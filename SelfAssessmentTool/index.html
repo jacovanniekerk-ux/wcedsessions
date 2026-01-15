@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The eCulture Quest: Transformation Journey</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- WCG Brand Configuration -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        wcg: {
+                            blue: '#001489',       
+                            pink: '#C8126E',       
+                            brightBlue: '#007DBA', 
+                            green: '#84BD00',      
+                            turquoise: '#00A9CE',  
+                            grey: '#968C83',       
+                            teal: '#7FA9AE',       
+                            steel: '#587F95',      
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Outfit', 'sans-serif'],
+                        mono: ['Courier Prime', 'monospace'],
+                    },
+                    backgroundImage: {
+                        'paper-texture': "url('https://www.transparenttextures.com/patterns/cream-paper.png')",
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- React & ReactDOM -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    
+    <!-- Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Lucide Icons (Script) -->
+    <script src="https://unpkg.com/lucide@0.263.1"></script>
+
+    <!-- Fonts & Animations -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;700;900&family=Courier+Prime:wght@400;700&display=swap');
+        
+        body { 
+            font-family: 'Outfit', sans-serif; 
+            background-color: #f0f4f8; 
+            color: #334155; 
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(0, 20, 137, 0.03) 0px, transparent 50%), 
+                radial-gradient(at 100% 100%, rgba(200, 18, 110, 0.03) 0px, transparent 50%);
+        }
+
+        /* Quest Card Styling */
+        .quest-card {
+            background-color: #fff;
+            background-image: linear-gradient(#fdfbf7 2px, transparent 2px), linear-gradient(90deg, #fdfbf7 2px, transparent 2px), linear-gradient(#fdfbf7 1px, transparent 1px), linear-gradient(90deg, #fdfbf7 1px, transparent 1px);
+            background-size: 50px 50px, 50px 50px, 10px 10px, 10px 10px;
+            background-position: -2px -2px, -2px -2px, -1px -1px, -1px -1px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .quest-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        /* Custom Animations */
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+        .animate-float { animation: float 3s ease-in-out infinite; }
+        
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .slide-in { animation: slideIn 0.5s cubic-bezier(0.16, 1, 0.3, 1); }
+
+        .progress-fill { transition: width 1s cubic-bezier(0.4, 0, 0.2, 1); }
+
+        /* Option Card Selection */
+        .option-card { transition: all 0.2s; position: relative; overflow: hidden; }
+        .option-card:hover { transform: scale(1.005); }
+        .option-card::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            width: 4px;
+            background: transparent;
+            transition: background 0.2s;
+        }
+        .option-card.selected::before { background: currentColor; }
+
+        /* Print Styles */
+        @media print {
+            body { background: white; color: black; background-image: none; }
+            .no-print { display: none; }
+            .print-only { display: block; }
+            .quest-card { border: 1px solid #000; box-shadow: none; break-inside: avoid; }
+            .break-inside-avoid { page-break-inside: avoid; }
+            button { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useMemo, useEffect } = React;
+
+        // --- ICON COMPONENT ---
+        const Icon = ({ name, className }) => {
+            const [svgHtml, setSvgHtml] = useState('');
+            useEffect(() => {
+                if (window.lucide && window.lucide.icons) {
+                    const pascalName = name.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join('');
+                    const iconNode = window.lucide.icons[pascalName];
+                    if (iconNode) setSvgHtml(iconNode.toSvg({ class: className }));
+                }
+            }, [name, className]);
+            return <span dangerouslySetInnerHTML={{ __html: svgHtml }} className="inline-flex items-center justify-center" />;
+        };
+
+        // --- FUTURE TASKS MATRIX ---
+        const QUEST_MATRIX = {
+            1: { // Level 1: 0-25%
+                title: "The Emerging Explorer",
+                goal: "Find personal comfort and safety.",
+                tasks: {
+                    people: { action: "Start a personal journal to document feelings about change.", desc: "Identify personal anxieties regarding technology." },
+                    practice: { action: "Commit to one small organisational habit (e.g., digital filing).", desc: "Find one small digital win that saves you time." },
+                    pedagogy: { action: "Use a visual aid (image/video) to clarify a difficult concept.", desc: "Focus on doing what you do, but slightly better." },
+                    platforms: { action: "Discuss 'digital boundaries' with your class.", desc: "Familiarise yourself with basic data privacy." }
+                }
+            },
+            2: { // Level 2: 25-50%
+                title: "The Digital Adopter",
+                goal: "Establish consistent, stress-free routines.",
+                tasks: {
+                    people: { action: "Share a 'failure story' with a trusted colleague.", desc: "Develop a playful attitude towards failure." },
+                    practice: { action: "Learn one set of keyboard shortcuts for your most-used tool.", desc: "Reduce friction in your daily workflow." },
+                    pedagogy: { action: "Run a low-stakes digital quiz (e.g., Kahoot/Quizizz).", desc: "Use tech to check for understanding in a fun way." },
+                    platforms: { action: "Google yourself to see what is publicly visible.", desc: "Understand your digital footprint." }
+                }
+            },
+            3: { // Level 3: 50-75%
+                title: "The Proficient Practitioner",
+                goal: "Ensure technology serves the curriculum.",
+                tasks: {
+                    people: { action: "Check in on a colleague who seems overwhelmed by tech.", desc: "Use your confidence to create a safe space for others." },
+                    practice: { action: "Audit your current tools. Discard what doesn't add value.", desc: "Ask: Is this tool serving me, or am I serving the tool?" },
+                    pedagogy: { action: "Design one inquiry-based project where learners drive discovery.", desc: "Use technology to offer choices to learners." },
+                    platforms: { action: "Design lessons that teach attention management.", desc: "Deepen understanding of the 'Cyber Effect'." }
+                }
+            },
+            4: { // Level 4: 75-100%
+                title: "The Transformation Leader",
+                goal: "Innovate, mentor, and influence the system.",
+                tasks: {
+                    people: { action: "Mentor a colleague, validating their non-tech strengths.", desc: "Shift focus from self-growth to lifting others." },
+                    practice: { action: "Initiate a school-wide project connecting classrooms.", desc: "Look for systemic problems solved through strategy." },
+                    pedagogy: { action: "Publish a reflection about a pedagogical breakthrough.", desc: "Move from consuming content to creating it." },
+                    platforms: { action: "Champion the 'Human' element in a digital world.", desc: "Lead the conversation on ethical digital citizenship." }
+                }
+            }
+        };
+
+        // --- GAME DATA (VERBATIM UPDATED) ---
+        const categories = [
+            {
+                id: 'people',
+                title: 'Realm of People',
+                subtitle: 'Emotional Infrastructure',
+                icon: 'heart',
+                textColor: 'text-wcg-pink', 
+                borderColor: 'border-wcg-pink',
+                badgeBg: 'bg-pink-50',
+                barColor: 'bg-wcg-pink',
+                questions: [
+                    { id: 'p1_q1', text: "Do you feel emotionally safe, supported, and able to ask questions during digital PD sessions?", options: [
+                        { val: 0, label: "The Withholder", desc: "I stay quiet because I don’t feel safe enough to ask or try.", xp: 0 },
+                        { val: 10, label: "The Survivor", desc: "I participate when needed, but I’m tense and self-conscious.", xp: 10 },
+                        { val: 25, label: "The Stabiliser", desc: "I engage steadily and ask questions when I need clarity.", xp: 25 },
+                        { val: 50, label: "The Grounded Connector", desc: "I feel safe, supported, and openly contribute to others’ learning.", xp: 50 }
+                    ]},
+                    { id: 'p1_q2', text: "Do you believe in your ability to learn and use digital tools, even when they feel unfamiliar or challenging?", options: [
+                        { val: 0, label: "The Withholder", desc: "I doubt myself and avoid new tools unless forced.", xp: 0 },
+                        { val: 10, label: "The Survivor", desc: "I try, but I often feel overwhelmed and unsure.", xp: 10 },
+                        { val: 25, label: "The Stabiliser", desc: "I trust that I’ll figure things out with practice.", xp: 25 },
+                        { val: 50, label: "The Grounded Connector", desc: "I embrace learning and feel confident adapting to new tools.", xp: 50 }
+                    ]},
+                    { id: 'p1_q3', text: "Do you carry emotional pressure around digital expectations (fear, shame, overload) that others may not see?", options: [
+                        { val: 0, label: "The Withholder", desc: "I feel anxious, but stay hidden; people don’t notice I’m struggling.", xp: 0 },
+                        { val: 10, label: "The Survivor", desc: "I absorb everyone’s stress, support others, and keep going silently.", xp: 10 },
+                        { val: 25, label: "The Stabiliser", desc: "I manage my stress, but sometimes the hidden load is real.", xp: 25 },
+                        { val: 50, label: "The Grounded Connector", desc: "I express when I’m overwhelmed and set boundaries when needed.", xp: 50 }
+                    ]},
+                    { id: 'p1_q4', text: "When digital tasks feel overwhelming, do you tend to withdraw or over-compensate to avoid judgment?", options: [
+                        { val: 0, label: "The Withholder", desc: "I withdraw and disappear from digital spaces.", xp: 0 },
+                        { val: 10, label: "The Survivor", desc: "I over-do, over-prepare, or over-comply to look ‘fine’.", xp: 10 },
+                        { val: 25, label: "The Stabiliser", desc: "I slow down or ask for clarity when I feel lost.", xp: 25 },
+                        { val: 50, label: "The Grounded Connector", desc: "I regulate myself and return to tasks with openness and calm.", xp: 50 }
+                    ]}
+                ]
+            },
+            {
+                id: 'practice',
+                title: 'Realm of Practice',
+                subtitle: 'Behavioural Culture',
+                icon: 'swords', 
+                textColor: 'text-wcg-brightBlue',
+                borderColor: 'border-wcg-brightBlue',
+                badgeBg: 'bg-sky-50',
+                barColor: 'bg-wcg-brightBlue',
+                questions: [
+                    { id: 'p2_q1', text: "Do your lessons include predictable digital routines that learners recognise and follow easily?", options: [
+                        { val: 0, label: "The Bypasser", desc: "I avoid routines; everything feels situational.", xp: 0 },
+                        { val: 10, label: "The Conserver", desc: "I have some routines, but I stick to what’s comfortable.", xp: 10 },
+                        { val: 25, label: "The Ritual Keeper", desc: "I use consistent digital routines across lessons.", xp: 25 },
+                        { val: 50, label: "The Culture Weaver", desc: "I build shared, school-wide habits that everyone benefits from.", xp: 50 }
+                    ]},
+                    { id: 'p2_q2', text: "Does your activity on platforms show a clear pattern of consistent use across weeks or terms?", options: [
+                        { val: 0, label: "The Bypasser", desc: "My digital activity is irregular or absent.", xp: 0 },
+                        { val: 10, label: "The Conserver", desc: "I log in only when needed; no consistent rhythm.", xp: 10 },
+                        { val: 25, label: "The Ritual Keeper", desc: "I use platforms regularly as part of my workflow.", xp: 25 },
+                        { val: 50, label: "The Culture Weaver", desc: "My digital consistency influences others to be more active too.", xp: 50 }
+                    ]},
+                    { id: 'p2_q3', text: "Are digital resources and information shared openly at your school, rather than held by specific individuals or groups?", options: [
+                        { val: 0, label: "The Bypasser", desc: "I rarely share; I keep to my own comfort zone.", xp: 0 },
+                        { val: 10, label: "The Conserver", desc: "I share selectively, mostly within my small circle.", xp: 10 },
+                        { val: 25, label: "The Ritual Keeper", desc: "I share resources openly when needed.", xp: 25 },
+                        { val: 50, label: "The Culture Weaver", desc: "I foster a culture of openness — everyone has access.", xp: 50 }
+                    ]},
+                    { id: 'p2_q4', text: "Are digital tasks and processes at your school free from dependency on one ‘go-to’ person or bottleneck?", options: [
+                        { val: 0, label: "The Bypasser", desc: "I rely on others because I avoid digital tasks.", xp: 0 },
+                        { val: 10, label: "The Conserver", desc: "I depend on one or two people and delay tasks without them.", xp: 10 },
+                        { val: 25, label: "The Ritual Keeper", desc: "I manage my own workflows and ask for help only when needed.", xp: 25 },
+                        { val: 50, label: "The Culture Weaver", desc: "I strengthen shared ownership so no one becomes a bottleneck.", xp: 50 }
+                    ]}
+                ]
+            },
+            {
+                id: 'pedagogy',
+                title: 'Realm of Pedagogy',
+                subtitle: 'Humanised Learning Design',
+                icon: 'book-open',
+                textColor: 'text-wcg-green',
+                borderColor: 'border-wcg-green',
+                badgeBg: 'bg-lime-50',
+                barColor: 'bg-wcg-green',
+                questions: [
+                    { id: 'p3_q1', text: "Do you use voice notes, storytelling, or multimodal tools to support multilingual expression during digital learning?", options: [
+                        { val: 0, label: "The Deliverer", desc: "I focus on text-based or traditional instructions only.", xp: 0 },
+                        { val: 10, label: "The Enhancer", desc: "I occasionally add multimedia but inconsistently.", xp: 10 },
+                        { val: 25, label: "The Co-Designer", desc: "I include voice notes or multimodal steps intentionally.", xp: 25 },
+                        { val: 50, label: "The Pedagogical Alchemist", desc: "I design tasks where learners express identity, voice, and language freely.", xp: 50 }
+                    ]},
+                    { id: 'p3_q2', text: "Do you use clear, affirming, emotionally supportive language when giving digital instructions or feedback?", options: [
+                        { val: 0, label: "The Deliverer", desc: "My digital tone is neutral or directive.", xp: 0 },
+                        { val: 10, label: "The Enhancer", desc: "I try to soften instructions but don’t always succeed.", xp: 10 },
+                        { val: 25, label: "The Co-Designer", desc: "My tone is mostly affirming and aware of emotional needs.", xp: 25 },
+                        { val: 50, label: "The Pedagogical Alchemist", desc: "I intentionally craft tone to create safety, clarity, and connection.", xp: 50 }
+                    ]},
+                    { id: 'p3_q3', text: "Do your digital assessments include opportunities for reflection or personal voice, not only right/wrong answers?", options: [
+                        { val: 0, label: "The Deliverer", desc: "My assessments focus primarily on right/wrong answers.", xp: 0 },
+                        { val: 10, label: "The Enhancer", desc: "I sometimes include reflection but not consistently.", xp: 10 },
+                        { val: 25, label: "The Co-Designer", desc: "I often build in reflective check-ins or voice-based responses.", xp: 25 },
+                        { val: 50, label: "The Pedagogical Alchemist", desc: "Reflection and personal voice are core to how I assess learning.", xp: 50 }
+                    ]},
+                    { id: 'p3_q4', text: "Do your learners influence aspects of the digital learning process, such as tool choice, format, or pacing?", options: [
+                        { val: 0, label: "The Deliverer", desc: "I select everything; learners simply follow.", xp: 0 },
+                        { val: 10, label: "The Enhancer", desc: "I allow small choices occasionally.", xp: 10 },
+                        { val: 25, label: "The Co-Designer", desc: "Learners co-shape some parts of the task or platform use.", xp: 25 },
+                        { val: 50, label: "The Pedagogical Alchemist", desc: "Learners help shape process, tools, pacing, and formats.", xp: 50 }
+                    ]}
+                ]
+            },
+            {
+                id: 'platforms',
+                title: 'Realm of Platforms',
+                subtitle: 'Human–Tool Relationship',
+                icon: 'layers',
+                textColor: 'text-wcg-turquoise',
+                borderColor: 'border-wcg-turquoise',
+                badgeBg: 'bg-cyan-50',
+                barColor: 'bg-wcg-turquoise',
+                questions: [
+                    { id: 'p4_q1', text: "Do you feel comfortable giving honest feedback about the digital platforms your school uses?", options: [
+                        { val: 0, label: "The Overwhelmed Navigator", desc: "I hold back; I’m scared to speak up.", xp: 0 },
+                        { val: 10, label: "The Functional Operator", desc: "I give feedback if asked, but rarely initiate.", xp: 10 },
+                        { val: 25, label: "The Conscious Selector", desc: "I provide feedback to improve usability.", xp: 25 },
+                        { val: 50, label: "The Ecosystem Shaper", desc: "I influence platform decisions through meaningful feedback.", xp: 50 }
+                    ]},
+                    { id: 'p4_q2', text: "Does navigating your school’s digital platforms feel manageable rather than mentally exhausting or confusing?", options: [
+                        { val: 0, label: "The Overwhelmed Navigator", desc: "I feel confused, drained, or lost in digital spaces.", xp: 0 },
+                        { val: 10, label: "The Functional Operator", desc: "I manage basics but often feel mentally overloaded.", xp: 10 },
+                        { val: 25, label: "The Conscious Selector", desc: "I navigate comfortably and select tools that reduce cognitive load.", xp: 25 },
+                        { val: 50, label: "The Ecosystem Shaper", desc: "I help simplify digital paths for others too.", xp: 50 }
+                    ]},
+                    { id: 'p4_q3', text: "Do the digital tools and content you use feel culturally relevant for South African learners?", options: [
+                        { val: 0, label: "The Overwhelmed Navigator", desc: "I use whatever is there, even if it doesn’t fit local context.", xp: 0 },
+                        { val: 10, label: "The Functional Operator", desc: "I try to localise content when I can.", xp: 10 },
+                        { val: 25, label: "The Conscious Selector", desc: "I choose tools and content that speak to our learners’ realities.", xp: 25 },
+                        { val: 50, label: "The Ecosystem Shaper", desc: "I intentionally source or create culturally aligned digital content.", xp: 50 }
+                    ]},
+                    { id: 'p4_q4', text: "Do the digital tools and platforms you use align well with your school’s actual realities (data, devices, time, workload)?", options: [
+                        { val: 0, label: "The Overwhelmed Navigator", desc: "I often feel the tools don’t match our realities.", xp: 0 },
+                        { val: 10, label: "The Functional Operator", desc: "I adapt slowly, even when the tools are misaligned.", xp: 10 },
+                        { val: 25, label: "The Conscious Selector", desc: "I choose tools that genuinely work in our context.", xp: 25 },
+                        { val: 50, label: "The Ecosystem Shaper", desc: "I adapt, advocate, or redesign workflows to meet real conditions.", xp: 50 }
+                    ]}
+                ]
+            }
+        ];
+
+        // --- LOGIC HELPERS ---
+        const getSparkLevel = (xp, totalMax) => {
+            const percentage = (xp / totalMax) * 100;
+            if (percentage <= 10) return { level: 0, title: "Dormant Spark", badge: "cloud-moon", msg: "The fire has not yet started. Time to strike the first match." };
+            if (percentage < 30) return { level: 1, title: "Spark 1: The Observer", badge: "sprout", msg: "You are at the start. Focus on Digital Literacy." };
+            if (percentage < 55) return { level: 2, title: "Spark 2: The Explorer", badge: "compass", msg: "You are gaining fluency. Time to build your toolkit." };
+            if (percentage < 75) return { level: 3, title: "Spark 3: The Practitioner", badge: "hammer", msg: "You are confident. Aim for deep integration." };
+            if (percentage < 90) return { level: 4, title: "Spark 4: The Innovator", badge: "zap", msg: "You are creating content and leading others." };
+            return { level: 5, title: "Spark 5: Transformation Agent", badge: "crown", msg: "You exhibit Digital Wisdom. You are a mentor." };
+        };
+
+        const getFutureQuests = (scores) => {
+            // Scores are 0-100 percentages per realm
+            const getLevel = (score) => {
+                if (score < 25) return 1;
+                if (score < 50) return 2;
+                if (score < 75) return 3;
+                return 4;
+            };
+
+            const tasks = [];
+            // We want to return 4 tasks, one for each realm based on its specific level
+            categories.forEach(cat => {
+                const score = scores[cat.id];
+                const level = getLevel(score);
+                const questData = QUEST_MATRIX[level];
+                if (questData && questData.tasks[cat.id]) {
+                    tasks.push({
+                        realm: cat.title.replace('Realm of ', ''),
+                        level: level,
+                        ...questData.tasks[cat.id],
+                        icon: cat.icon,
+                        color: cat.textColor,
+                        bg: cat.badgeBg,
+                        border: cat.borderColor
+                    });
+                }
+            });
+            return tasks;
+        };
+
+        function App() {
+            const [answers, setAnswers] = useState({});
+            const [currentRealmIndex, setCurrentRealmIndex] = useState(0);
+            const [showIntro, setShowIntro] = useState(true);
+            const [showResults, setShowResults] = useState(false);
+            const [xp, setXp] = useState(0);
+
+            const currentRealm = categories[currentRealmIndex];
+            const maxXP = 800; // 16 questions * 50 XP max
+
+            const handleAnswer = (qId, xpValue) => {
+                const oldXp = answers[qId] !== undefined ? answers[qId] : 0;
+                setAnswers(prev => ({ ...prev, [qId]: xpValue }));
+                setXp(prev => prev - oldXp + xpValue);
+            };
+
+            const nextRealm = () => {
+                if (currentRealmIndex < categories.length - 1) {
+                    setCurrentRealmIndex(prev => prev + 1);
+                    window.scrollTo(0,0);
+                } else {
+                    setShowResults(true);
+                    window.scrollTo(0,0);
+                }
+            };
+            
+            const isRealmComplete = useMemo(() => {
+                return currentRealm.questions.every(q => answers[q.id] !== undefined);
+            }, [answers, currentRealm]);
+
+            const resultsData = useMemo(() => {
+                const catScores = { people: 0, practice: 0, pedagogy: 0, platforms: 0 };
+                const catMax = 200; // 4 questions * 50 XP
+                
+                Object.keys(answers).forEach(key => {
+                    const val = answers[key];
+                    if (key.startsWith('p1')) catScores.people += val;
+                    if (key.startsWith('p2')) catScores.practice += val;
+                    if (key.startsWith('p3')) catScores.pedagogy += val;
+                    if (key.startsWith('p4')) catScores.platforms += val;
+                });
+
+                // Convert to percentages for level calculation
+                const percentages = {};
+                Object.keys(catScores).forEach(k => percentages[k] = Math.round((catScores[k] / catMax) * 100));
+                return percentages;
+            }, [answers]);
+
+            const sparkData = getSparkLevel(xp, maxXP);
+            const futureQuests = getFutureQuests(resultsData);
+
+            const handleGoogleSubmit = () => {
+                alert("Integration Point: Data would be sent to Google Form here.");
+            };
+
+            if (showIntro) {
+                return (
+                    <div className="flex items-center justify-center min-h-screen p-4 text-center">
+                        <div className="max-w-3xl bg-white border border-slate-200 rounded-3xl p-10 shadow-2xl animate-float">
+                            <div className="mb-8 flex justify-center">
+                                <div className="p-6 bg-wcg-blue rounded-full shadow-lg">
+                                    <Icon name="gamepad-2" className="w-20 h-20 text-white" />
+                                </div>
+                            </div>
+                            <h1 className="text-4xl md:text-6xl font-black mb-6 text-wcg-blue tracking-tight">THE eCULTURE QUEST</h1>
+                            <div className="w-24 h-2 bg-wcg-pink mx-auto mb-8 rounded-full"></div>
+                            <p className="text-xl text-slate-600 mb-10 leading-relaxed font-light">
+                                Welcome, Educator. <br/>
+                                Your goal is to move from <strong>Digital Literacy</strong> to <strong>Digital Wisdom</strong>.
+                                <br/><br/>
+                                Assess your proficiency across the <span className="text-wcg-brightBlue font-bold">4 Realms</span> to unlock your <span className="text-wcg-pink font-bold">Spark Level</span> and receive your personalised quest log.
+                            </p>
+                            <button onClick={() => setShowIntro(false)} className="px-10 py-5 bg-wcg-blue text-white rounded-full font-bold text-2xl hover:bg-wcg-brightBlue transition-all shadow-xl hover:shadow-2xl hover:-translate-y-1">
+                                START ADVENTURE
+                            </button>
+                        </div>
+                    </div>
+                );
+            }
+
+            if (showResults) {
+                return (
+                    <div className="min-h-screen p-4 md:p-8 max-w-7xl mx-auto">
+                        <div className="bg-white border-2 border-slate-100 rounded-3xl overflow-hidden shadow-2xl break-inside-avoid">
+                            {/* Header Section */}
+                            <div className="bg-wcg-blue p-10 text-center relative overflow-hidden">
+                                <div className="absolute inset-0 opacity-10" style={{backgroundImage: "radial-gradient(circle at center, white 1px, transparent 1px)", backgroundSize: "20px 20px"}}></div>
+                                <div className="relative z-10">
+                                    <div className="inline-block p-5 bg-white rounded-full border-8 border-wcg-pink mb-6 shadow-2xl">
+                                        <Icon name={sparkData.badge} className="w-16 h-16 text-wcg-pink" />
+                                    </div>
+                                    <h2 className="text-4xl md:text-5xl font-black text-white mb-2 tracking-tight">{sparkData.title}</h2>
+                                    <div className="inline-block px-4 py-1 bg-wcg-brightBlue/30 rounded-full border border-wcg-brightBlue/50 text-wcg-turquoise font-mono text-xl mb-4 backdrop-blur-sm">
+                                        Total XP: {xp} / {maxXP}
+                                    </div>
+                                    <p className="text-slate-100 mt-2 max-w-2xl mx-auto text-lg font-light">{sparkData.msg}</p>
+                                </div>
+                            </div>
+
+                            <div className="p-8 grid grid-cols-1 lg:grid-cols-12 gap-10">
+                                {/* Stats Column */}
+                                <div className="lg:col-span-4 space-y-8">
+                                    <div>
+                                        <h3 className="text-2xl font-black mb-6 flex items-center gap-3 text-wcg-blue border-b-2 border-slate-100 pb-2">
+                                            <Icon name="bar-chart-2" className="w-6 h-6"/> Realm Mastery
+                                        </h3>
+                                        <div className="space-y-6">
+                                            {Object.entries(resultsData).map(([key, score]) => {
+                                                const cat = categories.find(c => c.id === key);
+                                                const barColor = cat ? cat.barColor : 'bg-wcg-grey';
+                                                const IconName = cat ? cat.icon : 'circle';
+                                                return (
+                                                    <div key={key} className="bg-slate-50 p-4 rounded-xl border border-slate-200 break-inside-avoid">
+                                                        <div className="flex justify-between items-center mb-2">
+                                                            <div className="flex items-center gap-2">
+                                                                <div className={`p-1.5 rounded-lg ${cat.badgeBg} ${cat.textColor}`}>
+                                                                    <Icon name={IconName} className="w-4 h-4" />
+                                                                </div>
+                                                                <span className="uppercase text-sm font-bold text-slate-600 tracking-wider">{cat.title.replace('Realm of ', '')}</span>
+                                                            </div>
+                                                            <span className="font-mono font-bold text-slate-700">{score}%</span>
+                                                        </div>
+                                                        <div className="h-3 bg-white rounded-full overflow-hidden border border-slate-200">
+                                                            <div className={`h-full transition-all duration-1000 ${barColor}`} style={{width: `${score}%`}}></div>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                {/* Quests Column */}
+                                <div className="lg:col-span-8">
+                                    <h3 className="text-2xl font-black mb-6 flex items-center gap-3 text-wcg-blue border-b-2 border-slate-100 pb-2">
+                                        <Icon name="map" className="w-6 h-6" /> Your Future Quests
+                                    </h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        {futureQuests.map((quest, idx) => (
+                                            <div key={idx} className={`quest-card flex flex-col p-6 rounded-xl border-l-4 ${quest.border} break-inside-avoid relative`}>
+                                                <div className="absolute top-4 right-4 text-slate-300 opacity-20">
+                                                    <Icon name={quest.icon} className="w-24 h-24" />
+                                                </div>
+                                                <div className="relative z-10">
+                                                    <div className="flex items-center gap-2 mb-4">
+                                                        <span className={`text-xs font-black uppercase tracking-widest px-2 py-1 rounded bg-slate-100 ${quest.color}`}>{quest.realm}</span>
+                                                        <span className="text-xs font-mono text-slate-400">Lvl {quest.level}</span>
+                                                    </div>
+                                                    <div className="mb-6">
+                                                        <h4 className="font-bold text-slate-800 text-lg leading-tight mb-2">{quest.desc}</h4>
+                                                        <p className="text-sm text-slate-500 italic">Target: {quest.goal}</p>
+                                                    </div>
+                                                    <div className="mt-auto pt-4 border-t border-slate-100 border-dashed">
+                                                        <div className="text-xs text-wcg-grey uppercase font-bold mb-2 flex items-center gap-1"><Icon name="check-square" className="w-3 h-3"/> Recommended Action</div>
+                                                        <p className={`text-base font-bold ${quest.color}`}>"{quest.action}"</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            {/* Footer Actions */}
+                            <div className="p-8 bg-slate-50 border-t border-slate-200 flex justify-center gap-6 no-print">
+                                <button onClick={() => window.print()} className="flex items-center gap-2 px-8 py-4 bg-white border border-slate-300 hover:bg-slate-100 rounded-xl font-bold text-slate-700 shadow-sm transition-all hover:-translate-y-1">
+                                    <Icon name="printer" className="w-5 h-5" /> Print Report
+                                </button>
+                                <button onClick={() => window.location.reload()} className="flex items-center gap-2 px-8 py-4 bg-wcg-blue hover:bg-blue-800 text-white rounded-xl font-bold shadow-lg transition-all hover:-translate-y-1 hover:shadow-xl">
+                                    <Icon name="rotate-ccw" className="w-5 h-5" /> Replay Quest
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="min-h-screen flex flex-col items-center md:justify-center p-4">
+                    <div className="w-full max-w-6xl mb-6 flex justify-between items-end">
+                        <div>
+                            <div className="text-xs font-bold text-wcg-grey uppercase tracking-widest mb-1 flex items-center gap-1"><Icon name="compass" className="w-3 h-3"/> Current Quest</div>
+                            <h2 className={`text-3xl md:text-4xl font-black ${currentRealm.textColor} drop-shadow-sm flex items-center gap-3`}>
+                                {currentRealm.title}
+                            </h2>
+                            <p className="text-slate-500 font-medium text-lg mt-1">{currentRealm.subtitle}</p>
+                        </div>
+                        <div className="text-right hidden md:block">
+                            <div className="text-3xl font-black text-wcg-pink">{xp} XP</div>
+                            <div className="text-xs text-wcg-grey font-mono">Next Rank: Spark {Math.floor(xp/200) + 2}</div>
+                        </div>
+                    </div>
+
+                    <div className="w-full max-w-6xl h-3 bg-white rounded-full mb-8 overflow-hidden border border-slate-200 shadow-inner">
+                        <div className="h-full bg-gradient-to-r from-wcg-pink to-wcg-brightBlue progress-fill" style={{ width: `${((currentRealmIndex) / categories.length) * 100}%` }}></div>
+                    </div>
+
+                    <div className={`w-full max-w-6xl bg-white border-b-4 ${currentRealm.borderColor} rounded-3xl p-6 md:p-10 shadow-2xl slide-in`}>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
+                            {currentRealm.questions.map((q) => (
+                                <div key={q.id} className="space-y-4">
+                                    <h3 className="font-bold text-wcg-blue flex gap-3 items-start text-base md:text-lg leading-snug">
+                                        <div className="min-w-[24px] pt-1 text-slate-300"><Icon name="help-circle" className="w-6 h-6" /></div>
+                                        {q.text}
+                                    </h3>
+                                    <div className="grid grid-cols-1 gap-3 pl-9">
+                                        {q.options.map((opt) => (
+                                            <button key={opt.val} onClick={() => handleAnswer(q.id, opt.xp)} className={`option-card w-full text-left p-4 rounded-xl border transition-all group ${answers[q.id] === opt.xp ? `bg-${currentRealm.id === 'people' ? 'pink' : currentRealm.id === 'practice' ? 'sky' : currentRealm.id === 'pedagogy' ? 'lime' : 'cyan'}-50 border-${currentRealm.borderColor.split('-')[1]} selected shadow-md` : 'bg-slate-50 border-transparent hover:bg-white hover:border-slate-200 hover:shadow-sm'}`}>
+                                                <div className="flex justify-between items-center mb-1">
+                                                    <span className={`font-black text-xs uppercase tracking-wider ${answers[q.id] === opt.xp ? currentRealm.textColor : 'text-slate-400 group-hover:text-wcg-blue'}`}>{opt.label}</span>
+                                                    {answers[q.id] === opt.xp && <Icon name="check-circle" className="w-5 h-5 text-wcg-green" />}
+                                                </div>
+                                                <div className={`text-sm leading-relaxed ${answers[q.id] === opt.xp ? 'text-slate-800 font-medium' : 'text-slate-500'}`}>"{opt.desc}"</div>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                        <div className="mt-12 flex justify-end border-t border-slate-100 pt-8">
+                            <button onClick={nextRealm} disabled={!isRealmComplete} className={`flex items-center gap-3 px-10 py-4 rounded-xl font-bold text-xl transition-all ${isRealmComplete ? 'bg-wcg-blue text-white hover:bg-wcg-brightBlue shadow-xl hover:-translate-y-1' : 'bg-slate-100 text-slate-300 cursor-not-allowed'}`}>
+                                {currentRealmIndex === categories.length - 1 ? 'Complete Quest' : 'Next Realm'} <Icon name="arrow-right" className="w-6 h-6" />
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
