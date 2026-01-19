@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>eInfusion | Back on Track Programme</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --wcg-blue: #001489;
+            --wcg-grey: #968C83;
+            --wcg-red: #BA0C2F;
+            --wcg-teal: #7FA9AE;
+            --wcg-bright-blue: #007DBA;
+            --wcg-purple: #890C58;
+        }
+
+        body {
+            font-family: "Century Gothic", AppleGothic, sans-serif;
+            background-color: #fdfdfd;
+            color: #1e293b;
+            scroll-behavior: smooth;
+        }
+
+        .text-wcg-blue { color: var(--wcg-blue); }
+        .bg-wcg-blue { background-color: var(--wcg-blue); }
+        .bg-wcg-red { background-color: var(--wcg-red); }
+        .bg-wcg-teal { background-color: var(--wcg-teal); }
+        .border-wcg-teal { border-color: var(--wcg-teal); }
+
+        .hero-bg {
+            background: linear-gradient(rgba(0, 20, 137, 0.9), rgba(0, 20, 137, 0.9)), 
+                        url('https://images.unsplash.com/photo-1509062522246-3755977927d7?auto=format&fit=crop&q=80');
+            background-size: cover;
+            background-position: center;
+        }
+
+        /* Horizontal Module Scroller */
+        .module-scroller {
+            display: flex;
+            overflow-x: auto;
+            scroll-snap-type: x mandatory;
+            gap: 1.5rem;
+            padding: 2rem 0;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+        .module-scroller::-webkit-scrollbar { display: none; }
+        
+        .module-card {
+            flex: 0 0 320px;
+            scroll-snap-align: start;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+            overflow: hidden;
+        }
+        .module-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+        }
+
+        .module-icon-blob {
+            position: absolute;
+            top: -20px;
+            right: -20px;
+            width: 100px;
+            height: 100px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            padding-top: 15px;
+            padding-right: 15px;
+        }
+
+        .btn-massive-pulse {
+            animation: pulse-red 2s infinite;
+        }
+
+        @keyframes pulse-red {
+            0% { box-shadow: 0 0 0 0 rgba(186, 12, 47, 0.4); }
+            70% { box-shadow: 0 0 0 25px rgba(186, 12, 47, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(186, 12, 47, 0); }
+        }
+
+        .scroll-reveal {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.7s ease-out;
+        }
+        .scroll-reveal.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Methodology Step styling */
+        .moodle-step {
+            position: relative;
+        }
+        .moodle-step::after {
+            content: '';
+            position: absolute;
+            left: 24px;
+            top: 60px;
+            bottom: -20px;
+            width: 2px;
+            background: #e2e8f0;
+        }
+        .moodle-step:last-child::after { display: none; }
+    </style>
+</head>
+<body class="overflow-x-hidden">
+
+    <!-- Navbar -->
+    <nav class="fixed w-full z-50 bg-white/95 backdrop-blur-md shadow-md py-3 px-6 flex justify-between items-center">
+        <div class="flex items-center gap-2">
+            <div class="w-12 h-12 bg-wcg-blue rounded-xl flex items-center justify-center text-white text-2xl">
+                <i class="fas fa-microchip"></i>
+            </div>
+            <div>
+                <h1 class="text-xl font-black text-wcg-blue leading-none">eINFUSION</h1>
+                <p class="text-[10px] font-bold text-wcg-grey tracking-widest uppercase">Back on Track Programme</p>
+            </div>
+        </div>
+        <button class="bg-wcg-red text-white px-6 py-2 rounded-full font-bold hover:brightness-110 transition-all">
+            Join Cohort
+        </button>
+    </nav>
+
+    <!-- Hero -->
+    <header class="hero-bg min-h-[80vh] flex items-center justify-center text-center text-white px-6 pt-20">
+        <div class="max-w-4xl">
+            <span class="inline-block border-2 border-wcg-teal px-6 py-2 rounded-full text-sm font-black mb-6 uppercase tracking-widest">
+                Directorate eLearning
+            </span>
+            <h1 class="text-5xl md:text-8xl font-black mb-8 leading-tight">
+                Grow Your <br><span class="text-wcg-teal italic">Digital Toolbelt</span>
+            </h1>
+            <p class="text-xl md:text-2xl text-blue-100 font-light mb-10 max-w-2xl mx-auto">
+                Transform from simple substitution to total redefinition. 9 high-impact modules designed for the modern South African classroom.
+            </p>
+            <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                <a href="#modules" class="bg-white text-wcg-blue px-10 py-4 rounded-2xl font-black text-lg shadow-xl hover:bg-slate-100 transition-all">
+                    View 9 Modules
+                </a>
+                <a href="#methodology" class="bg-wcg-teal text-white px-10 py-4 rounded-2xl font-black text-lg shadow-xl hover:brightness-110 transition-all">
+                    How it Works
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Module Scroller Section -->
+    <section id="modules" class="py-24 bg-slate-50 overflow-hidden">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="flex flex-col md:flex-row justify-between items-end mb-12">
+                <div class="max-w-2xl">
+                    <h2 class="text-4xl font-black text-wcg-blue uppercase mb-4">The Infusion Journey</h2>
+                    <p class="text-slate-500">Master 9 critical digital skills. Every module is paired with practical tools you can use immediately.</p>
+                </div>
+                <div class="hidden md:flex gap-4">
+                    <button onclick="scrollModules(-350)" class="w-12 h-12 rounded-full border-2 border-wcg-blue text-wcg-blue flex items-center justify-center hover:bg-wcg-blue hover:text-white transition-all"><i class="fas fa-chevron-left"></i></button>
+                    <button onclick="scrollModules(350)" class="w-12 h-12 rounded-full border-2 border-wcg-blue text-wcg-blue flex items-center justify-center hover:bg-wcg-blue hover:text-white transition-all"><i class="fas fa-chevron-right"></i></button>
+                </div>
+            </div>
+
+            <div class="module-scroller" id="scroller">
+                <!-- Term 1 Blocks -->
+                <div class="module-card bg-wcg-blue text-white p-8 rounded-[2rem] shadow-sm flex flex-col">
+                    <div class="module-icon-blob"><i class="fas fa-desktop"></i></div>
+                    <span class="text-xs font-black text-blue-200 uppercase mb-2">Term 1 | Module 1</span>
+                    <h3 class="text-xl font-black mb-4 pr-10">Fundamental Presentation</h3>
+                    <p class="text-blue-100 text-sm mb-6 flex-grow leading-relaxed">Kill text-heavy slides. Master Coherence, Signaling, and the Triggering principle.</p>
+                    <div class="flex gap-2 text-[10px] font-bold uppercase">
+                        <span class="bg-white/20 px-2 py-1 rounded">Slidesgo</span>
+                        <span class="bg-white/20 px-2 py-1 rounded">PowerPoint</span>
+                    </div>
+                </div>
+
+                <div class="module-card bg-wcg-blue text-white p-8 rounded-[2rem] shadow-sm flex flex-col">
+                    <div class="module-icon-blob"><i class="fas fa-wand-magic-sparkles"></i></div>
+                    <span class="text-xs font-black text-blue-200 uppercase mb-2">Term 1 | Module 2</span>
+                    <h3 class="text-xl font-black mb-4 pr-10">Improved Delivery</h3>
+                    <p class="text-blue-100 text-sm mb-6 flex-grow leading-relaxed">Fix pixelation. Use Unsplash high-res assets and master Presenter View shortcuts.</p>
+                    <div class="flex gap-2 text-[10px] font-bold uppercase">
+                        <span class="bg-white/20 px-2 py-1 rounded">Pixabay</span>
+                        <span class="bg-white/20 px-2 py-1 rounded">Alt+Tab</span>
+                    </div>
+                </div>
+
+                <div class="module-card bg-wcg-blue text-white p-8 rounded-[2rem] shadow-sm flex flex-col">
+                    <div class="module-icon-blob"><i class="fas fa-play-circle"></i></div>
+                    <span class="text-xs font-black text-blue-200 uppercase mb-2">Term 1 | Module 3</span>
+                    <h3 class="text-xl font-black mb-4 pr-10">Teaching with Videos</h3>
+                    <p class="text-blue-100 text-sm mb-6 flex-grow leading-relaxed">Shift to active viewing. Use the 3-6 minute sweet spot and "no-edit" pause techniques.</p>
+                    <div class="flex gap-2 text-[10px] font-bold uppercase">
+                        <span class="bg-white/20 px-2 py-1 rounded">YouTube</span>
+                        <span class="bg-white/20 px-2 py-1 rounded">Curation</span>
+                    </div>
+                </div>
+
+                <!-- Term 2 Blocks -->
+                <div class="module-card bg-wcg-teal text-white p-8 rounded-[2rem] shadow-sm flex flex-col">
+                    <div class="module-icon-blob"><i class="fas fa-qrcode"></i></div>
+                    <span class="text-xs font-black text-teal-100 uppercase mb-2">Term 2 | Module 4</span>
+                    <h3 class="text-xl font-black mb-4 pr-10">Wayground Printed Mode</h3>
+                    <p class="text-teal-50 text-sm mb-6 flex-grow leading-relaxed">Instant paper-based digital assessment. Scan printed cards for real-time results.</p>
+                    <div class="flex gap-2 text-[10px] font-bold uppercase">
+                        <span class="bg-white/20 px-2 py-1 rounded">Offline-Digital</span>
+                        <span class="bg-white/20 px-2 py-1 rounded">Assessment</span>
+                    </div>
+                </div>
+
+                <div class="module-card bg-wcg-teal text-white p-8 rounded-[2rem] shadow-sm flex flex-col">
+                    <div class="module-icon-blob"><i class="fas fa-mobile-screen-button"></i></div>
+                    <span class="text-xs font-black text-teal-100 uppercase mb-2">Term 2 | Module 5</span>
+                    <h3 class="text-xl font-black mb-4 pr-10">AI Grading: Swiftgrade</h3>
+                    <p class="text-teal-50 text-sm mb-6 flex-grow leading-relaxed">Use GradeGPT to scan handwritten responses. Accelerate the student feedback loop.</p>
+                    <div class="flex gap-2 text-[10px] font-bold uppercase">
+                        <span class="bg-white/20 px-2 py-1 rounded">Feedback Loop</span>
+                        <span class="bg-white/20 px-2 py-1 rounded">AI Tool</span>
+                    </div>
+                </div>
+
+                <div class="module-card bg-wcg-teal text-white p-8 rounded-[2rem] shadow-sm flex flex-col">
+                    <div class="module-icon-blob"><i class="fas fa-cloud-arrow-down"></i></div>
+                    <span class="text-xs font-black text-teal-100 uppercase mb-2">Term 2 | Module 6</span>
+                    <h3 class="text-xl font-black mb-4 pr-10">Integrating ePortal</h3>
+                    <p class="text-teal-50 text-sm mb-6 flex-grow leading-relaxed">Navigate the WCED ePortal. Master dynamic links vs static file sharing for current content.</p>
+                    <div class="flex gap-2 text-[10px] font-bold uppercase">
+                        <span class="bg-white/20 px-2 py-1 rounded">WCED Portal</span>
+                        <span class="bg-white/20 px-2 py-1 rounded">Curation</span>
+                    </div>
+                </div>
+
+                <!-- Term 3 Blocks -->
+                <div class="module-card bg-wcg-red text-white p-8 rounded-[2rem] shadow-sm flex flex-col">
+                    <div class="module-icon-blob"><i class="fas fa-link"></i></div>
+                    <span class="text-xs font-black text-red-200 uppercase mb-2">Term 3 | Module 7</span>
+                    <h3 class="text-xl font-black mb-4 pr-10">Ease of Access</h3>
+                    <p class="text-red-50 text-sm mb-6 flex-grow leading-relaxed">Hyperdocs and bit.ly. Bridge the gap between physical and digital resources with ease.</p>
+                    <div class="flex gap-2 text-[10px] font-bold uppercase">
+                        <span class="bg-white/20 px-2 py-1 rounded">bit.ly</span>
+                        <span class="bg-white/20 px-2 py-1 rounded">Hyperdocs</span>
+                    </div>
+                </div>
+
+                <div class="module-card bg-wcg-red text-white p-8 rounded-[2rem] shadow-sm flex flex-col">
+                    <div class="module-icon-blob"><i class="fas fa-graduation-cap"></i></div>
+                    <span class="text-xs font-black text-red-200 uppercase mb-2">Term 3 | Module 8</span>
+                    <h3 class="text-xl font-black mb-4 pr-10">ePedagogy Mastery</h3>
+                    <p class="text-red-50 text-sm mb-6 flex-grow leading-relaxed">The theoretical engine. SAMR, TPACK, and Laurillard’s frameworks for real integration.</p>
+                    <div class="flex gap-2 text-[10px] font-bold uppercase">
+                        <span class="bg-white/20 px-2 py-1 rounded">SAMR</span>
+                        <span class="bg-white/20 px-2 py-1 rounded">TPACK</span>
+                    </div>
+                </div>
+
+                <div class="module-card bg-wcg-red text-white p-8 rounded-[2rem] shadow-sm flex flex-col">
+                    <div class="module-icon-blob"><i class="fas fa-robot"></i></div>
+                    <span class="text-xs font-black text-red-200 uppercase mb-2">Term 3 | Module 9</span>
+                    <h3 class="text-xl font-black mb-4 pr-10">Intro to Generative AI</h3>
+                    <p class="text-red-50 text-sm mb-6 flex-grow leading-relaxed">Prompting is King. Use ChatGPT responsibly to save time on planning and assessment.</p>
+                    <div class="flex gap-2 text-[10px] font-bold uppercase">
+                        <span class="bg-white/20 px-2 py-1 rounded">ChatGPT</span>
+                        <span class="bg-white/20 px-2 py-1 rounded">Prompts</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Methodology Section (Delivery Model) -->
+    <section id="methodology" class="py-24 bg-white px-6">
+        <div class="max-w-5xl mx-auto">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
+                <div class="scroll-reveal">
+                    <h2 class="text-4xl font-black text-wcg-blue uppercase mb-6 leading-tight">
+                        A Delivery Model Built for <br><span class="text-wcg-red italic">Busy Educators</span>
+                    </h2>
+                    <p class="text-slate-600 mb-8 leading-relaxed">
+                        We understand the demands of the modern classroom. The eInfusion programme is designed to be flexible, accessible, and structured to prevent burnout while ensuring consistent growth.
+                    </p>
+                    
+                    <div class="space-y-10">
+                        <div class="moodle-step flex gap-6">
+                            <div class="w-12 h-12 bg-wcg-blue rounded-full flex items-center justify-center text-white shrink-0 font-black shadow-lg">1</div>
+                            <div>
+                                <h4 class="font-black text-lg text-wcg-blue uppercase">Online & Self-Paced</h4>
+                                <p class="text-sm text-slate-500">Hosted entirely on Moodle. Log in whenever you have a gap, tracking your own progress through the digital toolbelt.</p>
+                            </div>
+                        </div>
+                        <div class="moodle-step flex gap-6">
+                            <div class="w-12 h-12 bg-wcg-teal rounded-full flex items-center justify-center text-white shrink-0 font-black shadow-lg">2</div>
+                            <div>
+                                <h4 class="font-black text-lg text-wcg-teal uppercase">Scheduled Release</h4>
+                                <p class="text-sm text-slate-500">To maintain momentum, modules are released in manageable clusters: <strong>3 Modules per Term</strong>.</p>
+                            </div>
+                        </div>
+                        <div class="moodle-step flex gap-6">
+                            <div class="w-12 h-12 bg-wcg-red rounded-full flex items-center justify-center text-white shrink-0 font-black shadow-lg">3</div>
+                            <div>
+                                <h4 class="font-black text-lg text-wcg-red uppercase">Evidence of Learning</h4>
+                                <p class="text-sm text-slate-500">Complete pre-tests, watch the 45-minute recording, and clear the post-test to earn your digital badge for the module.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-slate-50 p-10 rounded-[3rem] border-2 border-slate-100 scroll-reveal">
+                    <div class="text-center mb-8">
+                        <div class="inline-block p-4 bg-white rounded-2xl shadow-sm mb-4">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/e/e8/Moodle-logo.svg" alt="Moodle Logo" class="h-10">
+                        </div>
+                        <h3 class="font-black text-2xl text-wcg-blue">Access Anywhere</h3>
+                        <p class="text-sm text-wcg-grey font-bold uppercase tracking-wider">Mobile • Desktop • Tablet</p>
+                    </div>
+                    
+                    <ul class="space-y-4">
+                        <li class="flex items-center gap-4 p-4 bg-white rounded-2xl shadow-sm">
+                            <i class="fas fa-check-circle text-wcg-teal"></i>
+                            <span class="text-sm font-bold text-slate-700">No travel required</span>
+                        </li>
+                        <li class="flex items-center gap-4 p-4 bg-white rounded-2xl shadow-sm">
+                            <i class="fas fa-check-circle text-wcg-teal"></i>
+                            <span class="text-sm font-bold text-slate-700">Re-watch masterclasses anytime</span>
+                        </li>
+                        <li class="flex items-center gap-4 p-4 bg-white rounded-2xl shadow-sm">
+                            <i class="fas fa-check-circle text-wcg-teal"></i>
+                            <span class="text-sm font-bold text-slate-700">Instant test results</span>
+                        </li>
+                        <li class="flex items-center gap-4 p-4 bg-white rounded-2xl shadow-sm">
+                            <i class="fas fa-check-circle text-wcg-teal"></i>
+                            <span class="text-sm font-bold text-slate-700">Curated WCED resource links</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Final Call to Action -->
+    <section class="py-32 px-6 bg-slate-50 text-center relative overflow-hidden">
+        <div class="max-w-4xl mx-auto relative z-10 scroll-reveal">
+            <h2 class="text-5xl md:text-7xl font-black text-wcg-blue mb-8 leading-tight uppercase">Ready to Start Infusing?</h2>
+            <p class="text-2xl text-slate-500 font-light mb-12">Join hundreds of teachers transforming their pedagogical approach through hands-on ICT integration.</p>
+            
+            <button class="bg-wcg-red text-white text-3xl md:text-5xl font-black px-16 py-8 rounded-[2rem] shadow-2xl btn-massive-pulse hover:scale-105 transition-transform">
+                REGISTER NOW
+            </button>
+            
+            <p class="mt-12 text-wcg-grey font-bold uppercase tracking-widest text-sm italic">
+                A Project by WCED Directorate eLearning
+            </p>
+        </div>
+    </section>
+
+   
+
+    <script>
+        // Module Scroller Logic
+        function scrollModules(distance) {
+            const scroller = document.getElementById('scroller');
+            scroller.scrollBy({ left: distance, behavior: 'smooth' });
+        }
+
+        // Scroll Reveal Logic
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, { threshold: 0.1 });
+
+        document.querySelectorAll('.scroll-reveal').forEach(el => observer.observe(el));
+    </script>
+</body>
+</html>
