@@ -3,63 +3,105 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Upcoming Sessions | Western Cape Government</title>
-    
-    <!-- Tailwind CSS -->
+    <title>Upcoming Sessions</title>
+    <link rel="icon" type="image/png" href="favicon.png">
+
+    <!-- 1. Tailwind CSS (Styling Engine) -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- React & Babel -->
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    
-    <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
-
+    <!-- 2. Tailwind Configuration (WCG Brand Colours) -->
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     colors: {
                         wcg: {
-                            blue: '#004B87',        
-                            grey: '#968C83',        
-                            red: '#EE3B3B',         
-                            yellow: '#FFD700',      
-                            green: '#32CD32',       
+                            blue: '#004B87',        // Official WCG Blue
+                            grey: '#968C83',        // Borders/Secondary
+                            red: '#EE3B3B',         // Do it better
+                            yellow: '#FFD700',      // I can do it
+                            green: '#32CD32',       // Foundation
                             darkText: '#333333',
-                            lightBg: '#F8FAFC'
+                            lightBg: '#F3F4F6'
                         }
                     },
                     fontFamily: {
-                        sans: ['Segoe UI', 'Roboto', 'Helvetica', 'Arial', 'sans-serif'],
-                        accent: ['Montserrat', 'sans-serif']
+                        sans: ['Century Gothic', 'Didact Gothic', 'Segoe UI', 'sans-serif'],
+                        accent: ['Gotham', 'Montserrat', 'sans-serif']
+                    },
+                    animation: {
+                        'bounce-slight': 'bounce-slight 0.3s ease-in-out',
+                    },
+                    keyframes: {
+                        'bounce-slight': {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-3px)' },
+                        }
                     }
                 }
             }
         }
     </script>
 
+    <!-- 3. React & Babel (Component Logic) -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- 4. Custom Styles -->
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@700&display=swap');
-        .font-accent { font-family: 'Montserrat', sans-serif; }
-        .glass-card {
-            background: rgba(255, 255, 255, 0.9);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(226, 232, 240, 0.8);
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&family=Didact+Gothic&display=swap');
+        
+        body { font-family: 'Segoe UI', 'Didact Gothic', sans-serif; }
+        .font-accent { font-family: 'Montserrat', 'Gotham', sans-serif; }
+        
+        .session-card {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
+        .session-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px -10px rgba(0, 75, 135, 0.15);
+        }
+        .markdown-content ul { list-style-type: disc; margin-left: 1.5rem; margin-bottom: 1rem; }
+        .markdown-content p { margin-bottom: 0.75rem; }
     </style>
 </head>
-<body class="bg-wcg-lightBg min-h-screen text-wcg-darkText">
+<body class="bg-wcg-lightBg text-wcg-darkText min-h-screen">
     <div id="root"></div>
 
     <script type="text/babel">
         const { useState, useEffect, useMemo } = React;
 
-        // Helper to parse the CSV format and handle date logic
+        const apiKey = ""; // Provided at runtime
+
+        // Helper for Gemini API calls with exponential backoff
+        async function callGemini(prompt, systemInstruction) {
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+            const payload = {
+                contents: [{ parts: [{ text: prompt }] }],
+                systemInstruction: { parts: [{ text: systemInstruction }] }
+            };
+
+            for (let i = 0; i < 5; i++) {
+                try {
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    if (!response.ok) throw new Error('API request failed');
+                    const data = await response.json();
+                    return data.candidates?.[0]?.content?.parts?.[0]?.text;
+                } catch (error) {
+                    if (i === 4) throw error;
+                    await new Error(new Promise(resolve => setTimeout(resolve, Math.pow(2, i) * 1000)));
+                }
+            }
+        }
+
+        // Helper to parse the CSV format
         const parseCSV = (text) => {
             const lines = text.split('\n');
-            const headers = lines[0].split(',');
             const currentYear = new Date().getFullYear();
             const today = new Date();
             today.setHours(0, 0, 0, 0);
@@ -67,15 +109,9 @@
             return lines.slice(1)
                 .filter(line => line.trim() !== '' && !line.startsWith(',,,,'))
                 .map((line, index) => {
-                    // Regex to handle commas inside quotes
                     const values = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || [];
                     const cleanValues = values.map(v => v.replace(/^"|"$/g, '').trim());
-                    
-                    const dateStr = cleanValues[0]; // e.g., "Tue, Jan 27"
-                    const timeStr = cleanValues[1]; // e.g., "14:30 - 16:00"
-                    
-                    // Create a valid JS Date object for comparison
-                    // We assume current year since CSV only has Month/Day
+                    const dateStr = cleanValues[0];
                     const parsedDate = new Date(`${dateStr}, ${currentYear}`);
                     parsedDate.setHours(0, 0, 0, 0);
 
@@ -83,94 +119,160 @@
                         id: index,
                         dateRaw: dateStr,
                         dateObj: parsedDate,
-                        time: timeStr,
+                        time: cleanValues[1],
                         term: cleanValues[2],
                         district: cleanValues[3],
                         name: cleanValues[4],
                         level: cleanValues[5],
                         description: cleanValues[6],
-                        points: cleanValues[7],
                         registerLink: cleanValues[8],
                         googleCal: cleanValues[9],
                         outlookCal: cleanValues[10],
                         joinLink: cleanValues[11]
                     };
                 })
-                .filter(session => session.dateObj >= today) // Filter out past sessions
-                .sort((a, b) => a.dateObj - b.dateObj); // Sort by date
+                .filter(session => session.dateObj >= today)
+                .sort((a, b) => a.dateObj - b.dateObj);
         };
 
         const SessionCard = ({ session }) => {
+            const [aiContent, setAiContent] = useState(null);
+            const [loadingAi, setLoadingAi] = useState(false);
+            const [showModal, setShowModal] = useState(false);
+
             const today = new Date();
             today.setHours(0, 0, 0, 0);
             const isToday = session.dateObj.getTime() === today.getTime();
 
-            return (
-                <div className="glass-card rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col h-full border-l-4 border-l-wcg-blue">
-                    <div className="flex justify-between items-start mb-4">
-                        <div>
-                            <p className="text-wcg-blue font-bold text-lg leading-tight">{session.dateRaw}</p>
-                            <p className="text-gray-500 text-sm font-medium mt-1">
-                                <span className="inline-block mr-1">🕒</span> {session.time}
-                            </p>
-                        </div>
-                        <span className="bg-blue-50 text-wcg-blue text-[10px] uppercase tracking-widest font-bold px-2 py-1 rounded">
-                            {session.term}
-                        </span>
-                    </div>
-
-                    <h3 className="text-xl font-bold text-gray-800 mb-2 leading-tight min-h-[3rem]">
-                        {session.name}
-                    </h3>
+            const handleAiInsight = async (type) => {
+                setLoadingAi(true);
+                setShowModal(true);
+                try {
+                    const systemPrompt = "You are an educational consultant for the Western Cape Government Education Department. Provide clear, professional, and encouraging advice for teachers.";
+                    const prompt = type === 'brief' 
+                        ? `Generate a brief 3-point summary and 'why attend' for this webinar session titled "${session.name}" for "${session.level}" level. Description: ${session.description}`
+                        : `Create a teacher's preparation guide for "${session.name}". Suggest: 1. One pre-reading topic, 2. Required technical setup, 3. How they can use this in a classroom next week. Description: ${session.description}`;
                     
-                    <div className="flex items-center gap-2 mb-4">
-                        <span className="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded flex items-center gap-1">
-                            📍 {session.district}
-                        </span>
-                        <span className="bg-wcg-yellow/10 text-yellow-700 text-xs px-2 py-1 rounded">
-                            {session.level}
-                        </span>
+                    const result = await callGemini(prompt, systemPrompt);
+                    setAiContent(result);
+                } catch (err) {
+                    setAiContent("Sorry, I couldn't generate the insight right now. Please try again later.");
+                } finally {
+                    setLoadingAi(false);
+                }
+            };
+
+            return (
+                <div className="session-card bg-white rounded-xl overflow-hidden shadow-sm border border-gray-100 flex flex-col h-full relative">
+                    {/* Header: Date & Time */}
+                    <div className="bg-wcg-blue p-4 text-white">
+                        <div className="flex justify-between items-center">
+                            <div>
+                                <h3 className="text-xl font-black font-accent leading-tight uppercase tracking-tight">{session.dateRaw}</h3>
+                                <p className="text-blue-100 text-sm font-medium mt-1 uppercase tracking-wider">{session.time}</p>
+                            </div>
+                            <div className="text-right">
+                                <span className="bg-white/20 text-[10px] font-bold px-2 py-1 rounded uppercase tracking-widest">{session.term}</span>
+                            </div>
+                        </div>
                     </div>
 
-                    <p className="text-gray-600 text-sm line-clamp-3 mb-6 flex-grow">
-                        {session.description}
-                    </p>
-
-                    <div className="mt-auto pt-4 border-t border-gray-100">
-                        {isToday ? (
-                            <a 
-                                href={session.joinLink}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-colors animate-pulse"
-                            >
-                                <span className="relative flex h-3 w-3">
-                                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
-                                  <span className="relative inline-flex rounded-full h-3 w-3 bg-white"></span>
+                    <div className="p-6 flex flex-col flex-grow">
+                        <div className="mb-4">
+                            <span className="text-wcg-blue text-[10px] font-black uppercase tracking-widest block mb-1">{session.district}</span>
+                            <h4 className="text-lg font-bold text-gray-800 leading-tight mb-2">{session.name}</h4>
+                            <div className="flex flex-wrap gap-2 items-center">
+                                <span className="inline-block bg-wcg-yellow text-wcg-blue text-[10px] font-black px-2 py-1 rounded uppercase italic">
+                                    {session.level}
                                 </span>
-                                JOIN SESSION NOW
-                            </a>
-                        ) : (
-                            <div className="space-y-3">
-                                <a 
-                                    href={session.registerLink}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="w-full bg-wcg-blue hover:bg-blue-900 text-white font-bold py-2.5 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors text-sm"
+                                <button 
+                                    onClick={() => handleAiInsight('brief')}
+                                    className="text-[10px] font-bold text-wcg-blue hover:underline flex items-center gap-1"
                                 >
-                                    Pre-register
+                                    ✨ Session Briefing
+                                </button>
+                            </div>
+                        </div>
+
+                        <p className="text-gray-500 text-sm leading-relaxed mb-6 flex-grow">
+                            {session.description}
+                        </p>
+
+                        <div className="mt-auto pt-4 border-t border-gray-50 space-y-3">
+                            <button 
+                                onClick={() => handleAiInsight('prep')}
+                                className="w-full text-xs font-bold text-gray-400 hover:text-wcg-blue transition-colors flex items-center justify-center gap-1 py-1"
+                            >
+                                ✨ Preparation Guide
+                            </button>
+
+                            {isToday ? (
+                                <a 
+                                    href={session.joinLink} 
+                                    target="_blank" 
+                                    className="w-full bg-wcg-green hover:bg-green-600 text-white font-black py-4 rounded-lg text-center flex items-center justify-center gap-2 transition-colors shadow-lg shadow-green-200"
+                                >
+                                    <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+                                    JOIN SESSION NOW
                                 </a>
-                                <div className="grid grid-cols-2 gap-2">
-                                    <a href={session.googleCal} target="_blank" className="text-[11px] text-gray-500 hover:text-wcg-blue flex items-center justify-center gap-1 bg-gray-50 py-2 rounded-md transition-colors">
-                                        + Google
+                            ) : (
+                                <div className="space-y-3">
+                                    <a 
+                                        href={session.registerLink} 
+                                        target="_blank" 
+                                        className="w-full bg-wcg-blue hover:bg-blue-900 text-white font-bold py-3 rounded-lg text-center block transition-colors shadow-md shadow-blue-100"
+                                    >
+                                        Pre-register
                                     </a>
-                                    <a href={session.outlookCal} target="_blank" className="text-[11px] text-gray-500 hover:text-wcg-blue flex items-center justify-center gap-1 bg-gray-50 py-2 rounded-md transition-colors">
-                                        + Outlook
-                                    </a>
+                                    
+                                    <div className="flex gap-2">
+                                        <a href={session.googleCal} target="_blank" className="flex-1 bg-gray-50 hover:bg-gray-100 text-gray-400 text-[10px] font-bold py-2 rounded border border-gray-100 text-center transition-colors uppercase">
+                                            + Google
+                                        </a>
+                                        <a href={session.outlookCal} target="_blank" className="flex-1 bg-gray-50 hover:bg-gray-100 text-gray-400 text-[10px] font-bold py-2 rounded border border-gray-100 text-center transition-colors uppercase">
+                                            + Outlook
+                                        </a>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* AI Insights Modal */}
+                    {showModal && (
+                        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+                            <div className="bg-white rounded-2xl max-w-lg w-full max-h-[80vh] overflow-hidden flex flex-col shadow-2xl">
+                                <div className="bg-wcg-blue p-4 flex justify-between items-center">
+                                    <h5 className="text-white font-bold font-accent uppercase tracking-wider text-sm">✨ Smart Insights</h5>
+                                    <button onClick={() => setShowModal(false)} className="text-white/70 hover:text-white">
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                    </button>
+                                </div>
+                                <div className="p-6 overflow-y-auto">
+                                    {loadingAi ? (
+                                        <div className="flex flex-col items-center justify-center py-10 space-y-4">
+                                            <div className="w-10 h-10 border-4 border-wcg-yellow border-t-transparent rounded-full animate-spin"></div>
+                                            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest animate-pulse">Consulting Gemini...</p>
+                                        </div>
+                                    ) : (
+                                        <div className="markdown-content text-sm text-gray-700 leading-relaxed whitespace-pre-line">
+                                            {aiContent}
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="p-4 border-t border-gray-100 bg-gray-50 flex justify-end">
+                                    <button 
+                                        onClick={() => setShowModal(false)}
+                                        className="bg-wcg-blue text-white px-6 py-2 rounded-lg font-bold text-sm"
+                                    >
+                                        Got it
+                                    </button>
                                 </div>
                             </div>
-                        )}
-                    </div>
+                        </div>
+                    )}
                 </div>
             );
         };
@@ -202,47 +304,73 @@
             }, [sessions]);
 
             return (
-                <div className="max-w-7xl mx-auto px-4 py-12">
-                    <header className="mb-16 text-center">
-                        <div className="inline-block bg-wcg-blue text-white text-xs font-bold tracking-[0.2em] px-4 py-2 rounded-full mb-6 uppercase">
-                            Professional Development
-                        </div>
-                        <h1 className="text-4xl md:text-6xl font-black text-wcg-blue font-accent mb-4 tracking-tight">
-                            UPCOMING SESSIONS
-                        </h1>
-                        <p className="text-gray-500 max-w-2xl mx-auto text-lg">
-                            Empowering our educators with world-class digital skills and pedagogical tools.
-                        </p>
-                    </header>
-
-                    {loading ? (
-                        <div className="flex justify-center py-20">
-                            <div className="animate-spin rounded-full h-12 w-12 border-4 border-wcg-blue border-t-transparent"></div>
-                        </div>
-                    ) : sessions.length === 0 ? (
-                        <div className="text-center py-20 bg-white rounded-3xl shadow-sm border border-gray-100">
-                            <p className="text-xl text-gray-400 font-medium">No upcoming sessions scheduled at this time.</p>
-                        </div>
-                    ) : (
-                        Object.keys(groupedSessions).map(month => (
-                            <section key={month} className="mb-16">
-                                <div className="flex items-center gap-4 mb-8">
-                                    <h2 className="text-2xl font-black text-wcg-blue font-accent tracking-tighter uppercase">{month}</h2>
-                                    <div className="h-px bg-gray-200 flex-grow"></div>
+                <div className="flex flex-col min-h-screen">
+                    <nav className="bg-white border-b border-gray-200 py-6 sticky top-0 z-50">
+                        <div className="max-w-7xl mx-auto px-4 flex justify-between items-center">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 bg-wcg-blue rounded flex items-center justify-center">
+                                    <span className="text-white font-black text-xl">W</span>
                                 </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                                    {groupedSessions[month].map(session => (
-                                        <SessionCard key={session.id} session={session} />
-                                    ))}
-                                </div>
-                            </section>
-                        ))
-                    )}
+                                <span className="font-accent font-black text-wcg-blue tracking-tighter text-xl uppercase">eTPD Webinars</span>
+                            </div>
+                            <div className="hidden md:flex items-center gap-6">
+                                <span className="text-wcg-blue font-bold text-xs uppercase tracking-widest">Upcoming Sessions</span>
+                                <div className="w-px h-4 bg-gray-200"></div>
+                                <span className="text-gray-400 font-bold text-xs uppercase tracking-widest">Resources</span>
+                            </div>
+                        </div>
+                    </nav>
 
-                    <footer className="mt-20 py-10 border-t border-gray-200 text-center">
-                        <p className="text-xs font-accent font-bold text-gray-400 tracking-widest uppercase">
-                            © 2026 Western Cape Government • Education Department
-                        </p>
+                    <main className="flex-grow max-w-7xl mx-auto px-4 py-12 w-full">
+                        <header className="mb-12 border-l-4 border-wcg-yellow pl-6">
+                            <h1 className="text-4xl font-black text-wcg-blue font-accent uppercase tracking-tight mb-2">Grow Your Digital Classroom</h1>
+                            <p className="text-gray-500 max-w-2xl font-medium">Join our expert-led sessions to enhance your pedagogical skills and master the tools of modern education.</p>
+                        </header>
+
+                        {loading ? (
+                            <div className="flex flex-col items-center justify-center py-32 space-y-4">
+                                <div className="w-12 h-12 border-4 border-wcg-blue border-t-transparent rounded-full animate-spin"></div>
+                                <p className="text-wcg-blue font-bold animate-pulse uppercase tracking-widest text-xs">Syncing Schedule...</p>
+                            </div>
+                        ) : sessions.length === 0 ? (
+                            <div className="text-center py-32 bg-white rounded-2xl shadow-sm border border-gray-100">
+                                <h3 className="text-2xl font-black text-wcg-blue font-accent mb-2">NO SESSIONS PLANNED</h3>
+                                <p className="text-gray-400">Check back later for upcoming professional development opportunities.</p>
+                            </div>
+                        ) : (
+                            <div className="space-y-16">
+                                {Object.keys(groupedSessions).map(month => (
+                                    <section key={month}>
+                                        <div className="flex items-center gap-4 mb-8">
+                                            <div className="w-2 h-8 bg-wcg-yellow rounded-full"></div>
+                                            <h2 className="text-2xl font-bold text-wcg-blue tracking-tight font-accent uppercase">{month}</h2>
+                                            <div className="h-px bg-gray-200 flex-grow"></div>
+                                        </div>
+                                        
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                            {groupedSessions[month].map(session => (
+                                                <SessionCard key={session.id} session={session} />
+                                            ))}
+                                        </div>
+                                    </section>
+                                ))}
+                            </div>
+                        )}
+                    </main>
+                    
+                    <footer className="bg-white border-t border-gray-200 mt-20 py-10">
+                        <div className="max-w-7xl mx-auto px-4">
+                            <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+                                <p className="text-gray-400 text-[10px] font-accent font-bold tracking-[0.2em] uppercase">© 2026 Western Cape Government Education Department</p>
+                                <div className="flex gap-4">
+                                    <div className="w-6 h-6 bg-wcg-blue rounded-full"></div>
+                                    <div className="w-6 h-6 bg-wcg-grey rounded-full"></div>
+                                    <div className="w-6 h-6 bg-wcg-red rounded-full"></div>
+                                    <div className="w-6 h-6 bg-wcg-yellow rounded-full"></div>
+                                    <div className="w-6 h-6 bg-wcg-green rounded-full"></div>
+                                </div>
+                            </div>
+                        </div>
                     </footer>
                 </div>
             );
