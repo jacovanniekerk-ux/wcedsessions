@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug PD History</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; max-width: 1200px; margin: 0 auto; }
+        .debug-section { background: #f5f5f5; padding: 15px; margin: 15px 0; border-radius: 5px; }
+        .error { color: red; }
+        .success { color: green; }
+        table { border-collapse: collapse; width: 100%; margin-top: 10px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; font-size: 12px; }
+        th { background: #4CAF50; color: white; }
+        pre { background: #fff; padding: 10px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>CSV Debug Tool</h1>
+    <div id="output"></div>
+
+    <script>
+        const output = document.getElementById('output');
+        
+        function log(html) {
+            output.innerHTML += html;
+        }
+
+        log('<div class="debug-section"><h2>Loading attendance.csv...</h2></div>');
+
+        Papa.parse('attendance.csv', {
+            download: true,
+            header: true,
+            skipEmptyLines: true,
+            complete: (result) => {
+                log('<div class="debug-section success"><h2>✓ CSV Loaded Successfully</h2></div>');
+                
+                // Show total rows
+                log(`<div class="debug-section"><h3>Total Rows: ${result.data.length}</h3></div>`);
+                
+                // Show headers
+                if (result.data.length > 0) {
+                    const headers = Object.keys(result.data[0]);
+                    log('<div class="debug-section"><h3>CSV Headers Found:</h3><ul>');
+                    headers.forEach(h => log(`<li><strong>${h}</strong></li>`));
+                    log('</ul></div>');
+                    
+                    // Show first 3 records
+                    log('<div class="debug-section"><h3>First 3 Records:</h3>');
+                    log('<table><thead><tr>');
+                    headers.forEach(h => log(`<th>${h}</th>`));
+                    log('</tr></thead><tbody>');
+                    
+                    result.data.slice(0, 3).forEach(row => {
+                        log('<tr>');
+                        headers.forEach(h => log(`<td>${row[h] || 'EMPTY'}</td>`));
+                        log('</tr>');
+                    });
+                    log('</tbody></table></div>');
+                    
+                    // Check for ID/PERSAL columns specifically
+                    const idCol = result.data[0]['ID/Passport Number'];
+                    const persalCol = result.data[0]['PERSAL Number'];
+                    
+                    log('<div class="debug-section"><h3>ID/PERSAL Check:</h3>');
+                    log(`<p><strong>ID/Passport Number column exists:</strong> ${idCol !== undefined ? 'YES' : 'NO'}</p>`);
+                    log(`<p><strong>PERSAL Number column exists:</strong> ${persalCol !== undefined ? 'YES' : 'NO'}</p>`);
+                    
+                    if (idCol !== undefined) {
+                        log(`<p><strong>Sample ID value:</strong> "${idCol}"</p>`);
+                    }
+                    if (persalCol !== undefined) {
+                        log(`<p><strong>Sample PERSAL value:</strong> "${persalCol}"</p>`);
+                    }
+                    log('</div>');
+                    
+                    // Build indexes and show counts
+                    const idIndex = {};
+                    const persalIndex = {};
+                    
+                    result.data.forEach(record => {
+                        const id = record['ID/Passport Number']?.trim();
+                        const persal = record['PERSAL Number']?.trim();
+                        
+                        if (id) {
+                            if (!idIndex[id]) idIndex[id] = [];
+                            idIndex[id].push(record);
+                        }
+                        if (persal) {
+                            if (!persalIndex[persal]) persalIndex[persal] = [];
+                            persalIndex[persal].push(record);
+                        }
+                    });
+                    
+                    log('<div class="debug-section"><h3>Index Statistics:</h3>');
+                    log(`<p><strong>Unique ID numbers:</strong> ${Object.keys(idIndex).length}</p>`);
+                    log(`<p><strong>Unique PERSAL numbers:</strong> ${Object.keys(persalIndex).length}</p>`);
+                    log('</div>');
+                    
+                    // Show sample IDs and PERSALs
+                    log('<div class="debug-section"><h3>Sample ID Numbers (first 10):</h3><ul>');
+                    Object.keys(idIndex).slice(0, 10).forEach(id => {
+                        log(`<li>${id} (${idIndex[id].length} records)</li>`);
+                    });
+                    log('</ul></div>');
+                    
+                    log('<div class="debug-section"><h3>Sample PERSAL Numbers (first 10):</h3><ul>');
+                    Object.keys(persalIndex).slice(0, 10).forEach(persal => {
+                        log(`<li>${persal} (${persalIndex[persal].length} records)</li>`);
+                    });
+                    log('</ul></div>');
+                    
+                    // Test search
+                    log('<div class="debug-section"><h3>Test Search:</h3>');
+                    log('<p>Enter a known ID or PERSAL number to test:</p>');
+                    log('<input type="text" id="testSearch" placeholder="Enter ID or PERSAL" style="width: 300px; padding: 8px;">');
+                    log('<button onclick="testSearch()" style="padding: 8px 16px; margin-left: 10px;">Search</button>');
+                    log('<div id="searchResult"></div>');
+                    log('</div>');
+                    
+                    // Make indexes global for test
+                    window.idIndex = idIndex;
+                    window.persalIndex = persalIndex;
+                }
+            },
+            error: (error) => {
+                log(`<div class="debug-section error"><h2>✗ Error Loading CSV</h2><pre>${JSON.stringify(error, null, 2)}</pre></div>`);
+            }
+        });
+        
+        function testSearch() {
+            const searchValue = document.getElementById('testSearch').value.trim();
+            const resultDiv = document.getElementById('searchResult');
+            
+            if (!searchValue) {
+                resultDiv.innerHTML = '<p class="error">Please enter a value</p>';
+                return;
+            }
+            
+            const idResults = window.idIndex[searchValue] || [];
+            const persalResults = window.persalIndex[searchValue] || [];
+            
+            let html = '<div style="margin-top: 15px; background: white; padding: 15px; border-radius: 5px;">';
+            
+            if (idResults.length > 0) {
+                html += `<p class="success"><strong>Found ${idResults.length} records by ID number!</strong></p>`;
+                html += '<p>First record:</p><pre>' + JSON.stringify(idResults[0], null, 2) + '</pre>';
+            } else if (persalResults.length > 0) {
+                html += `<p class="success"><strong>Found ${persalResults.length} records by PERSAL number!</strong></p>`;
+                html += '<p>First record:</p><pre>' + JSON.stringify(persalResults[0], null, 2) + '</pre>';
+            } else {
+                html += `<p class="error"><strong>No records found for: ${searchValue}</strong></p>`;
+                html += '<p>Check the sample IDs/PERSALs above to make sure you\'re using a valid value from the CSV.</p>';
+            }
+            
+            html += '</div>';
+            resultDiv.innerHTML = html;
+        }
+    </script>
+</body>
+</html>
