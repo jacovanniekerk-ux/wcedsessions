@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>My Professional Development History</title>
+    <link rel="icon" type="image/png" href="favicon.png">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        wcg: {
+                            blue: '#004B87',
+                            grey: '#968C83',
+                            red: '#EE3B3B',
+                            yellow: '#FFD700',
+                            green: '#32CD32',
+                            darkText: '#333333',
+                            lightBg: '#F3F4F6'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Century Gothic', 'Didact Gothic', 'Segoe UI', 'sans-serif'],
+                        accent: ['Gotham', 'Montserrat', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+
+    <link href="https://fonts.googleapis.com/css2?family=Didact+Gothic&family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        body { -webkit-font-smoothing: antialiased; }
+        @media print {
+            .no-print { display: none !important; }
+            body { background: white; }
+            table { font-size: 11px; }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-wcg-darkText font-sans">
+
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useEffect, useMemo } = React;
+
+const LEVEL_COLOURS = (level) => {
+    const l = (level || '').toLowerCase();
+    if (l.includes('laying')) return 'bg-wcg-green text-white';
+    if (l.includes('better')) return 'bg-wcg-red text-white';
+    if (l.includes('i can do it') && !l.includes('better')) return 'bg-wcg-yellow text-gray-900';
+    if (l.includes('summit')) return 'bg-wcg-blue text-white';
+    return 'bg-gray-300 text-gray-800';
+};
+
+const yearFromTimestamp = (ts) => new Date(ts).getFullYear();
+
+const App = () => {
+    const [records, setRecords] = useState([]);
+    const [index, setIndex] = useState({ persal: {}, id: {} });
+    const [loading, setLoading] = useState(true);
+    const [mode, setMode] = useState('PERSAL');
+    const [query, setQuery] = useState('');
+    const [ack, setAck] = useState(false);
+    const [matches, setMatches] = useState([]);
+    const [profile, setProfile] = useState(null);
+    const [view, setView] = useState('cards');
+    const [filters, setFilters] = useState({ level: 'All', district: 'All', delivery: 'All' });
+
+    useEffect(() => {
+        Papa.parse('attendance.csv', {
+            download: true,
+            header: true,
+            skipEmptyLines: true,
+            complete: (res) => {
+                const rows = res.data;
+                const persal = {};
+                const id = {};
+
+                rows.forEach((r, i) => {
+                    const p = r['PERSAL Number'];
+                    const idn = r['ID/Passport Number'];
+                    if (p) (persal[p] ||= []).push(i);
+                    if (idn) (id[idn] ||= []).push(i);
+                });
+
+                setRecords(rows);
+                setIndex({ persal, id });
+                setLoading(false);
+            }
+        });
+    }, []);
+
+    const search = () => {
+        const ids = mode === 'PERSAL' ? index.persal[query] : index.id[query];
+        if (!ids) return;
+        const recs = ids.map(i => records[i])
+            .sort((a,b) => new Date(b.Timestamp) - new Date(a.Timestamp));
+
+        setMatches(recs);
+        const latest = recs[0];
+        setProfile({
+            name: `${latest['First Name']} ${latest['Surname']}`,
+            school: latest['Please select the school where you work.']
+        });
+    };
+
+    const filtered = useMemo(() => {
+        return matches.filter(r => {
+            if (filters.level !== 'All' && r['Development Level'] !== filters.level) return false;
+            if (filters.district !== 'All' && r['Hosting district'] !== filters.district) return false;
+            if (filters.delivery !== 'All' && r['Delivery Mode'] !== filters.delivery) return false;
+            return true;
+        });
+    }, [matches, filters]);
+
+    const deduped = useMemo(() => {
+        const seen = new Set();
+        return filtered.filter(r => {
+            const key = `${r['Session Name']}|${r.Timestamp}`;
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+        });
+    }, [filtered]);
+
+    const groupedByYear = useMemo(() => {
+        const g = {};
+        deduped.forEach(r => {
+            const y = yearFromTimestamp(r.Timestamp);
+            (g[y] ||= []).push(r);
+        });
+        return g;
+    }, [deduped]);
+
+    const metrics = useMemo(() => {
+        const m = { total: deduped.length, levels: {} };
+        deduped.forEach(r => {
+            const l = r['Development Level'] || 'Unknown';
+            m.levels[l] = (m.levels[l] || 0) + 1;
+        });
+        return m;
+    }, [deduped]);
+
+    const uniq = (field) => ['All', ...new Set(matches.map(r => r[field]).filter(Boolean))];
+
+    const exportCSV = () => {
+        const headers = ['Date','Session','Level','District','Delivery'];
+        const rows = deduped.map(r => [
+            new Date(r.Timestamp).toLocaleDateString(),
+            r['Session Name'],
+            r['Development Level'],
+            r['Hosting district'],
+            r['Delivery Mode']
+        ]);
+        const csv = [headers, ...rows].map(r => r.join(',')).join('\n');
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'my_pd_history.csv';
+        a.click();
+    };
+
+    if (loading) return <div className="p-12 text-center">Loading attendance records…</div>;
+
+    return (
+        <div className="min-h-screen">
+            <header className="bg-white border-b border-gray-200 p-4 flex items-center gap-4 no-print">
+                <img src="header.png" className="h-12" />
+                <h1 className="font-accent font-bold text-xl text-wcg-blue">My Professional Development History</h1>
+            </header>
+
+            <main className="max-w-7xl mx-auto p-6">
+                <div className="bg-white p-6 rounded-xl shadow no-print">
+                    <div className="flex gap-4 items-center mb-4">
+                        <select value={mode} onChange={e => setMode(e.target.value)} className="border rounded px-3 py-2">
+                            <option value="PERSAL">PERSAL Number</option>
+                            <option value="ID">ID / Passport</option>
+                        </select>
+                        <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Enter number" className="border rounded px-3 py-2 flex-1" />
+                    </div>
+
+                    <label className="flex items-center gap-2 text-sm mb-4">
+                        <input type="checkbox" checked={ack} onChange={e => setAck(e.target.checked)} />
+                        I acknowledge that this information is shown solely for my personal professional development record.
+                    </label>
+
+                    <button onClick={search} disabled={!query || !ack} className="bg-wcg-blue text-white px-6 py-2 rounded disabled:opacity-40">View My History</button>
+                </div>
+
+                {profile && (
+                    <div className="mt-10">
+                        <div className="flex justify-between items-start mb-6">
+                            <div>
+                                <h2 className="text-2xl font-bold">{profile.name}</h2>
+                                <p className="text-gray-600">{profile.school}</p>
+                            </div>
+                            <div className="flex gap-2 no-print">
+                                <button onClick={() => setView(v => v === 'cards' ? 'table' : 'cards')} className="border px-3 py-1 rounded">Toggle View</button>
+                                <button onClick={exportCSV} className="border px-3 py-1 rounded">Download CSV</button>
+                                <button onClick={() => window.print()} className="border px-3 py-1 rounded">Print / PDF</button>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                            <div className="bg-gray-100 p-4 rounded">Total Sessions<br/><strong>{metrics.total}</strong></div>
+                            {Object.entries(metrics.levels).map(([l,c]) => (
+                                <div key={l} className={`p-4 rounded ${LEVEL_COLOURS(l)}`}>{l}<br/><strong>{c}</strong></div>
+                            ))}
+                        </div>
+
+                        <div className="flex gap-3 mb-4 no-print">
+                            <select onChange={e => setFilters(f => ({...f, level: e.target.value}))} className="border px-2 py-1">
+                                {uniq('Development Level').map(v => <option key={v}>{v}</option>)}
+                            </select>
+                            <select onChange={e => setFilters(f => ({...f, district: e.target.value}))} className="border px-2 py-1">
+                                {uniq('Hosting district').map(v => <option key={v}>{v}</option>)}
+                            </select>
+                            <select onChange={e => setFilters(f => ({...f, delivery: e.target.value}))} className="border px-2 py-1">
+                                {uniq('Delivery Mode').map(v => <option key={v}>{v}</option>)}
+                            </select>
+                        </div>
+
+                        {Object.keys(groupedByYear).sort((a,b)=>b-a).map(year => (
+                            <section key={year} className="mb-10">
+                                <h3 className="text-xl font-bold mb-4">{year}</h3>
+
+                                {view === 'cards' ? (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        {groupedByYear[year].map((r,i) => (
+                                            <div key={i} className="bg-white p-4 rounded shadow">
+                                                <div className={`inline-block px-2 py-1 text-xs rounded ${LEVEL_COLOURS(r['Development Level'])}`}>{r['Development Level']}</div>
+                                                <h4 className="font-bold mt-2">{r['Session Name']}</h4>
+                                                <p className="text-sm text-gray-600">{new Date(r.Timestamp).toLocaleDateString()}</p>
+                                                <p className="text-sm">{r.Faciliator}</p>
+                                                <p className="text-sm">{r['Hosting district']} · {r['Delivery Mode']}</p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <table className="w-full border mt-2">
+                                        <thead className="bg-gray-100">
+                                            <tr>
+                                                <th className="p-2 border">Date</th>
+                                                <th className="p-2 border">Session</th>
+                                                <th className="p-2 border">Level</th>
+                                                <th className="p-2 border">District</th>
+                                                <th className="p-2 border">Delivery</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {groupedByYear[year].map((r,i) => (
+                                                <tr key={i}>
+                                                    <td className="p-2 border">{new Date(r.Timestamp).toLocaleDateString()}</td>
+                                                    <td className="p-2 border">{r['Session Name']}</td>
+                                                    <td className={`p-2 border ${LEVEL_COLOURS(r['Development Level'])}`}>{r['Development Level']}</td>
+                                                    <td className="p-2 border">{r['Hosting district']}</td>
+                                                    <td className="p-2 border">{r['Delivery Mode']}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                )}
+                            </section>
+                        ))}
+                    </div>
+                )}
+            </main>
+        </div>
+    );
+};
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
