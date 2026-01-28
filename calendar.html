@@ -59,7 +59,7 @@
     <style>
         body { 
             -webkit-font-smoothing: antialiased; 
-            -moz-osx-sha-grayscale: grayscale; 
+            -moz-osx-font-smoothing: grayscale; 
         }
         
         .fade-in { 
@@ -116,8 +116,6 @@
             word-wrap: break-word;
             overflow-wrap: break-word;
             hyphens: auto;
-            border-top-left-radius: 8px;
-            border-bottom-left-radius: 8px;
         }
         
         .session-pill:hover {
@@ -134,8 +132,7 @@
         }
         
         .other-month-cell {
-            background-color: #fcfcfc;
-            border: 1px solid #f3f4f6;
+            background-color: #fafafa;
         }
         
         /* Modal Styles */
@@ -160,21 +157,21 @@
             box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
         }
         
-        /* Developmental Level Border Styling - Increased thickness and radius */
+        /* Developmental Level Border Styling */
         .level-foundation {
-            border-left: 6px solid #32CD32 !important;
+            border-left: 4px solid #32CD32;
         }
         
         .level-better {
-            border-left: 6px solid #EE3B3B !important;
+            border-left: 4px solid #EE3B3B;
         }
         
         .level-can {
-            border-left: 6px solid #FFD700 !important;
+            border-left: 4px solid #FFD700;
         }
         
         .level-summit {
-            border-left: 6px solid #004B87 !important;
+            border-left: 4px solid #004B87;
         }
         
         /* Live indicator pulse */
@@ -205,7 +202,7 @@
             Calendar: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>,
             Grid: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>,
             Search: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>,
-            ChevronDown: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>,
+            ChevronDown: ({ className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m6 9 6 6 6-6"/></svg>,
             ChevronLeft: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>,
             ChevronRight: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>,
             Clock: () => <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>,
@@ -213,7 +210,8 @@
             Upload: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>,
             Loader: () => <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="spin"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>,
             AlertTriangle: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>,
-            ExternalLink: () => <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" x2="21" y1="14" y2="3"/></svg>
+            ExternalLink: () => <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" x2="21" y1="14" y2="3"/></svg>,
+            Filter: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
         };
 
         // --- HELPERS ---
@@ -268,20 +266,12 @@
             const level = text.toLowerCase();
             
             if (type === 'level') {
-                if (level.includes('foundation')) {
-                    colorClass = 'bg-wcg-green text-white border-wcg-green';
-                } else if (level.includes('better')) {
-                    colorClass = 'bg-wcg-red text-white border-wcg-red';
-                } else if (level.includes('i can')) {
-                    colorClass = 'bg-wcg-yellow text-gray-900 border-wcg-yellow';
-                } else if (level.includes('summit')) {
-                    colorClass = 'bg-wcg-blue text-white border-wcg-blue';
-                }
-            } else if (type === 'district') {
-                colorClass = 'bg-white text-wcg-blue border-wcg-blue/30 border';
-            } else if (type === 'term') {
-                colorClass = 'bg-gray-100 text-gray-600 border-gray-200 border';
-            }
+                if (level.includes('foundation')) colorClass = 'bg-wcg-green text-white border-wcg-green';
+                else if (level.includes('better')) colorClass = 'bg-wcg-red text-white border-wcg-red';
+                else if (level.includes('i can')) colorClass = 'bg-wcg-yellow text-gray-900 border-wcg-yellow';
+                else if (level.includes('summit')) colorClass = 'bg-wcg-blue text-white border-wcg-blue';
+            } else if (type === 'district') colorClass = 'bg-white text-wcg-blue border-wcg-blue/30 border';
+            else if (type === 'term') colorClass = 'bg-gray-100 text-gray-600 border-gray-200 border';
 
             return (
                 <span className={`px-2 py-0.5 rounded-md text-[11px] font-bold uppercase tracking-wide border ${colorClass} shadow-sm`}>
@@ -312,9 +302,7 @@
             };
             
             useEffect(() => {
-                const handleEscape = (e) => {
-                    if (e.key === 'Escape') onClose();
-                };
+                const handleEscape = (e) => { if (e.key === 'Escape') onClose(); };
                 document.addEventListener('keydown', handleEscape);
                 return () => document.removeEventListener('keydown', handleEscape);
             }, [onClose]);
@@ -400,20 +388,15 @@
             const dateObj = parseDate(session.date);
             const isTodaySession = isToday(dateObj);
             const isPast = isPastDate(dateObj);
-            
             const level = (session.level || '').toLowerCase();
-            let levelClass = '';
-            if (level.includes('foundation')) levelClass = 'level-foundation';
-            else if (level.includes('better')) levelClass = 'level-better';
-            else if (level.includes('i can')) levelClass = 'level-can';
-            else if (level.includes('summit')) levelClass = 'level-summit';
+            let levelClass = level.includes('foundation') ? 'level-foundation' : level.includes('better') ? 'level-better' : level.includes('i can') ? 'level-can' : level.includes('summit') ? 'level-summit' : '';
             
-            let bgColor = 'bg-white', textColor = 'text-gray-900', borderColor = 'border-gray-200';
-            if (isPast) { bgColor = 'bg-gray-100'; textColor = 'text-gray-500'; borderColor = 'border-gray-300'; }
-            else if (isTodaySession && session.joinLink) { bgColor = 'bg-red-50'; borderColor = 'border-red-300'; }
+            let bgColor = isPast ? 'bg-gray-100' : (isTodaySession && session.joinLink) ? 'bg-red-50' : 'bg-white';
+            let textColor = isPast ? 'text-gray-500' : 'text-gray-900';
+            let borderColor = isPast ? 'border-gray-300' : (isTodaySession && session.joinLink) ? 'border-red-300' : 'border-gray-200';
             
             return (
-                <div className={`session-pill ${bgColor} ${textColor} border ${borderColor} ${levelClass} mb-2 px-2.5 py-2 shadow-sm hover:shadow-md`} onClick={onClick}>
+                <div className={`session-pill ${bgColor} ${textColor} border ${borderColor} ${levelClass} rounded-md mb-2 px-2.5 py-2 cursor-pointer shadow-sm hover:shadow-md`} onClick={onClick}>
                     <div className="flex items-start gap-2">
                         {isTodaySession && session.joinLink && !isPast && <div className="flex-shrink-0 mt-1"><span className="live-dot"></span></div>}
                         <div className="flex-1 min-w-0">
@@ -426,23 +409,19 @@
             );
         };
 
-        const CalendarDay = ({ date, isCurrentMonth, sessions, onSessionClick }) => {
-            const isTodayDate = date && isToday(date);
-            
-            if (!isCurrentMonth) return <div className="calendar-day-cell other-month-cell"></div>;
-
+        const CalendarDay = ({ date, isCurrentMonth, sessions, isWeekend, onSessionClick }) => {
+            const isTodayDate = isToday(date);
+            let cellClass = `calendar-day-cell ${!isCurrentMonth ? 'other-month-cell' : ''} ${isWeekend ? 'weekend-cell' : ''} ${isTodayDate ? 'today-cell' : ''}`;
             return (
-                <div className={`calendar-day-cell ${isTodayDate ? 'today-cell' : ''}`}>
-                    <div className={`text-xs md:text-sm font-bold mb-2 ${isTodayDate ? 'text-wcg-blue' : 'text-gray-700'}`}>
+                <div className={cellClass}>
+                    <div className={`text-xs md:text-sm font-bold mb-2 ${!isCurrentMonth ? 'text-gray-400' : isTodayDate ? 'text-wcg-blue' : 'text-gray-700'}`}>
                         <div className="flex items-center justify-between">
                             <span>{date.getDate()}</span>
                             {isTodayDate && <span className="text-[9px] bg-wcg-blue text-white px-1.5 py-0.5 rounded-full font-bold">Today</span>}
                         </div>
                     </div>
                     <div className="space-y-1 overflow-y-auto" style={{maxHeight: 'calc(100% - 28px)'}}>
-                        {sessions.map((session, idx) => (
-                            <SessionPill key={idx} session={session} onClick={() => onSessionClick(session)} />
-                        ))}
+                        {sessions.map((session, idx) => <SessionPill key={idx} session={session} onClick={() => onSessionClick(session)} />)}
                     </div>
                 </div>
             );
@@ -461,54 +440,55 @@
                 });
                 return grouped;
             }, [sessions]);
-
-            // Optimized calendar generation to remove 2-week buffer
+            
             const calendarDays = useMemo(() => {
-                const days = [];
-                const firstDay = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
-                const lastDay = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
+                const firstDayOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
+                const lastDayOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
+                let startingDayOfWeek = firstDayOfMonth.getDay();
+                startingDayOfWeek = startingDayOfWeek === 0 ? 6 : startingDayOfWeek - 1; 
                 
-                // Get Mon=0 offset for first day
-                let startOffset = firstDay.getDay();
-                startOffset = startOffset === 0 ? 6 : startOffset - 1;
-
-                // 1. Add empty cells for leading days of the week (if Mon-Fri grid)
-                for (let i = 0; i < startOffset; i++) {
-                    if (i < 5) days.push({ isCurrentMonth: false });
-                }
-
-                // 2. Add actual days of the month
-                for (let d = 1; d <= lastDay.getDate(); d++) {
-                    const date = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), d);
-                    const dayOfWeek = date.getDay();
+                const days = [];
+                let currentDay = 0;
+                const totalCells = Math.ceil((startingDayOfWeek + lastDayOfMonth.getDate()) / 5) * 5;
+                
+                for (let i = 0; i < totalCells; i++) {
+                    const dayOffset = currentDay - startingDayOfWeek;
+                    const cellDate = new Date(firstDayOfMonth);
+                    cellDate.setDate(firstDayOfMonth.getDate() + dayOffset);
+                    const dayOfWeek = cellDate.getDay();
                     if (dayOfWeek !== 0 && dayOfWeek !== 6) {
-                        const dateKey = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+                        const dateKey = `${cellDate.getFullYear()}-${cellDate.getMonth()}-${cellDate.getDate()}`;
                         days.push({
-                            date,
-                            isCurrentMonth: true,
-                            sessions: sessionsByDate[dateKey] || []
+                            date: cellDate,
+                            isCurrentMonth: cellDate.getMonth() === currentMonth.getMonth(),
+                            sessions: sessionsByDate[dateKey] || [],
+                            isWeekend: false
                         });
                     }
+                    currentDay++;
+                    if (dayOfWeek === 5) currentDay += 2;
                 }
                 
-                // 3. Fill remaining grid to keep row consistency (5 columns)
                 while (days.length % 5 !== 0) {
-                    days.push({ isCurrentMonth: false });
+                    const lastDate = days[days.length - 1].date;
+                    const nextDate = new Date(lastDate);
+                    nextDate.setDate(nextDate.getDate() + 1);
+                    if (nextDate.getDay() !== 0 && nextDate.getDay() !== 6) {
+                        days.push({ date: nextDate, isCurrentMonth: false, sessions: [], isWeekend: false });
+                    }
                 }
-                
                 return days;
             }, [currentMonth, sessionsByDate]);
             
             return (
                 <div className="fade-in">
                     {selectedSession && <SessionModal session={selectedSession} onClose={() => setSelectedSession(null)} />}
-                    
                     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 md:p-6 mb-6">
                         <div className="flex items-center justify-between">
                             <button onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1))} className="p-2 hover:bg-gray-100 rounded-lg transition-colors"><Icons.ChevronLeft /></button>
                             <div className="flex flex-col md:flex-row items-center gap-2 md:gap-4">
                                 <h2 className="text-xl md:text-3xl font-bold text-wcg-blue font-accent">{currentMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}</h2>
-                                <button onClick={() => {const today = new Date(); setCurrentMonth(new Date(today.getFullYear(), today.getMonth(), 1));}} className="px-3 md:px-4 py-1 md:py-1.5 text-xs md:text-sm font-bold bg-wcg-blue text-white rounded-lg hover:bg-blue-800 transition-colors shadow-sm">Today</button>
+                                <button onClick={() => setCurrentMonth(new Date(new Date().getFullYear(), new Date().getMonth(), 1))} className="px-3 md:px-4 py-1 md:py-1.5 text-xs md:text-sm font-bold bg-wcg-blue text-white rounded-lg hover:bg-blue-800 transition-colors shadow-sm">Today</button>
                             </div>
                             <button onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1))} className="p-2 hover:bg-gray-100 rounded-lg transition-colors"><Icons.ChevronRight /></button>
                         </div>
@@ -523,25 +503,7 @@
                             ))}
                         </div>
                         <div className="calendar-grid">
-                            {calendarDays.map((day, index) => (
-                                <CalendarDay key={index} date={day.date} isCurrentMonth={day.isCurrentMonth} sessions={day.sessions || []} onSessionClick={(s) => setSelectedSession(s)} />
-                            ))}
-                        </div>
-                    </div>
-                    
-                    <div className="mt-6 bg-white rounded-xl shadow-sm border border-gray-200 p-4 md:p-6">
-                        <h3 className="text-sm md:text-base font-bold text-gray-700 mb-4">Legend</h3>
-                        <div className="mb-4">
-                            <p className="text-xs font-semibold text-gray-600 mb-2">Developmental Levels:</p>
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs md:text-sm">
-                                <div className="flex items-center gap-2"><div className="w-6 h-4 border-l-4 border-wcg-green bg-white rounded shadow-sm"></div><span>Foundation</span></div>
-                                <div className="flex items-center gap-2"><div className="w-6 h-4 border-l-4 border-wcg-yellow bg-white rounded shadow-sm"></div><span>I Can Do It</span></div>
-                                <div className="flex items-center gap-2"><div className="w-6 h-4 border-l-4 border-wcg-red bg-white rounded shadow-sm"></div><span>Do It Better</span></div>
-                                <div className="flex items-center gap-2"><div className="w-6 h-4 border-l-4 border-wcg-blue bg-white rounded shadow-sm"></div><span>The Summit</span></div>
-                            </div>
-                        </div>
-                        <div className="pt-3 border-t border-gray-200 text-xs md:text-sm flex items-center gap-2">
-                            <span className="live-dot"></span><span>Red dot indicates a live session (Join Now available)</span>
+                            {calendarDays.map((day, index) => <CalendarDay key={index} date={day.date} isCurrentMonth={day.isCurrentMonth} sessions={day.sessions} isWeekend={day.isWeekend} onSessionClick={setSelectedSession} />)}
                         </div>
                     </div>
                 </div>
@@ -552,93 +514,101 @@
             const [data, setData] = useState([]);
             const [loading, setLoading] = useState(true);
             const [error, setError] = useState(null);
-            
             const [searchTerm, setSearchTerm] = useState('');
             const [selectedDistrict, setSelectedDistrict] = useState('All');
             const [selectedSessionName, setSelectedSessionName] = useState('All');
-            const [selectedLevel, setSelectedLevel] = useState('All'); // New Filter State
             const [currentMonth, setCurrentMonth] = useState(new Date());
             
-            const fileInputRef = useRef(null);
+            // --- NEW: Toggle State for mobile pane ---
+            const [isPaneExpanded, setIsPaneExpanded] = useState(false);
 
             useEffect(() => {
                 Papa.parse('Upcoming Sessions - Scheduled Sessions.csv', {
                     download: true, header: true, skipEmptyLines: true,
-                    complete: (res) => { const valid = processCSVData(res); setData(valid); setLoading(false); },
+                    complete: (results) => { setData(processCSVData(results)); setLoading(false); },
                     error: () => { setError('failed_fetch'); setLoading(false); }
                 });
             }, []);
 
             const districts = useMemo(() => ['All', ...new Set(data.map(s => s.district).filter(Boolean).sort())], [data]);
             const sessionNames = useMemo(() => ['All', ...new Set(data.map(s => s.name).filter(Boolean).sort())], [data]);
-            const levels = useMemo(() => ['All', ...new Set(data.map(s => s.level).filter(Boolean).sort())], [data]); // Unique Levels
 
             const filteredSessions = useMemo(() => {
                 return data.filter(session => {
                     const sessionDate = parseDate(session.date);
-                    const today = new Date();
-                    const currentMonthStart = new Date(today.getFullYear(), today.getMonth(), 1);
-                    if (sessionDate < currentMonthStart) return false;
-
+                    if (sessionDate < new Date(new Date().getFullYear(), new Date().getMonth(), 1)) return false;
                     const matchesSearch = (session.name || '').toLowerCase().includes(searchTerm.toLowerCase()) || (session.description || '').toLowerCase().includes(searchTerm.toLowerCase());
                     const matchesDistrict = selectedDistrict === 'All' || session.district === selectedDistrict;
                     const matchesSessionName = selectedSessionName === 'All' || session.name === selectedSessionName;
-                    const matchesLevel = selectedLevel === 'All' || session.level === selectedLevel;
-                    
-                    return matchesSearch && matchesDistrict && matchesSessionName && matchesLevel;
+                    return matchesSearch && matchesDistrict && matchesSessionName;
                 }).sort((a, b) => parseDate(a.date) - parseDate(b.date));
-            }, [data, searchTerm, selectedDistrict, selectedSessionName, selectedLevel]);
+            }, [data, searchTerm, selectedDistrict, selectedSessionName]);
 
             if (loading) return <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 text-wcg-blue"><Icons.Loader /><h2 className="text-xl font-bold mt-4 font-accent">Loading Sessions...</h2></div>;
 
             return (
                 <div className="min-h-screen pb-12 font-sans bg-gray-50">
-                    <header className="bg-white border-b border-gray-200 sticky top-0 z-30 shadow-sm">
+                    <header className="bg-white border-b border-gray-200 sticky top-0 z-30 shadow-sm transition-all duration-300">
                         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 md:py-4">
-                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 md:gap-6">
-                                <div className="flex items-center justify-center md:justify-start gap-3">
-                                    <img src="header.png" alt="WCG" className="h-10 md:h-16 w-auto object-contain" />
-                                    <a href="index.html" className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg text-xs font-bold text-gray-700 transition-colors flex items-center gap-2"><Icons.Grid /><span>Tiles View</span></a>
+                            {/* Logo Row */}
+                            <div className="flex items-center justify-between gap-3">
+                                <div className="flex items-center gap-2 md:gap-3">
+                                    <img src="header.png" alt="WCG" className="h-8 md:h-16 w-auto object-contain" />
+                                    <a href="index.html" className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg text-[10px] md:text-xs font-bold text-gray-700 transition-colors flex items-center gap-1 md:gap-2">
+                                        <Icons.Grid /><span>Tiles</span>
+                                    </a>
                                 </div>
-                                <div className="relative w-full md:w-80 lg:w-96">
+                                
+                                {/* Pane Toggle (Mobile Only) */}
+                                <button 
+                                    onClick={() => setIsPaneExpanded(!isPaneExpanded)}
+                                    className="md:hidden flex items-center gap-2 px-3 py-1.5 bg-wcg-blue text-white rounded-lg text-xs font-bold shadow-sm"
+                                >
+                                    <Icons.Filter />
+                                    <span>{isPaneExpanded ? 'Hide Filters' : 'Filters'}</span>
+                                    <Icons.ChevronDown className={`transition-transform duration-300 ${isPaneExpanded ? 'rotate-180' : ''}`} />
+                                </button>
+
+                                {/* Desktop Search Input (Always visible on desktop) */}
+                                <div className="hidden md:relative md:block w-80 lg:w-96">
                                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400"><Icons.Search /></div>
-                                    <input type="text" placeholder="Search sessions..." className="block w-full pl-10 pr-4 py-2 border border-gray-200 rounded-full bg-gray-50 sm:text-sm" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                                    <input type="text" placeholder="Search sessions..." className="block w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-full bg-gray-50 text-sm focus:outline-none focus:ring-1 focus:ring-wcg-blue focus:border-wcg-blue" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
                                 </div>
                             </div>
 
-                            <div className="mt-3 md:mt-6 flex flex-wrap gap-2 md:gap-3 items-center pt-3 md:pt-4 border-t border-gray-100">
-                                <select value={selectedDistrict} onChange={(e) => setSelectedDistrict(e.target.value)} className="bg-white border border-gray-200 text-gray-700 py-1.5 px-3 rounded-lg text-xs md:text-sm font-medium shadow-sm">
-                                    {districts.map(d => <option key={d} value={d}>{d === 'All' ? 'All Districts' : d}</option>)}
-                                </select>
-                                
-                                <select value={selectedLevel} onChange={(e) => setSelectedLevel(e.target.value)} className="bg-white border border-gray-200 text-gray-700 py-1.5 px-3 rounded-lg text-xs md:text-sm font-medium shadow-sm">
-                                    {levels.map(l => <option key={l} value={l}>{l === 'All' ? 'All Levels' : l}</option>)}
-                                </select>
+                            {/* Collapsible Pane (Mobile) / Default Pane (Desktop) */}
+                            <div className={`${isPaneExpanded ? 'block' : 'hidden'} md:block transition-all duration-300`}>
+                                {/* Mobile Search Input */}
+                                <div className="mt-4 md:hidden relative">
+                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400"><Icons.Search /></div>
+                                    <input type="text" placeholder="Search sessions..." className="block w-full pl-10 pr-4 py-2 border border-gray-200 rounded-full bg-gray-50 text-sm" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                                </div>
 
-                                <select value={selectedSessionName} onChange={(e) => setSelectedSessionName(e.target.value)} className="bg-white border border-gray-200 text-gray-700 py-1.5 px-3 rounded-lg text-xs md:text-sm font-medium shadow-sm max-w-[160px] truncate">
-                                    {sessionNames.map(name => <option key={name} value={name}>{name === 'All' ? 'All Sessions' : name}</option>)}
-                                </select>
-                                
-                                {(selectedDistrict !== 'All' || selectedSessionName !== 'All' || selectedLevel !== 'All' || searchTerm !== '') && (
-                                    <button onClick={() => {setSelectedDistrict('All'); setSelectedSessionName('All'); setSelectedLevel('All'); setSearchTerm('');}} className="text-xs text-wcg-red hover:text-red-700 font-bold ml-auto px-2 uppercase tracking-wide">Clear</button>
-                                )}
+                                <div className="mt-3 md:mt-6 flex flex-wrap gap-2 md:gap-3 items-center pt-3 md:pt-4 border-t border-gray-100">
+                                    <select value={selectedDistrict} onChange={(e) => setSelectedDistrict(e.target.value)} className="bg-white border border-gray-200 text-gray-700 py-1.5 px-3 rounded-lg text-xs md:text-sm font-medium shadow-sm">
+                                        {districts.map(d => <option key={d} value={d}>{d === 'All' ? 'All Districts' : d}</option>)}
+                                    </select>
+                                    <select value={selectedSessionName} onChange={(e) => setSelectedSessionName(e.target.value)} className="bg-white border border-gray-200 text-gray-700 py-1.5 px-3 rounded-lg text-xs md:text-sm font-medium shadow-sm max-w-[150px] md:max-w-[200px] truncate">
+                                        {sessionNames.map(name => <option key={name} value={name}>{name === 'All' ? 'All Sessions' : name}</option>)}
+                                    </select>
+                                    {(selectedDistrict !== 'All' || selectedSessionName !== 'All' || searchTerm !== '') && (
+                                        <button onClick={() => {setSelectedDistrict('All'); setSelectedSessionName('All'); setSearchTerm('');}} className="text-xs text-wcg-red hover:text-red-700 font-bold ml-auto px-2 uppercase tracking-wide">Clear</button>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     </header>
 
                     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                        {error ? (
-                            <div className="p-6 bg-red-50 border border-red-100 rounded-xl"><h3 className="font-bold text-wcg-red">Data Source Not Found</h3><p className="text-sm mt-1">Please ensure the CSV file is in the correct folder.</p></div>
-                        ) : filteredSessions.length === 0 ? (
-                            <div className="text-center py-24 bg-white rounded-2xl shadow-sm border border-dashed border-gray-300"><h3 className="text-xl font-bold text-gray-900">No sessions found</h3></div>
+                        {filteredSessions.length === 0 ? (
+                            <div className="text-center py-24 bg-white rounded-2xl shadow-sm border border-dashed border-gray-300">
+                                <h3 className="text-xl font-bold text-gray-900 font-accent">No sessions found</h3>
+                                <button onClick={() => {setSelectedDistrict('All'); setSelectedSessionName('All'); setSearchTerm('');}} className="mt-6 text-wcg-blue hover:text-blue-800 font-bold uppercase text-sm tracking-wide">Clear all filters</button>
+                            </div>
                         ) : (
                             <CalendarView sessions={filteredSessions} currentMonth={currentMonth} setCurrentMonth={setCurrentMonth} />
                         )}
                     </main>
-                    
-                    <footer className="bg-white border-t border-gray-200 mt-20 py-8 text-center text-gray-400 text-xs font-accent font-bold tracking-widest uppercase">
-                        © 2026 Western Cape Government
-                    </footer>
                 </div>
             );
         };
