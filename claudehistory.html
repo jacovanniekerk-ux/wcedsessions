@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My PD History - WCED Professional Development</title>
+    <link rel="icon" type="image/png" href="favicon.png">
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'wcg-green': '#76B82A',
+                        'wcg-yellow': '#FDB913',
+                        'wcg-red': '#E30613',
+                        'wcg-blue': '#007BC0',
+                        'wcg-purple': '#672D82',
+                        'wcg-dark': '#1a1a1a',
+                        'wcg-gray': '#666666'
+                    },
+                    fontFamily: {
+                        'sans': ['Arial', 'Helvetica', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+            body {
+                background: white !important;
+            }
+            .print-full-width {
+                max-width: 100% !important;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo } = React;
+
+        // Utility: Parse DD/MM/YYYY HH:MM:SS format
+        function parseTimestamp(timestamp) {
+            if (!timestamp) return null;
+            try {
+                const [datePart] = timestamp.split(' ');
+                const [day, month, year] = datePart.split('/');
+                return new Date(year, month - 1, day);
+            } catch {
+                return null;
+            }
+        }
+
+        // Utility: Format date for display
+        function formatDate(dateObj) {
+            if (!dateObj) return 'N/A';
+            const day = String(dateObj.getDate()).padStart(2, '0');
+            const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const year = dateObj.getFullYear();
+            return `${day}/${month}/${year}`;
+        }
+
+        // Utility: Get development level color
+        function getLevelColor(level) {
+            if (!level) return 'bg-gray-200 text-gray-800';
+            const normalized = level.toLowerCase().trim();
+            if (normalized === 'laying the foundation') return 'bg-wcg-green text-white';
+            if (normalized === 'i can do it') return 'bg-wcg-yellow text-black';
+            if (normalized === 'i can do it better') return 'bg-wcg-red text-white';
+            if (normalized === 'the summit') return 'bg-wcg-blue text-white';
+            return 'bg-gray-200 text-gray-800';
+        }
+
+        function App() {
+            const [data, setData] = useState([]);
+            const [loading, setLoading] = useState(true);
+            const [searchType, setSearchType] = useState('id'); // 'id' or 'persal'
+            const [searchValue, setSearchValue] = useState('');
+            const [acknowledged, setAcknowledged] = useState(false);
+            const [results, setResults] = useState(null);
+            const [viewMode, setViewMode] = useState('cards'); // 'cards' or 'table'
+            const [filters, setFilters] = useState({
+                level: '',
+                district: '',
+                mode: ''
+            });
+
+            // Load CSV on mount
+            useEffect(() => {
+                Papa.parse('attendance.csv', {
+                    download: true,
+                    header: true,
+                    skipEmptyLines: true,
+                    complete: (result) => {
+                        setData(result.data);
+                        setLoading(false);
+                    },
+                    error: (error) => {
+                        console.error('Error loading CSV:', error);
+                        setLoading(false);
+                    }
+                });
+            }, []);
+
+            // Build indexes for fast lookup
+            const indexes = useMemo(() => {
+                const idIndex = {};
+                const persalIndex = {};
+
+                data.forEach(record => {
+                    const id = record['ID/Passport Number']?.trim();
+                    const persal = record['PERSAL Number']?.trim();
+
+                    if (id) {
+                        if (!idIndex[id]) idIndex[id] = [];
+                        idIndex[id].push(record);
+                    }
+                    if (persal) {
+                        if (!persalIndex[persal]) persalIndex[persal] = [];
+                        persalIndex[persal].push(record);
+                    }
+                });
+
+                return { idIndex, persalIndex };
+            }, [data]);
+
+            // Handle search
+            const handleSearch = () => {
+                if (!searchValue.trim() || !acknowledged) return;
+
+                const searchKey = searchValue.trim();
+                let records = [];
+
+                if (searchType === 'id') {
+                    records = indexes.idIndex[searchKey] || [];
+                } else {
+                    records = indexes.persalIndex[searchKey] || [];
+                }
+
+                if (records.length === 0) {
+                    setResults({ profile: null, sessions: [], allSessions: [] });
+                    return;
+                }
+
+                // Sort by timestamp (newest first) for profile resolution
+                const sortedRecords = [...records].sort((a, b) => {
+                    const dateA = parseTimestamp(a.Timestamp);
+                    const dateB = parseTimestamp(b.Timestamp);
+                    return dateB - dateA;
+                });
+
+                // Get profile from most recent record
+                const mostRecent = sortedRecords[0];
+                const profile = {
+                    name: `${mostRecent['First Name']} ${mostRecent['Surname']}`.trim(),
+                    school: mostRecent['School'] || 'N/A',
+                    district: mostRecent['District'] || 'N/A'
+                };
+
+                // Deduplicate sessions by Session Name + Timestamp
+                const seenSessions = new Set();
+                const uniqueSessions = sortedRecords
+                    .filter(record => {
+                        const key = `${record['Session Name']}_${record.Timestamp}`;
+                        if (seenSessions.has(key)) return false;
+                        seenSessions.add(key);
+                        return true;
+                    })
+                    .map(record => ({
+                        ...record,
+                        parsedDate: parseTimestamp(record.Timestamp),
+                        year: parseTimestamp(record.Timestamp)?.getFullYear() || 'Unknown'
+                    }));
+
+                setResults({ profile, sessions: uniqueSessions, allSessions: uniqueSessions });
+                setFilters({ level: '', district: '', mode: '' }); // Reset filters
+            };
+
+            // Apply filters
+            const filteredSessions = useMemo(() => {
+                if (!results) return [];
+
+                let filtered = results.allSessions;
+
+                if (filters.level) {
+                    filtered = filtered.filter(s => 
+                        s['Development Level']?.toLowerCase().trim() === filters.level.toLowerCase().trim()
+                    );
+                }
+
+                if (filters.district) {
+                    filtered = filtered.filter(s => 
+                        s['Hosting District']?.trim() === filters.district
+                    );
+                }
+
+                if (filters.mode) {
+                    filtered = filtered.filter(s => 
+                        s['Delivery Mode']?.trim() === filters.mode
+                    );
+                }
+
+                return filtered;
+            }, [results, filters]);
+
+            // Group by year
+            const sessionsByYear = useMemo(() => {
+                const grouped = {};
+                filteredSessions.forEach(session => {
+                    const year = session.year;
+                    if (!grouped[year]) grouped[year] = [];
+                    grouped[year].push(session);
+                });
+
+                // Sort years descending
+                return Object.keys(grouped)
+                    .sort((a, b) => b - a)
+                    .map(year => ({
+                        year,
+                        sessions: grouped[year]
+                    }));
+            }, [filteredSessions]);
+
+            // Calculate metrics
+            const metrics = useMemo(() => {
+                const total = filteredSessions.length;
+                const byLevel = {
+                    'Laying the Foundation': 0,
+                    'I can do it': 0,
+                    'I can do it better': 0,
+                    'The Summit': 0,
+                    'Other': 0
+                };
+
+                filteredSessions.forEach(session => {
+                    const level = session['Development Level']?.trim();
+                    if (byLevel.hasOwnProperty(level)) {
+                        byLevel[level]++;
+                    } else {
+                        byLevel['Other']++;
+                    }
+                });
+
+                return { total, byLevel };
+            }, [filteredSessions]);
+
+            // Get unique filter values
+            const filterOptions = useMemo(() => {
+                if (!results) return { levels: [], districts: [], modes: [] };
+
+                const levels = [...new Set(results.allSessions.map(s => s['Development Level']?.trim()).filter(Boolean))];
+                const districts = [...new Set(results.allSessions.map(s => s['Hosting District']?.trim()).filter(Boolean))].sort();
+                const modes = [...new Set(results.allSessions.map(s => s['Delivery Mode']?.trim()).filter(Boolean))].sort();
+
+                return { levels, districts, modes };
+            }, [results]);
+
+            // Export to CSV
+            const exportToCSV = () => {
+                const csvData = filteredSessions.map(session => ({
+                    'Date': formatDate(session.parsedDate),
+                    'Session Name': session['Session Name'] || '',
+                    'Development Level': session['Development Level'] || '',
+                    'Hosting District': session['Hosting District'] || '',
+                    'Delivery Mode': session['Delivery Mode'] || '',
+                    'Facilitator': session['Facilitator'] || ''
+                }));
+
+                const csv = Papa.unparse(csvData);
+                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = 'my_pd_history.csv';
+                link.click();
+            };
+
+            // Input validation
+            const isValidInput = () => {
+                if (!searchValue.trim()) return false;
+                if (searchType === 'id') {
+                    return /^\d{13}$/.test(searchValue.trim());
+                }
+                if (searchType === 'persal') {
+                    return /^\d{8}$/.test(searchValue.trim());
+                }
+                return false;
+            };
+
+            const canSearch = acknowledged && isValidInput();
+
+            if (loading) {
+                return (
+                    <div className="min-h-screen flex items-center justify-center">
+                        <div className="text-center">
+                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-wcg-blue mx-auto mb-4"></div>
+                            <p className="text-gray-600">Loading attendance records...</p>
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="min-h-screen bg-gray-50">
+                    {/* Header */}
+                    <header className="bg-white shadow-sm no-print">
+                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+                            <img src="header.png" alt="WCED Header" className="h-16 mx-auto" />
+                        </div>
+                    </header>
+
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 print-full-width">
+                        {!results ? (
+                            // Search Interface
+                            <div className="max-w-2xl mx-auto">
+                                <div className="bg-white rounded-lg shadow-md p-8">
+                                    <h1 className="text-3xl font-bold text-wcg-dark mb-6 text-center">
+                                        My PD History
+                                    </h1>
+                                    <p className="text-gray-600 mb-8 text-center">
+                                        View your complete professional development attendance record
+                                    </p>
+
+                                    {/* Search Type Toggle */}
+                                    <div className="mb-6">
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Search by:
+                                        </label>
+                                        <div className="flex gap-4">
+                                            <button
+                                                onClick={() => { setSearchType('id'); setSearchValue(''); }}
+                                                className={`flex-1 py-3 px-4 rounded-lg border-2 transition-colors ${
+                                                    searchType === 'id'
+                                                        ? 'border-wcg-blue bg-wcg-blue text-white'
+                                                        : 'border-gray-300 bg-white text-gray-700 hover:border-wcg-blue'
+                                                }`}
+                                            >
+                                                ID Number
+                                            </button>
+                                            <button
+                                                onClick={() => { setSearchType('persal'); setSearchValue(''); }}
+                                                className={`flex-1 py-3 px-4 rounded-lg border-2 transition-colors ${
+                                                    searchType === 'persal'
+                                                        ? 'border-wcg-blue bg-wcg-blue text-white'
+                                                        : 'border-gray-300 bg-white text-gray-700 hover:border-wcg-blue'
+                                                }`}
+                                            >
+                                                PERSAL Number
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* Search Input */}
+                                    <div className="mb-6">
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            {searchType === 'id' ? 'ID Number (13 digits)' : 'PERSAL Number (8 digits)'}
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={searchValue}
+                                            onChange={(e) => setSearchValue(e.target.value)}
+                                            onKeyPress={(e) => e.key === 'Enter' && canSearch && handleSearch()}
+                                            placeholder={searchType === 'id' ? '1234567890123' : '12345678'}
+                                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wcg-blue focus:border-transparent"
+                                            maxLength={searchType === 'id' ? 13 : 8}
+                                        />
+                                        {searchValue && !isValidInput() && (
+                                            <p className="text-sm text-red-600 mt-1">
+                                                Please enter a valid {searchType === 'id' ? '13-digit ID' : '8-digit PERSAL'} number
+                                            </p>
+                                        )}
+                                    </div>
+
+                                    {/* Acknowledgement Checkbox */}
+                                    <div className="mb-6">
+                                        <label className="flex items-start gap-3 cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                checked={acknowledged}
+                                                onChange={(e) => setAcknowledged(e.target.checked)}
+                                                className="mt-1 h-5 w-5 text-wcg-blue border-gray-300 rounded focus:ring-wcg-blue"
+                                            />
+                                            <span className="text-sm text-gray-700">
+                                                I confirm I am accessing my own professional development records for personal verification purposes only.
+                                            </span>
+                                        </label>
+                                    </div>
+
+                                    {/* Search Button */}
+                                    <button
+                                        onClick={handleSearch}
+                                        disabled={!canSearch}
+                                        className={`w-full py-3 px-4 rounded-lg font-semibold transition-colors ${
+                                            canSearch
+                                                ? 'bg-wcg-blue text-white hover:bg-blue-700'
+                                                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                        }`}
+                                    >
+                                        View My History
+                                    </button>
+                                </div>
+                            </div>
+                        ) : (
+                            // Results Interface
+                            <div>
+                                {results.profile ? (
+                                    <>
+                                        {/* Profile Header */}
+                                        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+                                            <div className="flex justify-between items-start">
+                                                <div>
+                                                    <h2 className="text-2xl font-bold text-wcg-dark mb-2">
+                                                        {results.profile.name}
+                                                    </h2>
+                                                    <p className="text-gray-600">
+                                                        <span className="font-semibold">School:</span> {results.profile.school}
+                                                    </p>
+                                                    <p className="text-gray-600">
+                                                        <span className="font-semibold">District:</span> {results.profile.district}
+                                                    </p>
+                                                    <p className="text-sm text-gray-500 mt-2">
+                                                        Generated: {new Date().toLocaleDateString('en-GB')}
+                                                    </p>
+                                                </div>
+                                                <button
+                                                    onClick={() => setResults(null)}
+                                                    className="no-print px-4 py-2 text-sm text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg hover:bg-gray-50"
+                                                >
+                                                    New Search
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        {/* Metrics Panel */}
+                                        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+                                            <h3 className="text-lg font-semibold text-wcg-dark mb-4">Summary</h3>
+                                            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                                                <div className="text-center p-4 bg-gray-50 rounded-lg">
+                                                    <div className="text-3xl font-bold text-wcg-dark">{metrics.total}</div>
+                                                    <div className="text-sm text-gray-600 mt-1">Total Sessions</div>
+                                                </div>
+                                                <div className="text-center p-4 bg-wcg-green/10 rounded-lg">
+                                                    <div className="text-3xl font-bold text-wcg-green">{metrics.byLevel['Laying the Foundation']}</div>
+                                                    <div className="text-sm text-gray-600 mt-1">Foundation</div>
+                                                </div>
+                                                <div className="text-center p-4 bg-wcg-yellow/10 rounded-lg">
+                                                    <div className="text-3xl font-bold text-wcg-yellow">{metrics.byLevel['I can do it']}</div>
+                                                    <div className="text-sm text-gray-600 mt-1">I Can Do It</div>
+                                                </div>
+                                                <div className="text-center p-4 bg-wcg-red/10 rounded-lg">
+                                                    <div className="text-3xl font-bold text-wcg-red">{metrics.byLevel['I can do it better']}</div>
+                                                    <div className="text-sm text-gray-600 mt-1">Better</div>
+                                                </div>
+                                                <div className="text-center p-4 bg-wcg-blue/10 rounded-lg">
+                                                    <div className="text-3xl font-bold text-wcg-blue">{metrics.byLevel['The Summit']}</div>
+                                                    <div className="text-sm text-gray-600 mt-1">Summit</div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Controls */}
+                                        <div className="bg-white rounded-lg shadow-md p-6 mb-6 no-print">
+                                            <div className="flex flex-wrap gap-4 items-end">
+                                                {/* Development Level Filter */}
+                                                <div className="flex-1 min-w-[200px]">
+                                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                        Development Level
+                                                    </label>
+                                                    <select
+                                                        value={filters.level}
+                                                        onChange={(e) => setFilters({...filters, level: e.target.value})}
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wcg-blue"
+                                                    >
+                                                        <option value="">All Levels</option>
+                                                        {filterOptions.levels.map(level => (
+                                                            <option key={level} value={level}>{level}</option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+
+                                                {/* District Filter */}
+                                                <div className="flex-1 min-w-[200px]">
+                                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                        Hosting District
+                                                    </label>
+                                                    <select
+                                                        value={filters.district}
+                                                        onChange={(e) => setFilters({...filters, district: e.target.value})}
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wcg-blue"
+                                                    >
+                                                        <option value="">All Districts</option>
+                                                        {filterOptions.districts.map(district => (
+                                                            <option key={district} value={district}>{district}</option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+
+                                                {/* Delivery Mode Filter */}
+                                                <div className="flex-1 min-w-[200px]">
+                                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                        Delivery Mode
+                                                    </label>
+                                                    <select
+                                                        value={filters.mode}
+                                                        onChange={(e) => setFilters({...filters, mode: e.target.value})}
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wcg-blue"
+                                                    >
+                                                        <option value="">All Modes</option>
+                                                        {filterOptions.modes.map(mode => (
+                                                            <option key={mode} value={mode}>{mode}</option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+
+                                                {/* View Toggle */}
+                                                <div className="flex gap-2">
+                                                    <button
+                                                        onClick={() => setViewMode('cards')}
+                                                        className={`px-4 py-2 rounded-lg border-2 transition-colors ${
+                                                            viewMode === 'cards'
+                                                                ? 'border-wcg-blue bg-wcg-blue text-white'
+                                                                : 'border-gray-300 text-gray-700 hover:border-wcg-blue'
+                                                        }`}
+                                                    >
+                                                        Cards
+                                                    </button>
+                                                    <button
+                                                        onClick={() => setViewMode('table')}
+                                                        className={`px-4 py-2 rounded-lg border-2 transition-colors ${
+                                                            viewMode === 'table'
+                                                                ? 'border-wcg-blue bg-wcg-blue text-white'
+                                                                : 'border-gray-300 text-gray-700 hover:border-wcg-blue'
+                                                        }`}
+                                                    >
+                                                        Table
+                                                    </button>
+                                                </div>
+
+                                                {/* Export Buttons */}
+                                                <div className="flex gap-2">
+                                                    <button
+                                                        onClick={exportToCSV}
+                                                        className="px-4 py-2 bg-wcg-green text-white rounded-lg hover:bg-green-700 transition-colors"
+                                                    >
+                                                        Download CSV
+                                                    </button>
+                                                    <button
+                                                        onClick={() => window.print()}
+                                                        className="px-4 py-2 bg-wcg-purple text-white rounded-lg hover:bg-purple-700 transition-colors"
+                                                    >
+                                                        Print / PDF
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Results */}
+                                        {filteredSessions.length === 0 ? (
+                                            <div className="bg-white rounded-lg shadow-md p-8 text-center">
+                                                <p className="text-gray-600">No sessions found matching the selected filters.</p>
+                                            </div>
+                                        ) : viewMode === 'cards' ? (
+                                            // Card View
+                                            <div className="space-y-8">
+                                                {sessionsByYear.map(({ year, sessions }) => (
+                                                    <div key={year}>
+                                                        <h3 className="text-xl font-bold text-wcg-dark mb-4 pb-2 border-b-2 border-wcg-blue">
+                                                            {year}
+                                                        </h3>
+                                                        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                                                            {sessions.map((session, idx) => (
+                                                                <div key={idx} className="bg-white rounded-lg shadow-md p-5 hover:shadow-lg transition-shadow">
+                                                                    <div className="flex justify-between items-start mb-3">
+                                                                        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getLevelColor(session['Development Level'])}`}>
+                                                                            {session['Development Level'] || 'N/A'}
+                                                                        </span>
+                                                                        <span className="text-sm text-gray-500">
+                                                                            {formatDate(session.parsedDate)}
+                                                                        </span>
+                                                                    </div>
+                                                                    <h4 className="font-semibold text-wcg-dark mb-3 line-clamp-2">
+                                                                        {session['Session Name'] || 'Untitled Session'}
+                                                                    </h4>
+                                                                    <div className="space-y-1 text-sm text-gray-600">
+                                                                        <p><span className="font-medium">Facilitator:</span> {session['Facilitator'] || 'N/A'}</p>
+                                                                        <p><span className="font-medium">District:</span> {session['Hosting District'] || 'N/A'}</p>
+                                                                        <p><span className="font-medium">Mode:</span> {session['Delivery Mode'] || 'N/A'}</p>
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            // Table View
+                                            <div className="bg-white rounded-lg shadow-md overflow-hidden">
+                                                <div className="overflow-x-auto">
+                                                    <table className="w-full">
+                                                        <thead className="bg-gray-50 border-b">
+                                                            <tr>
+                                                                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Date</th>
+                                                                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Session Name</th>
+                                                                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Level</th>
+                                                                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Facilitator</th>
+                                                                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">District</th>
+                                                                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Mode</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody className="divide-y divide-gray-200">
+                                                            {filteredSessions.map((session, idx) => (
+                                                                <tr key={idx} className="hover:bg-gray-50">
+                                                                    <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
+                                                                        {formatDate(session.parsedDate)}
+                                                                    </td>
+                                                                    <td className="px-4 py-3 text-sm text-gray-900">
+                                                                        {session['Session Name'] || 'Untitled Session'}
+                                                                    </td>
+                                                                    <td className="px-4 py-3 text-sm">
+                                                                        <span className={`px-2 py-1 rounded text-xs font-semibold ${getLevelColor(session['Development Level'])}`}>
+                                                                            {session['Development Level'] || 'N/A'}
+                                                                        </span>
+                                                                    </td>
+                                                                    <td className="px-4 py-3 text-sm text-gray-700">
+                                                                        {session['Facilitator'] || 'N/A'}
+                                                                    </td>
+                                                                    <td className="px-4 py-3 text-sm text-gray-700">
+                                                                        {session['Hosting District'] || 'N/A'}
+                                                                    </td>
+                                                                    <td className="px-4 py-3 text-sm text-gray-700">
+                                                                        {session['Delivery Mode'] || 'N/A'}
+                                                                    </td>
+                                                                </tr>
+                                                            ))}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </>
+                                ) : (
+                                    // No Results Found
+                                    <div className="max-w-2xl mx-auto">
+                                        <div className="bg-white rounded-lg shadow-md p-8 text-center">
+                                            <div className="text-gray-400 mb-4">
+                                                <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                </svg>
+                                            </div>
+                                            <h3 className="text-xl font-semibold text-gray-900 mb-2">No Records Found</h3>
+                                            <p className="text-gray-600 mb-6">
+                                                No professional development records were found for the {searchType === 'id' ? 'ID' : 'PERSAL'} number you entered. 
+                                                Please check your details and try again.
+                                            </p>
+                                            <button
+                                                onClick={() => setResults(null)}
+                                                className="px-6 py-2 bg-wcg-blue text-white rounded-lg hover:bg-blue-700 transition-colors"
+                                            >
+                                                Try Again
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.render(<App />, document.getElementById('root'));
+    </script>
+</body>
+</html>
