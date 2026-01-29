@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>School PD Report - WCED Professional Development</title>
+    <link rel="icon" type="image/png" href="favicon.png">
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'wcg-green': '#76B82A',
+                        'wcg-yellow': '#FDB913',
+                        'wcg-red': '#E30613',
+                        'wcg-blue': '#001489',
+                        'wcg-purple': '#672D82',
+                        'wcg-pink': '#C8126E',
+                        'wcg-dark': '#1a1a1a',
+                        'wcg-gray': '#666666'
+                    },
+                    fontFamily: {
+                        'sans': ['Century Gothic', 'Arial', 'Helvetica', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @media print { .no-print { display: none !important; } body { background: white !important; } }
+        .pivot-row:hover { background-color: rgba(0, 20, 137, 0.02); }
+        .chart-bar { transition: height 0.3s ease; }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo } = React;
+
+        const SPARK_SESSIONS = ['Adoption Strategy', 'Digital Skills Course', 'Facilitator Think Tank', 'Cyber Effect Ambassador Initiation Course'];
+        const DOVETAIL_SESSIONS = ['ePedagogy: Building a Digital Lesson', 'Integrating digital resources from the ePortal', 'Google Fundamentals 1: Account and Google Chrome', 'Office Online Fundamentals', 'Improved Presentation Skills', 'Ease of Access with QR Codes and Bit.ly links', 'Teaching with Videos', 'Orientation to Google Forms', 'AI In Education: Work Smarter, not Harder', 'Introduction to Cyber Wellness Education'];
+
+        // Helper: Parse Date
+        const parseTimestamp = (ts) => {
+            if (!ts) return null;
+            const [datePart] = ts.split(' ');
+            const [day, month, year] = datePart.split('/');
+            return new Date(year, month - 1, day);
+        };
+
+        const getQuarter = (date) => {
+            const m = date.getMonth();
+            if (m <= 2) return 'Q1';
+            if (m <= 5) return 'Q2';
+            if (m <= 8) return 'Q3';
+            return 'Q4';
+        };
+
+        function App() {
+            const [data, setData] = useState([]);
+            const [loading, setLoading] = useState(true);
+            const [schoolName, setSchoolName] = useState('');
+            const [filters, setFilters] = useState({ year: '2025', level: '', mode: '' });
+            const [expandedRows, setExpandedRows] = useState(new Set());
+            const [pivotMode, setPivotMode] = useState('teacher'); // 'teacher' or 'session'
+
+            useEffect(() => {
+                const params = new URLSearchParams(window.location.search);
+                const school = params.get('school');
+                setSchoolName(school || 'All Schools');
+
+                Papa.parse('attendance.csv', {
+                    download: true,
+                    header: true,
+                    skipEmptyLines: true,
+                    complete: (result) => {
+                        const filtered = school 
+                            ? result.data.filter(r => r.School?.trim() === school)
+                            : result.data;
+                        setData(filtered);
+                        setLoading(false);
+                    }
+                });
+            }, []);
+
+            const toggleRow = (id) => {
+                const newRows = new Set(expandedRows);
+                if (newRows.has(id)) newRows.delete(id);
+                else newRows.add(id);
+                setExpandedRows(newRows);
+            };
+
+            const filteredData = useMemo(() => {
+                return data.filter(r => {
+                    const date = parseTimestamp(r.Timestamp);
+                    const matchYear = !filters.year || date?.getFullYear().toString() === filters.year;
+                    const matchLevel = !filters.level || r['Development Level'] === filters.level;
+                    const matchMode = !filters.mode || r['Delivery Mode'] === filters.mode;
+                    return matchYear && matchLevel && matchMode;
+                });
+            }, [data, filters]);
+
+            const stats = useMemo(() => {
+                const levels = { 'Laying the Foundation': 0, 'I can do it': 0, 'I can do it better': 0, 'The Summit': 0 };
+                const quarters = { 'Q1': 0, 'Q2': 0, 'Q3': 0, 'Q4': 0 };
+                const modes = {};
+
+                filteredData.forEach(r => {
+                    if (levels.hasOwnProperty(r['Development Level'])) levels[r['Development Level']]++;
+                    const q = getQuarter(parseTimestamp(r.Timestamp));
+                    quarters[q]++;
+                    modes[r['Delivery Mode']] = (modes[r['Delivery Mode']] || 0) + 1;
+                });
+                return { levels, quarters, modes };
+            }, [filteredData]);
+
+            const pivotData = useMemo(() => {
+                const groups = {};
+                filteredData.forEach(r => {
+                    const key = pivotMode === 'teacher' ? `${r['First Name']} ${r['Surname']}` : r['Session Name'];
+                    if (!groups[key]) groups[key] = [];
+                    groups[key].push(r);
+                });
+                return groups;
+            }, [filteredData, pivotMode]);
+
+            if (loading) return <div className="p-10 text-center">Loading School Data...</div>;
+
+            return (
+                <div className="max-w-7xl mx-auto px-4 py-8">
+                    <header className="mb-8 text-center no-print">
+                        <img src="header.png" alt="WCED" className="h-16 mx-auto mb-4" />
+                        <h1 className="text-3xl font-bold text-wcg-dark uppercase tracking-tight">{schoolName}</h1>
+                        <p className="text-wcg-gray italic">School Professional Development Overview</p>
+                    </header>
+
+                    {/* Filters */}
+                    <div className="bg-white p-6 rounded-xl shadow-sm mb-8 flex flex-wrap gap-4 no-print items-end">
+                        <div className="flex-1 min-w-[150px]">
+                            <label className="block text-xs font-bold text-wcg-blue mb-2 uppercase">Filter Year</label>
+                            <select className="w-full border rounded p-2" value={filters.year} onChange={e => setFilters({...filters, year: e.target.value})}>
+                                <option value="2024">2024</option>
+                                <option value="2025">2025</option>
+                                <option value="2026">2026</option>
+                            </select>
+                        </div>
+                        <div className="flex-1 min-w-[200px]">
+                            <label className="block text-xs font-bold text-wcg-blue mb-2 uppercase">Dev Level</label>
+                            <select className="w-full border rounded p-2" value={filters.level} onChange={e => setFilters({...filters, level: e.target.value})}>
+                                <option value="">All Levels</option>
+                                {Object.keys(stats.levels).map(l => <option key={l} value={l}>{l}</option>)}
+                            </select>
+                        </div>
+                        <button onClick={() => window.print()} className="bg-wcg-purple text-white px-6 py-2 rounded font-bold hover:opacity-90 transition">Print Report</button>
+                    </div>
+
+                    {/* Graphics Summary */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+                        <div className="bg-white p-6 rounded-xl shadow-sm border-t-4 border-wcg-blue">
+                            <h3 className="text-lg font-bold mb-6 text-wcg-dark">Attendance by Quarter</h3>
+                            <div className="flex items-end justify-around h-48 pt-4">
+                                {Object.entries(stats.quarters).map(([q, count]) => {
+                                    const height = filteredData.length ? (count / filteredData.length) * 100 : 0;
+                                    return (
+                                        <div key={q} className="flex flex-col items-center w-full">
+                                            <div className="bg-wcg-blue w-12 rounded-t chart-bar" style={{ height: `${height + 5}%` }}></div>
+                                            <span className="text-xs font-bold mt-2">{q}</span>
+                                            <span className="text-xs text-gray-500">{count}</span>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        <div className="bg-white p-6 rounded-xl shadow-sm border-t-4 border-wcg-green">
+                            <h3 className="text-lg font-bold mb-4 text-wcg-dark">Developmental Levels</h3>
+                            <div className="space-y-4">
+                                {Object.entries(stats.levels).map(([level, count]) => (
+                                    <div key={level}>
+                                        <div className="flex justify-between text-xs font-bold mb-1">
+                                            <span>{level}</span>
+                                            <span>{count}</span>
+                                        </div>
+                                        <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
+                                            <div className="bg-wcg-green h-full" style={{ width: `${(count / filteredData.length) * 100}%` }}></div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Pivot Table */}
+                    <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200">
+                        <div className="p-4 bg-gray-50 border-b flex justify-between items-center">
+                            <h3 className="font-bold text-wcg-dark">Detailed Attendance List</h3>
+                            <div className="flex gap-2">
+                                <button 
+                                    onClick={() => setPivotMode('teacher')}
+                                    className={`px-3 py-1 text-xs font-bold rounded ${pivotMode === 'teacher' ? 'bg-wcg-blue text-white' : 'bg-gray-200'}`}
+                                >By Teacher</button>
+                                <button 
+                                    onClick={() => setPivotMode('session')}
+                                    className={`px-3 py-1 text-xs font-bold rounded ${pivotMode === 'session' ? 'bg-wcg-blue text-white' : 'bg-gray-200'}`}
+                                >By Session</button>
+                            </div>
+                        </div>
+
+                        <table className="w-full text-sm">
+                            <thead>
+                                <tr className="bg-gray-100 text-left">
+                                    <th className="p-4 w-10"></th>
+                                    <th className="p-4">{pivotMode === 'teacher' ? 'Teacher Name' : 'Session Name'}</th>
+                                    <th className="p-4 text-center">Total Attendances</th>
+                                    <th className="p-4">Primary Level</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {Object.entries(pivotData).map(([name, sessions]) => (
+                                    <React.Fragment key={name}>
+                                        <tr className="border-t pivot-row cursor-pointer" onClick={() => toggleRow(name)}>
+                                            <td className="p-4 text-center text-wcg-blue font-bold">{expandedRows.has(name) ? '−' : '+'}</td>
+                                            <td className="p-4 font-semibold">{name}</td>
+                                            <td className="p-4 text-center">{sessions.length}</td>
+                                            <td className="p-4 italic text-gray-500">{sessions[0]['Development Level']}</td>
+                                        </tr>
+                                        {expandedRows.has(name) && (
+                                            <tr className="bg-gray-50">
+                                                <td colSpan="4" className="p-6 border-t">
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                        <div>
+                                                            <h4 className="font-bold text-wcg-blue mb-2 text-xs uppercase">Attendance Details</h4>
+                                                            <ul className="space-y-2">
+                                                                {sessions.map((s, i) => (
+                                                                    <li key={i} className="text-xs border-b pb-1 flex justify-between">
+                                                                        <span>{pivotMode === 'teacher' ? s['Session Name'] : `${s['First Name']} ${s['Surname']}`}</span>
+                                                                        <span className="text-gray-400">{s.Timestamp.split(' ')[0]}</span>
+                                                                    </li>
+                                                                ))}
+                                                            </ul>
+                                                        </div>
+                                                        {pivotMode === 'teacher' && (
+                                                            <div className="bg-white p-4 rounded border">
+                                                                <h4 className="font-bold text-wcg-pink mb-2 text-xs uppercase">Milestone Progress</h4>
+                                                                <div className="flex gap-4">
+                                                                    <div className="flex-1 text-center p-2 bg-wcg-yellow/10 rounded">
+                                                                        <div className="text-lg font-bold">⭐ {
+                                                                            [...new Set(sessions.filter(s => SPARK_SESSIONS.includes(s['Session Name'])).map(s => s['Session Name']))].length
+                                                                        }</div>
+                                                                        <div className="text-[10px] uppercase font-bold">Sparks</div>
+                                                                    </div>
+                                                                    <div className="flex-1 text-center p-2 bg-wcg-pink/10 rounded">
+                                                                        <div className="text-lg font-bold">💎 {
+                                                                            [...new Set(sessions.filter(s => DOVETAIL_SESSIONS.includes(s['Session Name'])).map(s => s['Session Name']))].length
+                                                                        }</div>
+                                                                        <div className="text-[10px] uppercase font-bold">Dovetails</div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </React.Fragment>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.render(<App />, document.getElementById('root'));
+    </script>
+</body>
+</html>
