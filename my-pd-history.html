@@ -20,6 +20,7 @@
                         'wcg-red': '#E30613',
                         'wcg-blue': '#007BC0',
                         'wcg-purple': '#672D82',
+                        'wcg-pink': '#C8126E',
                         'wcg-dark': '#1a1a1a',
                         'wcg-gray': '#666666'
                     },
@@ -42,6 +43,18 @@
                 max-width: 100% !important;
             }
         }
+        
+        .spark-overlay {
+            background: linear-gradient(135deg, rgba(253, 185, 19, 0.05) 0%, rgba(253, 185, 19, 0.1) 100%);
+        }
+        
+        .dovetail-overlay {
+            background: linear-gradient(135deg, rgba(200, 18, 110, 0.05) 0%, rgba(200, 18, 110, 0.1) 100%);
+        }
+        
+        .modal-backdrop {
+            background-color: rgba(0, 0, 0, 0.5);
+        }
     </style>
 </head>
 <body class="bg-gray-50">
@@ -49,6 +62,28 @@
 
     <script type="text/babel">
         const { useState, useEffect, useMemo } = React;
+
+        // Sparks sessions
+        const SPARK_SESSIONS = [
+            'Adoption Strategy',
+            'Digital Skills Course',
+            'Facilitator Think Tank',
+            'Cyber Effect Ambassador Initiation Course'
+        ];
+
+        // Dovetail Essentials sessions
+        const DOVETAIL_SESSIONS = [
+            'ePedagogy: Building a Digital Lesson',
+            'Integrating digital resources from the ePortal',
+            'Google Fundamentals 1: Account and Google Chrome',
+            'Office Online Fundamentals',
+            'Improved Presentation Skills',
+            'Ease of Access with QR Codes and Bit.ly links',
+            'Teaching with Videos',
+            'Orientation to Google Forms',
+            'AI In Education: Work Smarter, not Harder',
+            'Introduction to Cyber Wellness Education'
+        ];
 
         // Utility: Parse DD/MM/YYYY HH:MM:SS format
         function parseTimestamp(timestamp) {
@@ -82,19 +117,117 @@
             return 'bg-gray-200 text-gray-800';
         }
 
+        // Utility: Check if session is a Spark
+        function isSpark(sessionName) {
+            return SPARK_SESSIONS.includes(sessionName?.trim());
+        }
+
+        // Utility: Check if session is Dovetail Essential
+        function isDovetail(sessionName) {
+            return DOVETAIL_SESSIONS.includes(sessionName?.trim());
+        }
+
+        // Checklist Modal Component
+        function ChecklistModal({ isOpen, onClose, type, completedSessions, allSessions }) {
+            if (!isOpen) return null;
+
+            const title = type === 'spark' ? '⭐ Spark Sessions' : '💎 Dovetail Essentials';
+            
+            // For Sparks, check if they have bonus spark
+            const uniqueDovetails = type === 'spark' 
+                ? [...new Set(allSessions.filter(s => isDovetail(s['Session Name']?.trim())).map(s => s['Session Name']?.trim()))]
+                : [];
+            const bonus5Dovetail = type === 'spark' && uniqueDovetails.length >= 5;
+
+            const sessionsList = type === 'spark' ? SPARK_SESSIONS : DOVETAIL_SESSIONS;
+
+            return (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop no-print" onClick={onClose}>
+                    <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] overflow-hidden" onClick={e => e.stopPropagation()}>
+                        <div className="p-6 border-b border-gray-200">
+                            <div className="flex justify-between items-center">
+                                <h3 className="text-2xl font-bold text-wcg-dark">{title}</h3>
+                                <button 
+                                    onClick={onClose}
+                                    className="text-gray-400 hover:text-gray-600 text-2xl leading-none"
+                                >
+                                    ×
+                                </button>
+                            </div>
+                        </div>
+                        <div className="p-6 overflow-y-auto max-h-[60vh]">
+                            <div className="space-y-3">
+                                {sessionsList.map((session, idx) => {
+                                    const isCompleted = completedSessions.includes(session);
+                                    return (
+                                        <div 
+                                            key={idx}
+                                            className={`flex items-start gap-3 p-3 rounded-lg border-2 ${
+                                                isCompleted 
+                                                    ? 'border-green-500 bg-green-50' 
+                                                    : 'border-gray-300 bg-gray-50'
+                                            }`}
+                                        >
+                                            <div className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center ${
+                                                isCompleted ? 'bg-green-500' : 'bg-gray-300'
+                                            }`}>
+                                                {isCompleted && (
+                                                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                                    </svg>
+                                                )}
+                                            </div>
+                                            <span className={`flex-1 ${isCompleted ? 'text-green-900 font-medium' : 'text-gray-500'}`}>
+                                                {session}
+                                            </span>
+                                        </div>
+                                    );
+                                })}
+                                
+                                {type === 'spark' && (
+                                    <div 
+                                        className={`flex items-start gap-3 p-3 rounded-lg border-2 mt-4 ${
+                                            bonus5Dovetail
+                                                ? 'border-green-500 bg-green-50' 
+                                                : 'border-gray-300 bg-gray-50'
+                                        }`}
+                                    >
+                                        <div className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center ${
+                                            bonus5Dovetail ? 'bg-green-500' : 'bg-gray-300'
+                                        }`}>
+                                            {bonus5Dovetail && (
+                                                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                                </svg>
+                                            )}
+                                        </div>
+                                        <span className={`flex-1 ${bonus5Dovetail ? 'text-green-900 font-medium' : 'text-gray-500'}`}>
+                                            <strong>Bonus Spark:</strong> Complete 5+ Dovetail Essentials ({uniqueDovetails.length}/5)
+                                        </span>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
         function App() {
             const [data, setData] = useState([]);
             const [loading, setLoading] = useState(true);
-            const [searchType, setSearchType] = useState('id'); // 'id' or 'persal'
+            const [searchType, setSearchType] = useState('id');
             const [searchValue, setSearchValue] = useState('');
             const [acknowledged, setAcknowledged] = useState(false);
             const [results, setResults] = useState(null);
-            const [viewMode, setViewMode] = useState('cards'); // 'cards' or 'table'
+            const [viewMode, setViewMode] = useState('cards');
             const [filters, setFilters] = useState({
                 level: '',
                 district: '',
-                mode: ''
+                mode: '',
+                category: ''
             });
+            const [modalOpen, setModalOpen] = useState({ isOpen: false, type: null });
 
             // Load CSV on mount
             useEffect(() => {
@@ -153,7 +286,7 @@
                     return;
                 }
 
-                // Sort by timestamp (newest first) for profile resolution
+                // Sort by timestamp (newest first)
                 const sortedRecords = [...records].sort((a, b) => {
                     const dateA = parseTimestamp(a.Timestamp);
                     const dateB = parseTimestamp(b.Timestamp);
@@ -180,11 +313,13 @@
                     .map(record => ({
                         ...record,
                         parsedDate: parseTimestamp(record.Timestamp),
-                        year: parseTimestamp(record.Timestamp)?.getFullYear() || 'Unknown'
+                        year: parseTimestamp(record.Timestamp)?.getFullYear() || 'Unknown',
+                        isSpark: isSpark(record['Session Name']),
+                        isDovetail: isDovetail(record['Session Name'])
                     }));
 
                 setResults({ profile, sessions: uniqueSessions, allSessions: uniqueSessions });
-                setFilters({ level: '', district: '', mode: '' }); // Reset filters
+                setFilters({ level: '', district: '', mode: '', category: '' });
             };
 
             // Apply filters
@@ -211,6 +346,14 @@
                     );
                 }
 
+                if (filters.category === 'spark') {
+                    filtered = filtered.filter(s => s.isSpark);
+                }
+
+                if (filters.category === 'dovetail') {
+                    filtered = filtered.filter(s => s.isDovetail);
+                }
+
                 return filtered;
             }, [results, filters]);
 
@@ -223,7 +366,6 @@
                     grouped[year].push(session);
                 });
 
-                // Sort years descending
                 return Object.keys(grouped)
                     .sort((a, b) => b - a)
                     .map(year => ({
@@ -234,6 +376,8 @@
 
             // Calculate metrics
             const metrics = useMemo(() => {
+                if (!results) return null;
+
                 const total = filteredSessions.length;
                 const byLevel = {
                     'Laying the Foundation': 0,
@@ -252,8 +396,34 @@
                     }
                 });
 
-                return { total, byLevel };
-            }, [filteredSessions]);
+                // Get unique Spark sessions attended
+                const uniqueSparkSessions = [...new Set(
+                    results.allSessions
+                        .filter(s => s.isSpark)
+                        .map(s => s['Session Name']?.trim())
+                )];
+
+                // Get unique Dovetail sessions attended
+                const uniqueDovetailSessions = [...new Set(
+                    results.allSessions
+                        .filter(s => s.isDovetail)
+                        .map(s => s['Session Name']?.trim())
+                )];
+
+                // Calculate total Sparks (including bonus)
+                const bonusSpark = uniqueDovetailSessions.length >= 5 ? 1 : 0;
+                const totalSparks = uniqueSparkSessions.length + bonusSpark;
+
+                return { 
+                    total, 
+                    byLevel, 
+                    uniqueSparks: uniqueSparkSessions,
+                    uniqueDovetails: uniqueDovetailSessions,
+                    totalSparks,
+                    totalDovetails: uniqueDovetailSessions.length,
+                    hasBonusSpark: bonusSpark === 1
+                };
+            }, [filteredSessions, results]);
 
             // Get unique filter values
             const filterOptions = useMemo(() => {
@@ -274,7 +444,9 @@
                     'Development Level': session['Development Level'] || '',
                     'Hosting District': session['Hosting District'] || '',
                     'Delivery Mode': session['Delivery Mode'] || '',
-                    'Facilitator': session['Facilitator'] || ''
+                    'Facilitator': session['Facilitator'] || '',
+                    'Is Spark': session.isSpark ? 'Yes' : 'No',
+                    'Is Dovetail': session.isDovetail ? 'Yes' : 'No'
                 }));
 
                 const csv = Papa.unparse(csvData);
@@ -312,7 +484,6 @@
 
             return (
                 <div className="min-h-screen bg-gray-50">
-                    {/* Header */}
                     <header className="bg-white shadow-sm no-print">
                         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
                             <img src="header.png" alt="WCED Header" className="h-16 mx-auto" />
@@ -321,7 +492,6 @@
 
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 print-full-width">
                         {!results ? (
-                            // Search Interface
                             <div className="max-w-2xl mx-auto">
                                 <div className="bg-white rounded-lg shadow-md p-8">
                                     <h1 className="text-3xl font-bold text-wcg-dark mb-6 text-center">
@@ -331,7 +501,6 @@
                                         View your complete professional development attendance record
                                     </p>
 
-                                    {/* Search Type Toggle */}
                                     <div className="mb-6">
                                         <label className="block text-sm font-medium text-gray-700 mb-2">
                                             Search by:
@@ -360,7 +529,6 @@
                                         </div>
                                     </div>
 
-                                    {/* Search Input */}
                                     <div className="mb-6">
                                         <label className="block text-sm font-medium text-gray-700 mb-2">
                                             {searchType === 'id' ? 'ID Number (13 digits)' : 'PERSAL Number (8 digits)'}
@@ -381,7 +549,6 @@
                                         )}
                                     </div>
 
-                                    {/* Acknowledgement Checkbox */}
                                     <div className="mb-6">
                                         <label className="flex items-start gap-3 cursor-pointer">
                                             <input
@@ -396,7 +563,6 @@
                                         </label>
                                     </div>
 
-                                    {/* Search Button */}
                                     <button
                                         onClick={handleSearch}
                                         disabled={!canSearch}
@@ -411,11 +577,17 @@
                                 </div>
                             </div>
                         ) : (
-                            // Results Interface
                             <div>
                                 {results.profile ? (
                                     <>
-                                        {/* Profile Header */}
+                                        <ChecklistModal 
+                                            isOpen={modalOpen.isOpen}
+                                            onClose={() => setModalOpen({ isOpen: false, type: null })}
+                                            type={modalOpen.type}
+                                            completedSessions={modalOpen.type === 'spark' ? metrics.uniqueSparks : metrics.uniqueDovetails}
+                                            allSessions={results.allSessions}
+                                        />
+
                                         <div className="bg-white rounded-lg shadow-md p-6 mb-6">
                                             <div className="flex justify-between items-start">
                                                 <div>
@@ -441,10 +613,9 @@
                                             </div>
                                         </div>
 
-                                        {/* Metrics Panel */}
                                         <div className="bg-white rounded-lg shadow-md p-6 mb-6">
                                             <h3 className="text-lg font-semibold text-wcg-dark mb-4">Summary</h3>
-                                            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                                            <div className="grid grid-cols-2 md:grid-cols-7 gap-4">
                                                 <div className="text-center p-4 bg-gray-50 rounded-lg">
                                                     <div className="text-3xl font-bold text-wcg-dark">{metrics.total}</div>
                                                     <div className="text-sm text-gray-600 mt-1">Total Sessions</div>
@@ -465,21 +636,35 @@
                                                     <div className="text-3xl font-bold text-wcg-blue">{metrics.byLevel['The Summit']}</div>
                                                     <div className="text-sm text-gray-600 mt-1">Summit</div>
                                                 </div>
+                                                <div 
+                                                    className="text-center p-4 bg-wcg-yellow/10 rounded-lg cursor-pointer hover:bg-wcg-yellow/20 transition-colors no-print"
+                                                    onClick={() => setModalOpen({ isOpen: true, type: 'spark' })}
+                                                    title="Click to view checklist"
+                                                >
+                                                    <div className="text-3xl font-bold text-wcg-yellow">⭐ {metrics.totalSparks}</div>
+                                                    <div className="text-sm text-gray-600 mt-1">Sparks</div>
+                                                </div>
+                                                <div 
+                                                    className="text-center p-4 bg-wcg-pink/10 rounded-lg cursor-pointer hover:bg-wcg-pink/20 transition-colors no-print"
+                                                    onClick={() => setModalOpen({ isOpen: true, type: 'dovetail' })}
+                                                    title="Click to view checklist"
+                                                >
+                                                    <div className="text-3xl font-bold text-wcg-pink">💎 {metrics.totalDovetails}</div>
+                                                    <div className="text-sm text-gray-600 mt-1">Dovetail</div>
+                                                </div>
                                             </div>
                                         </div>
 
-                                        {/* Controls */}
                                         <div className="bg-white rounded-lg shadow-md p-6 mb-6 no-print">
                                             <div className="flex flex-wrap gap-4 items-end">
-                                                {/* Development Level Filter */}
-                                                <div className="flex-1 min-w-[200px]">
+                                                <div className="flex-1 min-w-[180px]">
                                                     <label className="block text-sm font-medium text-gray-700 mb-2">
                                                         Development Level
                                                     </label>
                                                     <select
                                                         value={filters.level}
                                                         onChange={(e) => setFilters({...filters, level: e.target.value})}
-                                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wcg-blue"
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wcg-blue text-sm"
                                                     >
                                                         <option value="">All Levels</option>
                                                         {filterOptions.levels.map(level => (
@@ -488,15 +673,14 @@
                                                     </select>
                                                 </div>
 
-                                                {/* District Filter */}
-                                                <div className="flex-1 min-w-[200px]">
+                                                <div className="flex-1 min-w-[180px]">
                                                     <label className="block text-sm font-medium text-gray-700 mb-2">
                                                         Hosting District
                                                     </label>
                                                     <select
                                                         value={filters.district}
                                                         onChange={(e) => setFilters({...filters, district: e.target.value})}
-                                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wcg-blue"
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wcg-blue text-sm"
                                                     >
                                                         <option value="">All Districts</option>
                                                         {filterOptions.districts.map(district => (
@@ -505,15 +689,14 @@
                                                     </select>
                                                 </div>
 
-                                                {/* Delivery Mode Filter */}
-                                                <div className="flex-1 min-w-[200px]">
+                                                <div className="flex-1 min-w-[180px]">
                                                     <label className="block text-sm font-medium text-gray-700 mb-2">
                                                         Delivery Mode
                                                     </label>
                                                     <select
                                                         value={filters.mode}
                                                         onChange={(e) => setFilters({...filters, mode: e.target.value})}
-                                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wcg-blue"
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wcg-blue text-sm"
                                                     >
                                                         <option value="">All Modes</option>
                                                         {filterOptions.modes.map(mode => (
@@ -522,11 +705,25 @@
                                                     </select>
                                                 </div>
 
-                                                {/* View Toggle */}
+                                                <div className="flex-1 min-w-[180px]">
+                                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                        Category
+                                                    </label>
+                                                    <select
+                                                        value={filters.category}
+                                                        onChange={(e) => setFilters({...filters, category: e.target.value})}
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wcg-blue text-sm"
+                                                    >
+                                                        <option value="">All Sessions</option>
+                                                        <option value="spark">⭐ Sparks Only</option>
+                                                        <option value="dovetail">💎 Dovetail Only</option>
+                                                    </select>
+                                                </div>
+
                                                 <div className="flex gap-2">
                                                     <button
                                                         onClick={() => setViewMode('cards')}
-                                                        className={`px-4 py-2 rounded-lg border-2 transition-colors ${
+                                                        className={`px-4 py-2 rounded-lg border-2 transition-colors text-sm ${
                                                             viewMode === 'cards'
                                                                 ? 'border-wcg-blue bg-wcg-blue text-white'
                                                                 : 'border-gray-300 text-gray-700 hover:border-wcg-blue'
@@ -536,7 +733,7 @@
                                                     </button>
                                                     <button
                                                         onClick={() => setViewMode('table')}
-                                                        className={`px-4 py-2 rounded-lg border-2 transition-colors ${
+                                                        className={`px-4 py-2 rounded-lg border-2 transition-colors text-sm ${
                                                             viewMode === 'table'
                                                                 ? 'border-wcg-blue bg-wcg-blue text-white'
                                                                 : 'border-gray-300 text-gray-700 hover:border-wcg-blue'
@@ -546,17 +743,16 @@
                                                     </button>
                                                 </div>
 
-                                                {/* Export Buttons */}
                                                 <div className="flex gap-2">
                                                     <button
                                                         onClick={exportToCSV}
-                                                        className="px-4 py-2 bg-wcg-green text-white rounded-lg hover:bg-green-700 transition-colors"
+                                                        className="px-4 py-2 bg-wcg-green text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
                                                     >
                                                         Download CSV
                                                     </button>
                                                     <button
                                                         onClick={() => window.print()}
-                                                        className="px-4 py-2 bg-wcg-purple text-white rounded-lg hover:bg-purple-700 transition-colors"
+                                                        className="px-4 py-2 bg-wcg-purple text-white rounded-lg hover:bg-purple-700 transition-colors text-sm"
                                                     >
                                                         Print / PDF
                                                     </button>
@@ -564,13 +760,11 @@
                                             </div>
                                         </div>
 
-                                        {/* Results */}
                                         {filteredSessions.length === 0 ? (
                                             <div className="bg-white rounded-lg shadow-md p-8 text-center">
                                                 <p className="text-gray-600">No sessions found matching the selected filters.</p>
                                             </div>
                                         ) : viewMode === 'cards' ? (
-                                            // Card View
                                             <div className="space-y-8">
                                                 {sessionsByYear.map(({ year, sessions }) => (
                                                     <div key={year}>
@@ -579,7 +773,24 @@
                                                         </h3>
                                                         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                                                             {sessions.map((session, idx) => (
-                                                                <div key={idx} className="bg-white rounded-lg shadow-md p-5 hover:shadow-lg transition-shadow">
+                                                                <div 
+                                                                    key={idx} 
+                                                                    className={`bg-white rounded-lg shadow-md p-5 hover:shadow-lg transition-shadow relative overflow-hidden ${
+                                                                        session.isSpark ? 'border-2 border-wcg-yellow spark-overlay' : 
+                                                                        session.isDovetail ? 'border-2 border-wcg-pink dovetail-overlay' : ''
+                                                                    }`}
+                                                                >
+                                                                    {session.isSpark && (
+                                                                        <div className="absolute top-2 right-2 bg-wcg-yellow text-black px-2 py-1 rounded-full text-xs font-bold flex items-center gap-1">
+                                                                            ⭐ Spark
+                                                                        </div>
+                                                                    )}
+                                                                    {session.isDovetail && (
+                                                                        <div className="absolute top-2 right-2 bg-wcg-pink text-white px-2 py-1 rounded-full text-xs font-bold flex items-center gap-1">
+                                                                            💎 Dovetail
+                                                                        </div>
+                                                                    )}
+                                                                    
                                                                     <div className="flex justify-between items-start mb-3">
                                                                         <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getLevelColor(session['Development Level'])}`}>
                                                                             {session['Development Level'] || 'N/A'}
@@ -588,7 +799,7 @@
                                                                             {formatDate(session.parsedDate)}
                                                                         </span>
                                                                     </div>
-                                                                    <h4 className="font-semibold text-wcg-dark mb-3 line-clamp-2">
+                                                                    <h4 className="font-semibold text-wcg-dark mb-3 line-clamp-2 pr-20">
                                                                         {session['Session Name'] || 'Untitled Session'}
                                                                     </h4>
                                                                     <div className="space-y-1 text-sm text-gray-600">
@@ -603,7 +814,6 @@
                                                 ))}
                                             </div>
                                         ) : (
-                                            // Table View
                                             <div className="bg-white rounded-lg shadow-md overflow-hidden">
                                                 <div className="overflow-x-auto">
                                                     <table className="w-full">
@@ -615,11 +825,18 @@
                                                                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Facilitator</th>
                                                                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">District</th>
                                                                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Mode</th>
+                                                                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Special</th>
                                                             </tr>
                                                         </thead>
                                                         <tbody className="divide-y divide-gray-200">
                                                             {filteredSessions.map((session, idx) => (
-                                                                <tr key={idx} className="hover:bg-gray-50">
+                                                                <tr 
+                                                                    key={idx} 
+                                                                    className={`hover:bg-gray-50 ${
+                                                                        session.isSpark ? 'spark-overlay' : 
+                                                                        session.isDovetail ? 'dovetail-overlay' : ''
+                                                                    }`}
+                                                                >
                                                                     <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
                                                                         {formatDate(session.parsedDate)}
                                                                     </td>
@@ -640,6 +857,18 @@
                                                                     <td className="px-4 py-3 text-sm text-gray-700">
                                                                         {session['Delivery Mode'] || 'N/A'}
                                                                     </td>
+                                                                    <td className="px-4 py-3 text-sm">
+                                                                        {session.isSpark && (
+                                                                            <span className="inline-flex items-center gap-1 bg-wcg-yellow text-black px-2 py-1 rounded text-xs font-bold">
+                                                                                ⭐ Spark
+                                                                            </span>
+                                                                        )}
+                                                                        {session.isDovetail && (
+                                                                            <span className="inline-flex items-center gap-1 bg-wcg-pink text-white px-2 py-1 rounded text-xs font-bold">
+                                                                                💎 Dovetail
+                                                                            </span>
+                                                                        )}
+                                                                    </td>
                                                                 </tr>
                                                             ))}
                                                         </tbody>
@@ -649,7 +878,6 @@
                                         )}
                                     </>
                                 ) : (
-                                    // No Results Found
                                     <div className="max-w-2xl mx-auto">
                                         <div className="bg-white rounded-lg shadow-md p-8 text-center">
                                             <div className="text-gray-400 mb-4">
