@@ -52,6 +52,10 @@
     <script type="text/babel">
         const { useState, useEffect, useMemo, useRef } = React;
 
+        // *** UPDATE THIS DATE WHEN YOU UPDATE THE CSV FILE ***
+        const DATA_LAST_UPDATED = '2026-01-29'; // Format: YYYY-MM-DD
+        // *****************************************************
+
         // Sparks and Dovetail definitions
         const SPARK_SESSIONS = [
             'Adoption Strategy',
@@ -115,6 +119,16 @@
 
         function isDovetail(sessionName) {
             return DOVETAIL_SESSIONS.includes(sessionName?.trim());
+        }
+
+        function getModeIcon(mode) {
+            if (!mode) return '📋';
+            const normalized = mode.trim().toLowerCase();
+            if (normalized === 'virtual') return '🖥️';
+            if (normalized === 'face-to-face') return '🏢';
+            if (normalized === 'hybrid') return '🔄';
+            if (normalized === 'self-paced') return '📚';
+            return '📋';
         }
 
         function getURLParameter(name) {
@@ -271,7 +285,7 @@
                 const teachers = {};
 
                 filteredData.forEach(record => {
-                    const name = `${record['First Name']} ${record['Surname']}`;
+                    const name = `${record['First Name']} ${record['Surname']}`.toUpperCase().trim();
                     if (!teachers[name]) {
                         teachers[name] = {
                             name,
@@ -322,23 +336,35 @@
                     if (!sessions[sessionName]) {
                         sessions[sessionName] = {
                             name: sessionName,
-                            attendances: [],
+                            attendances: {},
                             level: record['Development Level'],
-                            mode: record['Delivery Mode']
+                            mode: record['Delivery Mode'],
+                            hostingDistrict: record['Hosting District'],
+                            dates: new Set()
                         };
                     }
 
-                    sessions[sessionName].attendances.push({
-                        teacher: `${record['First Name']} ${record['Surname']}`,
-                        date: record.parsedDate
-                    });
+                    const teacherName = `${record['First Name']} ${record['Surname']}`.toUpperCase().trim();
+                    
+                    // Keep only the most recent attendance per teacher
+                    if (!sessions[sessionName].attendances[teacherName] || 
+                        record.parsedDate > sessions[sessionName].attendances[teacherName].date) {
+                        sessions[sessionName].attendances[teacherName] = {
+                            teacher: teacherName,
+                            date: record.parsedDate
+                        };
+                    }
+
+                    sessions[sessionName].dates.add(formatDate(record.parsedDate));
                 });
 
                 return Object.values(sessions)
                     .map(s => ({
                         ...s,
-                        totalAttendances: s.attendances.length,
-                        uniqueTeachers: [...new Set(s.attendances.map(a => a.teacher))].length
+                        attendanceList: Object.values(s.attendances).sort((a, b) => b.date - a.date),
+                        totalAttendances: Object.keys(s.attendances).length,
+                        uniqueTeachers: Object.keys(s.attendances).length,
+                        sessionDates: Array.from(s.dates).sort().join(', ')
                     }))
                     .sort((a, b) => b.totalAttendances - a.totalAttendances);
             }, [filteredData]);
@@ -504,12 +530,6 @@
                                 <p className="text-gray-600 mb-4">
                                     This page requires a school parameter in the URL.
                                 </p>
-                                <div className="bg-gray-100 p-4 rounded-lg text-left">
-                                    <p className="text-sm text-gray-700 mb-2"><strong>Example URL format:</strong></p>
-                                    <code className="text-xs bg-white px-2 py-1 rounded border">
-                                        school-view.html?school=Mountain+View+High
-                                    </code>
-                                </div>
                             </div>
                         </div>
                     </div>
@@ -547,7 +567,10 @@
                                     <h1 className="text-3xl font-bold text-wcg-dark mb-2">{schoolName}</h1>
                                     <p className="text-gray-600">Professional Development Report</p>
                                     <p className="text-sm text-gray-500 mt-2">
-                                        Generated: {new Date().toLocaleDateString('en-GB')}
+                                        Report Generated: {new Date().toLocaleDateString('en-GB')}
+                                    </p>
+                                    <p className="text-xs text-gray-400 mt-1">
+                                        ⚠️ Based on static data last updated: {new Date(DATA_LAST_UPDATED).toLocaleDateString('en-GB')}
                                     </p>
                                 </div>
                                 <button
@@ -733,15 +756,33 @@
                                         
                                         {expandedSessions.has(session.name) && (
                                             <div className="px-4 pb-4 pt-2 bg-gray-50 border-t">
+                                                {/* Session Details */}
+                                                <div className="mb-3 pb-3 border-b border-gray-300">
+                                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm">
+                                                        <div>
+                                                            <span className="font-medium text-gray-700">📅 Date(s):</span>
+                                                            <span className="ml-2 text-gray-600">{session.sessionDates}</span>
+                                                        </div>
+                                                        <div>
+                                                            <span className="font-medium text-gray-700">📍 District:</span>
+                                                            <span className="ml-2 text-gray-600">{session.hostingDistrict || 'N/A'}</span>
+                                                        </div>
+                                                        <div>
+                                                            <span className="font-medium text-gray-700">{getModeIcon(session.mode)} Mode:</span>
+                                                            <span className="ml-2 text-gray-600">{session.mode || 'N/A'}</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                
+                                                {/* Teacher List */}
                                                 <div className="space-y-2">
-                                                    {session.attendances
-                                                        .sort((a, b) => b.date - a.date)
-                                                        .map((attendance, idx) => (
-                                                            <div key={idx} className="flex justify-between items-center text-sm py-2 border-b border-gray-200 last:border-0">
-                                                                <span className="font-medium text-gray-900">{attendance.teacher}</span>
-                                                                <span className="text-gray-500 text-xs">{formatDate(attendance.date)}</span>
-                                                            </div>
-                                                        ))}
+                                                    <div className="text-sm font-medium text-gray-700 mb-2">Teachers Attended:</div>
+                                                    {session.attendanceList.map((attendance, idx) => (
+                                                        <div key={idx} className="flex justify-between items-center text-sm py-2 border-b border-gray-200 last:border-0">
+                                                            <span className="font-medium text-gray-900">{attendance.teacher}</span>
+                                                            <span className="text-gray-500 text-xs">Most recent: {formatDate(attendance.date)}</span>
+                                                        </div>
+                                                    ))}
                                                 </div>
                                             </div>
                                         )}
