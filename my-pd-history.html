@@ -18,14 +18,14 @@
                         'wcg-green': '#76B82A',
                         'wcg-yellow': '#FDB913',
                         'wcg-red': '#E30613',
-                        'wcg-blue': '#007BC0',
+                        'wcg-blue': '#001489',
                         'wcg-purple': '#672D82',
                         'wcg-pink': '#C8126E',
                         'wcg-dark': '#1a1a1a',
                         'wcg-gray': '#666666'
                     },
                     fontFamily: {
-                        'sans': ['Arial', 'Helvetica', 'sans-serif']
+                        'sans': ['Century Gothic', 'Arial', 'Helvetica', 'sans-serif']
                     }
                 }
             }
@@ -780,17 +780,6 @@
                                                                         session.isDovetail ? 'border-2 border-wcg-pink dovetail-overlay' : ''
                                                                     }`}
                                                                 >
-                                                                    {session.isSpark && (
-                                                                        <div className="absolute top-2 right-2 bg-wcg-yellow text-black px-2 py-1 rounded-full text-xs font-bold flex items-center gap-1">
-                                                                            ⭐ Spark
-                                                                        </div>
-                                                                    )}
-                                                                    {session.isDovetail && (
-                                                                        <div className="absolute top-2 right-2 bg-wcg-pink text-white px-2 py-1 rounded-full text-xs font-bold flex items-center gap-1">
-                                                                            💎 Dovetail
-                                                                        </div>
-                                                                    )}
-                                                                    
                                                                     <div className="flex justify-between items-start mb-3">
                                                                         <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getLevelColor(session['Development Level'])}`}>
                                                                             {session['Development Level'] || 'N/A'}
@@ -799,14 +788,28 @@
                                                                             {formatDate(session.parsedDate)}
                                                                         </span>
                                                                     </div>
-                                                                    <h4 className="font-semibold text-wcg-dark mb-3 line-clamp-2 pr-20">
+                                                                    <h4 className="font-semibold text-wcg-dark mb-3 line-clamp-2">
                                                                         {session['Session Name'] || 'Untitled Session'}
                                                                     </h4>
-                                                                    <div className="space-y-1 text-sm text-gray-600">
+                                                                    <div className="space-y-1 text-sm text-gray-600 mb-3">
                                                                         <p><span className="font-medium">Facilitator:</span> {session['Facilitator'] || 'N/A'}</p>
                                                                         <p><span className="font-medium">District:</span> {session['Hosting District'] || 'N/A'}</p>
                                                                         <p><span className="font-medium">Mode:</span> {session['Delivery Mode'] || 'N/A'}</p>
                                                                     </div>
+                                                                    {session.isSpark && (
+                                                                        <div className="mt-3 pt-3 border-t border-gray-200">
+                                                                            <span className="inline-flex items-center gap-1 bg-wcg-yellow text-black px-2 py-1 rounded-full text-xs font-bold">
+                                                                                ⭐ Spark
+                                                                            </span>
+                                                                        </div>
+                                                                    )}
+                                                                    {session.isDovetail && (
+                                                                        <div className="mt-3 pt-3 border-t border-gray-200">
+                                                                            <span className="inline-flex items-center gap-1 bg-wcg-pink text-white px-2 py-1 rounded-full text-xs font-bold">
+                                                                                💎 Dovetail
+                                                                            </span>
+                                                                        </div>
+                                                                    )}
                                                                 </div>
                                                             ))}
                                                         </div>
@@ -859,13 +862,13 @@
                                                                     </td>
                                                                     <td className="px-4 py-3 text-sm">
                                                                         {session.isSpark && (
-                                                                            <span className="inline-flex items-center gap-1 bg-wcg-yellow text-black px-2 py-1 rounded text-xs font-bold">
-                                                                                ⭐ Spark
+                                                                            <span className="inline-flex items-center gap-1 bg-wcg-yellow text-black px-2 py-1 rounded text-xs font-bold whitespace-nowrap">
+                                                                                Spark
                                                                             </span>
                                                                         )}
                                                                         {session.isDovetail && (
-                                                                            <span className="inline-flex items-center gap-1 bg-wcg-pink text-white px-2 py-1 rounded text-xs font-bold">
-                                                                                💎 Dovetail
+                                                                            <span className="inline-flex items-center gap-1 bg-wcg-pink text-white px-2 py-1 rounded text-xs font-bold whitespace-nowrap">
+                                                                                Dovetail
                                                                             </span>
                                                                         )}
                                                                     </td>
