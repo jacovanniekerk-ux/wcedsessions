@@ -53,7 +53,7 @@
         const { useState, useEffect, useMemo, useRef } = React;
 
         // *** UPDATE THIS DATE WHEN YOU UPDATE THE CSV FILE ***
-        const DATA_LAST_UPDATED = '2026-01-29'; // Format: YYYY-MM-DD
+        const DATA_LAST_UPDATED = '2025-01-28'; // Format: YYYY-MM-DD
         // *****************************************************
 
         // Sparks and Dovetail definitions
@@ -148,6 +148,7 @@
             });
             const [expandedTeachers, setExpandedTeachers] = useState(new Set());
             const [expandedSessions, setExpandedSessions] = useState(new Set());
+            const [teacherSort, setTeacherSort] = useState('name'); // 'name', 'attendance', 'sparks'
 
             const quarterChartRef = useRef(null);
             const pieChartRef = useRef(null);
@@ -197,9 +198,13 @@
 
                 setSchoolData(filtered);
 
-                // Auto-select all available years
+                // Auto-select only current and previous year
+                const currentYear = new Date().getFullYear();
+                const previousYear = currentYear - 1;
                 const years = [...new Set(filtered.map(r => r.year))].sort();
-                setFilters(prev => ({ ...prev, years }));
+                const defaultYears = years.filter(y => y === currentYear || y === previousYear);
+                
+                setFilters(prev => ({ ...prev, years: defaultYears }));
             }, [schoolName, data]);
 
             // Get available years for checkboxes
@@ -315,15 +320,25 @@
                     }
                 });
 
-                return Object.values(teachers)
+                const teacherList = Object.values(teachers)
                     .map(t => ({
                         ...t,
                         totalSessions: t.sessions.length,
                         sparkCount: t.uniqueSparks.size + (t.uniqueDovetails.size >= 5 ? 1 : 0),
                         dovetailCount: t.uniqueDovetails.size
-                    }))
-                    .sort((a, b) => a.name.localeCompare(b.name));
-            }, [filteredData]);
+                    }));
+
+                // Apply sorting
+                if (teacherSort === 'name') {
+                    teacherList.sort((a, b) => a.name.localeCompare(b.name));
+                } else if (teacherSort === 'attendance') {
+                    teacherList.sort((a, b) => b.totalSessions - a.totalSessions);
+                } else if (teacherSort === 'sparks') {
+                    teacherList.sort((a, b) => b.sparkCount - a.sparkCount);
+                }
+
+                return teacherList;
+            }, [filteredData, teacherSort]);
 
             // Group by sessions
             const sessionData = useMemo(() => {
@@ -336,36 +351,41 @@
                     if (!sessions[sessionName]) {
                         sessions[sessionName] = {
                             name: sessionName,
-                            attendances: {},
+                            attendances: [],
                             level: record['Development Level'],
                             mode: record['Delivery Mode'],
-                            hostingDistrict: record['Hosting District'],
-                            dates: new Set()
+                            isSpark: isSpark(sessionName),
+                            isDovetail: isDovetail(sessionName)
                         };
                     }
 
                     const teacherName = `${record['First Name']} ${record['Surname']}`.toUpperCase().trim();
                     
-                    // Keep only the most recent attendance per teacher
-                    if (!sessions[sessionName].attendances[teacherName] || 
-                        record.parsedDate > sessions[sessionName].attendances[teacherName].date) {
-                        sessions[sessionName].attendances[teacherName] = {
-                            teacher: teacherName,
-                            date: record.parsedDate
-                        };
-                    }
-
-                    sessions[sessionName].dates.add(formatDate(record.parsedDate));
+                    sessions[sessionName].attendances.push({
+                        teacher: teacherName,
+                        date: record.parsedDate,
+                        hostingDistrict: record['Hosting District'],
+                        mode: record['Delivery Mode']
+                    });
                 });
 
                 return Object.values(sessions)
-                    .map(s => ({
-                        ...s,
-                        attendanceList: Object.values(s.attendances).sort((a, b) => b.date - a.date),
-                        totalAttendances: Object.keys(s.attendances).length,
-                        uniqueTeachers: Object.keys(s.attendances).length,
-                        sessionDates: Array.from(s.dates).sort().join(', ')
-                    }))
+                    .map(s => {
+                        // Get unique teachers (keep most recent attendance for count)
+                        const uniqueTeachers = {};
+                        s.attendances.forEach(att => {
+                            if (!uniqueTeachers[att.teacher] || att.date > uniqueTeachers[att.teacher].date) {
+                                uniqueTeachers[att.teacher] = att;
+                            }
+                        });
+
+                        return {
+                            ...s,
+                            attendanceList: s.attendances.sort((a, b) => b.date - a.date),
+                            totalAttendances: s.attendances.length,
+                            uniqueTeachers: Object.keys(uniqueTeachers).length
+                        };
+                    })
                     .sort((a, b) => b.totalAttendances - a.totalAttendances);
             }, [filteredData]);
 
@@ -530,6 +550,12 @@
                                 <p className="text-gray-600 mb-4">
                                     This page requires a school parameter in the URL.
                                 </p>
+                                <div className="bg-gray-100 p-4 rounded-lg text-left">
+                                    <p className="text-sm text-gray-700 mb-2"><strong>Example URL format:</strong></p>
+                                    <code className="text-xs bg-white px-2 py-1 rounded border">
+                                        school-view.html?school=Mountain+View+High
+                                    </code>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -662,7 +688,21 @@
 
                         {/* Teacher Attendance */}
                         <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-                            <h3 className="text-lg font-semibold text-wcg-dark mb-4">Teacher Attendance</h3>
+                            <div className="flex justify-between items-center mb-4">
+                                <h3 className="text-lg font-semibold text-wcg-dark">Teacher Attendance</h3>
+                                <div className="no-print">
+                                    <label className="text-sm font-medium text-gray-700 mr-2">Sort by:</label>
+                                    <select
+                                        value={teacherSort}
+                                        onChange={(e) => setTeacherSort(e.target.value)}
+                                        className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wcg-blue text-sm"
+                                    >
+                                        <option value="name">Name (A-Z)</option>
+                                        <option value="attendance">Attendance (High-Low)</option>
+                                        <option value="sparks">Sparks (High-Low)</option>
+                                    </select>
+                                </div>
+                            </div>
                             <div className="space-y-2">
                                 {teacherData.map(teacher => (
                                     <div key={teacher.name} className="border border-gray-200 rounded-lg">
@@ -705,9 +745,20 @@
                                                     {teacher.sessions
                                                         .sort((a, b) => b.parsedDate - a.parsedDate)
                                                         .map((session, idx) => (
-                                                            <div key={idx} className="flex justify-between items-center text-sm py-2 border-b border-gray-200 last:border-0">
+                                                            <div 
+                                                                key={idx} 
+                                                                className={`flex justify-between items-center text-sm py-2 px-3 rounded border-b last:border-0 ${
+                                                                    session.isSpark ? 'border-l-4 border-l-wcg-yellow bg-wcg-yellow bg-opacity-5' :
+                                                                    session.isDovetail ? 'border-l-4 border-l-wcg-pink bg-wcg-pink bg-opacity-5' :
+                                                                    'border-gray-200'
+                                                                }`}
+                                                            >
                                                                 <div className="flex-1">
-                                                                    <div className="font-medium text-gray-900">{session['Session Name']}</div>
+                                                                    <div className="font-medium text-gray-900">
+                                                                        {session.isSpark && <span className="mr-2">⭐</span>}
+                                                                        {session.isDovetail && <span className="mr-2">💎</span>}
+                                                                        {session['Session Name']}
+                                                                    </div>
                                                                     <div className="text-gray-500 text-xs mt-1">
                                                                         {formatDate(session.parsedDate)} • {session['Delivery Mode']}
                                                                     </div>
@@ -730,7 +781,14 @@
                             <h3 className="text-lg font-semibold text-wcg-dark mb-4">Session Attendance</h3>
                             <div className="space-y-2">
                                 {sessionData.map(session => (
-                                    <div key={session.name} className="border border-gray-200 rounded-lg">
+                                    <div 
+                                        key={session.name} 
+                                        className={`border rounded-lg ${
+                                            session.isSpark ? 'border-wcg-yellow border-2' :
+                                            session.isDovetail ? 'border-wcg-pink border-2' :
+                                            'border-gray-200'
+                                        }`}
+                                    >
                                         <div
                                             onClick={() => toggleSession(session.name)}
                                             className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50"
@@ -740,9 +798,13 @@
                                                     {expandedSessions.has(session.name) ? '▼' : '▶'}
                                                 </span>
                                                 <div className="flex-1">
-                                                    <div className="font-semibold text-wcg-dark">{session.name}</div>
+                                                    <div className="font-semibold text-wcg-dark">
+                                                        {session.isSpark && <span className="mr-2">⭐</span>}
+                                                        {session.isDovetail && <span className="mr-2">💎</span>}
+                                                        {session.name}
+                                                    </div>
                                                     <div className="text-sm text-gray-600">
-                                                        {session.totalAttendances} attendances • {session.uniqueTeachers} teachers
+                                                        {session.totalAttendances} attendances • {session.uniqueTeachers} unique teachers
                                                     </div>
                                                 </div>
                                             </div>
@@ -750,37 +812,24 @@
                                                 <span className={`px-2 py-1 rounded text-xs font-semibold ${getLevelColor(session.level)}`}>
                                                     {session.level}
                                                 </span>
-                                                <span className="text-xs text-gray-500">{session.mode}</span>
+                                                <span className="text-xs text-gray-500">{getModeIcon(session.mode)} {session.mode}</span>
                                             </div>
                                         </div>
                                         
                                         {expandedSessions.has(session.name) && (
                                             <div className="px-4 pb-4 pt-2 bg-gray-50 border-t">
-                                                {/* Session Details */}
-                                                <div className="mb-3 pb-3 border-b border-gray-300">
-                                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm">
-                                                        <div>
-                                                            <span className="font-medium text-gray-700">📅 Date(s):</span>
-                                                            <span className="ml-2 text-gray-600">{session.sessionDates}</span>
-                                                        </div>
-                                                        <div>
-                                                            <span className="font-medium text-gray-700">📍 District:</span>
-                                                            <span className="ml-2 text-gray-600">{session.hostingDistrict || 'N/A'}</span>
-                                                        </div>
-                                                        <div>
-                                                            <span className="font-medium text-gray-700">{getModeIcon(session.mode)} Mode:</span>
-                                                            <span className="ml-2 text-gray-600">{session.mode || 'N/A'}</span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                
-                                                {/* Teacher List */}
                                                 <div className="space-y-2">
-                                                    <div className="text-sm font-medium text-gray-700 mb-2">Teachers Attended:</div>
+                                                    <div className="text-sm font-medium text-gray-700 mb-2">Attendance Records:</div>
                                                     {session.attendanceList.map((attendance, idx) => (
-                                                        <div key={idx} className="flex justify-between items-center text-sm py-2 border-b border-gray-200 last:border-0">
-                                                            <span className="font-medium text-gray-900">{attendance.teacher}</span>
-                                                            <span className="text-gray-500 text-xs">Most recent: {formatDate(attendance.date)}</span>
+                                                        <div key={idx} className="flex justify-between items-center text-sm py-2 px-3 bg-white rounded border border-gray-200">
+                                                            <div className="flex-1">
+                                                                <span className="font-medium text-gray-900">{attendance.teacher}</span>
+                                                            </div>
+                                                            <div className="flex gap-4 items-center text-xs text-gray-600">
+                                                                <span>📅 {formatDate(attendance.date)}</span>
+                                                                <span>📍 {attendance.hostingDistrict || 'N/A'}</span>
+                                                                <span>{getModeIcon(attendance.mode)} {attendance.mode || 'N/A'}</span>
+                                                            </div>
                                                         </div>
                                                     ))}
                                                 </div>
