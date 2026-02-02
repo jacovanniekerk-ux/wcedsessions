@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Adoption & Transformation Pathway - WCED eLearning</title>
     <link rel="icon" type="image/png" href="favicon.png">
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -17,14 +16,32 @@
         }
 
         body {
-            font-family: 'Open Sans', sans-serif;
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            font-family: 'Century Gothic', Arial, Helvetica, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf1 50%, #dde3ea 100%);
             min-height: 100vh;
-            overflow-x: hidden;
+            overflow-x: auto;
+            position: relative;
+        }
+
+        /* Decorative background pattern */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                radial-gradient(circle at 20% 30%, rgba(118, 184, 42, 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 80% 70%, rgba(0, 20, 137, 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 50% 50%, rgba(253, 185, 19, 0.05) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
         }
 
         h1, h2, h3, h4, h5, h6 {
-            font-family: 'Montserrat', sans-serif;
+            font-family: 'Century Gothic', Arial, Helvetica, sans-serif;
+            font-weight: bold;
         }
 
         .header {
@@ -69,13 +86,15 @@
             padding: 3rem 2rem 2rem;
             max-width: 900px;
             margin: 0 auto;
+            position: relative;
+            z-index: 1;
         }
 
         .hero h1 {
             font-size: 2.5rem;
             color: #001489;
             margin-bottom: 1rem;
-            font-weight: 700;
+            font-weight: bold;
         }
 
         .hero p {
@@ -87,32 +106,42 @@
         }
 
         .pathway-container {
-            max-width: 900px;
+            max-width: 100%;
             margin: 2rem auto;
-            padding: 2rem;
+            padding: 3rem 2rem;
             position: relative;
-            min-height: 1400px;
+            overflow-x: auto;
+            overflow-y: visible;
         }
 
-        .svg-container {
+        .pathway-scroll {
+            display: flex;
+            align-items: center;
+            gap: 4rem;
+            min-width: min-content;
+            padding: 2rem 4rem;
+            position: relative;
+        }
+
+        /* Connecting line SVG */
+        .connection-line {
             position: absolute;
-            top: 0;
-            left: 50%;
-            transform: translateX(-50%);
+            top: 50%;
+            left: 0;
             width: 100%;
-            height: 100%;
+            height: 4px;
             pointer-events: none;
-            z-index: 0;
+            z-index: 1;
         }
 
         .path-line {
             stroke: #007DBA;
             stroke-width: 4;
             fill: none;
+            opacity: 0.3;
             stroke-dasharray: 2000;
             stroke-dashoffset: 2000;
-            opacity: 0.4;
-            animation: drawPath 3s ease-out forwards;
+            animation: drawPath 2s ease-out forwards;
             stroke-linecap: round;
         }
 
@@ -122,14 +151,19 @@
             }
         }
 
-        .milestone {
-            position: absolute;
+        .milestone-card {
+            min-width: 280px;
+            max-width: 280px;
+            background: white;
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
             cursor: pointer;
+            transition: all 0.4s ease;
+            position: relative;
+            z-index: 10;
             transform: scale(0);
             animation: popIn 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
-            z-index: 10;
-            left: 50%;
-            margin-left: -90px; /* Half of bubble width */
         }
 
         @keyframes popIn {
@@ -138,178 +172,110 @@
             }
         }
 
-        .milestone:nth-child(1) { animation-delay: 0.5s; }
-        .milestone:nth-child(2) { animation-delay: 0.8s; }
-        .milestone:nth-child(3) { animation-delay: 1.1s; }
-        .milestone:nth-child(4) { animation-delay: 1.4s; }
-        .milestone:nth-child(5) { animation-delay: 1.7s; }
+        .milestone-card:nth-child(1) { animation-delay: 0.3s; }
+        .milestone-card:nth-child(2) { animation-delay: 0.5s; }
+        .milestone-card:nth-child(3) { animation-delay: 0.7s; }
+        .milestone-card:nth-child(4) { animation-delay: 0.9s; }
+        .milestone-card:nth-child(5) { animation-delay: 1.1s; }
 
-        .milestone-bubble {
-            width: 180px;
-            height: 180px;
-            border-radius: 50%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            padding: 1.5rem;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
-            transition: all 0.4s ease;
-            position: relative;
-            overflow: hidden;
-            border: 4px solid white;
+        .milestone-card:hover {
+            transform: translateY(-8px) scale(1.05);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
         }
 
-        .milestone-bubble::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0) 100%);
-            opacity: 0;
-            transition: opacity 0.3s ease;
+        .milestone-card.blue-border {
+            border: 4px solid #007DBA;
         }
 
-        .milestone:hover .milestone-bubble {
-            transform: scale(1.15);
-            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+        .milestone-card.green-border {
+            border: 4px solid #78BE20;
         }
 
-        .milestone:hover .milestone-bubble::before {
-            opacity: 1;
+        .milestone-card.purple-border {
+            border: 4px solid #672D82;
+        }
+
+        .milestone-card.red-border {
+            border: 4px solid #E30613;
+        }
+
+        .milestone-card.gold-border {
+            border: 4px solid #FFD700;
         }
 
         .milestone-number {
             position: absolute;
-            top: -15px;
-            right: -15px;
-            width: 40px;
-            height: 40px;
-            background: white;
+            top: -12px;
+            left: 1rem;
+            width: 36px;
+            height: 36px;
+            background: #001489;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-weight: 700;
-            font-size: 1.2rem;
-            color: #001489;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-            z-index: 1;
+            font-weight: bold;
+            font-size: 1.1rem;
+            color: white;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
         }
 
         .milestone-icon {
-            font-size: 3rem;
-            margin-bottom: 0.5rem;
-            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+            font-size: 3.5rem;
+            margin-bottom: 1rem;
+            text-align: center;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
         }
 
         .milestone-title {
-            font-family: 'Montserrat', sans-serif;
-            font-weight: 700;
-            font-size: 0.95rem;
-            color: white;
-            margin-bottom: 0.3rem;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #001489;
+            margin-bottom: 0.5rem;
+            text-align: center;
         }
 
         .milestone-subtitle {
-            font-size: 0.75rem;
-            color: rgba(255, 255, 255, 0.95);
-            font-weight: 400;
-            text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+            font-size: 0.95rem;
+            color: #666;
+            margin-bottom: 1rem;
+            text-align: center;
+            font-weight: 600;
         }
 
-        .path-decorator {
-            position: absolute;
-            width: 12px;
-            height: 12px;
-            background: #007DBA;
-            border-radius: 50%;
-            left: 50%;
-            margin-left: -6px;
-            opacity: 0;
-            animation: fadeInDot 0.5s ease forwards;
+        .milestone-duration {
+            display: inline-block;
+            background: #f0f0f0;
+            color: #555;
+            padding: 0.4rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-top: 0.5rem;
         }
 
-        @keyframes fadeInDot {
-            to {
-                opacity: 0.6;
-            }
+        .milestone-description {
+            font-size: 0.9rem;
+            color: #666;
+            line-height: 1.5;
+            text-align: center;
+            margin-top: 1rem;
         }
 
-        .blue-bubble {
-            background: linear-gradient(135deg, #001489 0%, #007DBA 100%);
-        }
-
-        .green-bubble {
-            background: linear-gradient(135deg, #78BE20 0%, #5a9518 100%);
-        }
-
-        .red-bubble {
-            background: linear-gradient(135deg, #BA0C2F 0%, #8a0922 100%);
-        }
-
-        .orange-bubble {
-            background: linear-gradient(135deg, #EF7D00 0%, #c76500 100%);
-        }
-
-        .gold-bubble {
-            background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
-        }
-
-        @media (max-width: 768px) {
-            .pathway-container {
-                padding: 1rem;
-                min-height: 1200px;
-            }
-
-            .milestone-bubble {
-                width: 160px;
-                height: 160px;
-                padding: 1.2rem;
-            }
-
-            .milestone {
-                margin-left: -80px;
-            }
-
-            .milestone-icon {
-                font-size: 2.5rem;
-            }
-
-            .milestone-title {
-                font-size: 0.85rem;
-            }
-
-            .milestone-subtitle {
-                font-size: 0.7rem;
-            }
-
-            .milestone-number {
-                width: 35px;
-                height: 35px;
-                font-size: 1rem;
-            }
-
-            .path-line {
-                stroke-width: 3;
-            }
-        }
-
+        /* Modal Styles */
         .modal-backdrop {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.7);
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
             display: flex;
             align-items: center;
             justify-content: center;
             z-index: 1000;
+            padding: 2rem;
             animation: fadeIn 0.3s ease;
         }
 
@@ -322,39 +288,68 @@
             background: white;
             border-radius: 20px;
             max-width: 700px;
-            width: 90%;
-            max-height: 80vh;
+            width: 100%;
+            max-height: 90vh;
             overflow-y: auto;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
             animation: slideUp 0.4s ease;
+            position: relative;
         }
 
         @keyframes slideUp {
             from {
-                opacity: 0;
                 transform: translateY(50px);
+                opacity: 0;
             }
             to {
-                opacity: 1;
                 transform: translateY(0);
+                opacity: 1;
             }
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 1.5rem;
+            right: 1.5rem;
+            width: 40px;
+            height: 40px;
+            border: none;
+            background: #f0f0f0;
+            border-radius: 50%;
+            font-size: 1.5rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            color: #666;
+            font-weight: bold;
+            z-index: 1;
+        }
+
+        .modal-close:hover {
+            background: #e0e0e0;
+            transform: rotate(90deg);
         }
 
         .modal-header {
-            padding: 2rem 2rem 1rem;
-            border-bottom: 2px solid #f0f0f0;
+            background: linear-gradient(135deg, #001489 0%, #003db8 100%);
+            padding: 3rem 2rem 2rem;
+            text-align: center;
+            color: white;
+            border-radius: 20px 20px 0 0;
         }
 
         .modal-title {
-            font-size: 1.8rem;
-            color: #001489;
+            font-size: 2rem;
             margin-bottom: 0.5rem;
-            font-weight: 700;
+            font-weight: bold;
         }
 
         .modal-subtitle {
-            color: #666;
-            font-size: 1rem;
+            font-size: 1.2rem;
+            opacity: 0.9;
+            font-weight: 600;
         }
 
         .modal-body {
@@ -362,20 +357,22 @@
         }
 
         .modal-section {
-            margin-bottom: 1.5rem;
+            margin-bottom: 2rem;
         }
 
         .modal-section h3 {
+            font-size: 1.3rem;
             color: #001489;
-            font-size: 1.1rem;
-            margin-bottom: 0.8rem;
-            font-weight: 600;
+            margin-bottom: 1rem;
+            font-weight: bold;
+            border-bottom: 2px solid #e0e0e0;
+            padding-bottom: 0.5rem;
         }
 
         .modal-section p {
             color: #555;
-            line-height: 1.6;
-            margin-bottom: 0.5rem;
+            line-height: 1.7;
+            margin-bottom: 1rem;
         }
 
         .modal-section ul {
@@ -383,89 +380,83 @@
             padding-left: 0;
         }
 
-        .modal-section li {
+        .modal-section ul li {
+            padding: 0.75rem 0 0.75rem 2rem;
             color: #555;
-            padding: 0.5rem 0;
-            padding-left: 1.5rem;
+            line-height: 1.6;
             position: relative;
+            border-left: 3px solid #007DBA;
+            margin-bottom: 0.5rem;
+            background: #f9f9f9;
+            border-radius: 4px;
         }
 
-        .modal-section li::before {
-            content: "✓";
+        .modal-section ul li::before {
+            content: '✓';
             position: absolute;
-            left: 0;
+            left: 0.5rem;
             color: #78BE20;
             font-weight: bold;
         }
 
-        .modal-close {
-            position: absolute;
-            top: 1rem;
-            right: 1rem;
-            background: none;
-            border: none;
-            font-size: 2rem;
-            color: #999;
-            cursor: pointer;
-            transition: color 0.3s ease;
-            width: 40px;
-            height: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .modal-close:hover {
-            color: #333;
-        }
-
         .badge {
             display: inline-block;
-            padding: 0.3rem 0.8rem;
+            padding: 0.5rem 1rem;
             border-radius: 20px;
-            font-size: 0.85rem;
+            font-size: 0.9rem;
             font-weight: 600;
-            margin-right: 0.5rem;
-            margin-bottom: 0.5rem;
         }
 
-        .badge-blue { background: #007DBA; color: white; }
-        .badge-green { background: #78BE20; color: white; }
-        .badge-orange { background: #EF7D00; color: white; }
+        .badge-blue {
+            background: #007DBA;
+            color: white;
+        }
 
+        .badge-green {
+            background: #78BE20;
+            color: white;
+        }
+
+        /* Scroll hint */
+        .scroll-hint {
+            text-align: center;
+            padding: 1rem;
+            color: #666;
+            font-size: 0.9rem;
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {
+                transform: translateX(0);
+            }
+            40% {
+                transform: translateX(-10px);
+            }
+            60% {
+                transform: translateX(-5px);
+            }
+        }
+
+        /* Responsive adjustments */
         @media (max-width: 768px) {
             .hero h1 {
-                font-size: 1.8rem;
-            }
-
-            .hero p {
-                font-size: 1rem;
-            }
-
-            .milestone-bubble {
-                width: 140px;
-                height: 140px;
-                padding: 1rem;
-            }
-
-            .milestone-icon {
                 font-size: 2rem;
             }
 
-            .milestone-title {
-                font-size: 0.8rem;
+            .pathway-scroll {
+                gap: 2rem;
+                padding: 2rem 2rem;
             }
 
-            .milestone-subtitle {
-                font-size: 0.65rem;
+            .milestone-card {
+                min-width: 240px;
+                max-width: 240px;
             }
 
             .modal-content {
-                width: 95%;
-            }
-
-            .modal-title {
-                font-size: 1.4rem;
+                margin: 1rem;
+                max-height: 85vh;
             }
         }
     </style>
@@ -474,69 +465,64 @@
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect, useRef } = React;
-
-        const DOVETAIL_ESSENTIALS = [
-            'ePedagogy: Building a Digital Lesson',
-            'Integrating digital resources from the ePortal',
-            'Google Fundamentals 1: Account and Google Chrome',
-            'Office Online Fundamentals',
-            'Improved Presentation Skills',
-            'Ease of Access with QR Codes and Bit.ly links',
-            'Teaching with Videos',
-            'Orientation to Google Forms',
-            'AI In Education: Work Smarter, not Harder',
-            'Introduction to Cyber Wellness Education'
-        ];
+        const { useState } = React;
 
         const MILESTONES = [
             {
-                id: 'adoption',
+                id: 'foundation',
                 step: 1,
-                title: 'ICT Adoption Strategy',
-                subtitle: 'Entry Point',
-                icon: '🧭',
-                color: 'blue-bubble',
-                position: { top: 50 },
-                duration: '24 hours (self-paced)',
-                description: 'Your journey begins here. This course provides visibility into the eLearning landscape and introduces the Transformation Agenda.',
+                title: 'Foundation Phase',
+                subtitle: 'Starting Your Journey',
+                icon: '🌱',
+                color: 'blue-border',
+                duration: 'Self-paced beginning',
+                description: 'Explore the Facilitator Toolkit on the ePortal to discover your interests and build foundational digital skills.',
                 keyPoints: [
-                    'Understanding the WCED eLearning Vision',
-                    'Mapping your current technology integration',
-                    'Exploring the transformation roadmap',
-                    'Identifying opportunities for growth'
+                    'Access the WCED ePortal and Facilitator Toolkit',
+                    'Explore self-paced resources tailored to your interests',
+                    'Begin building your digital confidence',
+                    'Connect with your local ICT Liaison Officer'
                 ],
-                next: 'Complete this foundational course to unlock the micro-learning pathway.'
+                next: 'Start with any resource that sparks your curiosity—there\'s no wrong place to begin!'
             },
             {
-                id: 'microlearning',
+                id: 'dovetail',
                 step: 2,
-                title: 'Ad-Hoc Micro-Learning',
-                subtitle: 'Customisation',
-                icon: '🧩',
-                color: 'green-bubble',
-                position: { top: 300 },
-                duration: 'Non-linear, self-paced',
-                description: 'Choose your own adventure! Explore a variety of micro-learning sessions aligned with our 4-tiered developmental approach: Laying the Foundation, I Can Do It, I Can Do It Better, and The Summit.',
-                keyPoints: [
-                    '10 Dovetail Essentials (highlighted pathway)',
-                    'Variety of other specialized sessions',
-                    'Aligned to 4 developmental levels',
-                    'Mix and match based on your needs'
+                title: 'Dovetail Micro-Learning',
+                subtitle: 'Skill Building',
+                icon: '💎',
+                color: 'green-border',
+                duration: '45-60 minute sessions',
+                description: 'Engage in bite-sized, practical sessions covering essential digital skills across four developmental levels.',
+                dovetailEssentials: [
+                    'ePedagogy: Building a Digital Lesson',
+                    'Integrating digital resources from the ePortal',
+                    'Google Fundamentals 1: Account and Google Chrome',
+                    'Office Online Fundamentals',
+                    'Improved Presentation Skills',
+                    'Ease of Access with QR Codes and Bit.ly links',
+                    'Teaching with Videos',
+                    'Orientation to Google Forms',
+                    'AI In Education: Work Smarter, not Harder',
+                    'Introduction to Cyber Wellness Education'
                 ],
-                dovetailEssentials: DOVETAIL_ESSENTIALS,
-                next: 'Build your skills through targeted micro-learning experiences.'
+                keyPoints: [
+                    'Short, focused learning sessions',
+                    'Four levels: Foundation → Can Do → Better → Summit',
+                    'Flexible attendance—join sessions that match your needs',
+                    'Practical, classroom-ready skills'
+                ],
+                next: 'Attend sessions across all four levels to build comprehensive digital literacy.'
             },
             {
-                id: 'digitalskills',
+                id: 'spark',
                 step: 3,
-                title: 'Digital Skills Course',
-                subtitle: 'Experiential Shift',
-                icon: '📖',
-                color: 'blue-bubble',
-                position: { top: 550 },
-                duration: '4 weeks (immersive)',
-                description: 'Shift from "how to use technology" to "how to learn with technology." Experience learning from your students\' perspective.',
+                title: 'Spark Immersion',
+                subtitle: 'Deep Dive Experience',
+                icon: '⚡',
+                color: 'purple-border',
+                duration: '4-week intensive program',
+                description: 'Participate in immersive learning experiences that transform your teaching practice through hands-on technology integration.',
                 keyPoints: [
                     'Immersive 4-week learning experience',
                     'Learner-centered pedagogical approach',
@@ -551,8 +537,7 @@
                 title: 'Cyber Effect Course',
                 subtitle: 'Ethical Capstone',
                 icon: '🌍',
-                color: 'red-bubble',
-                position: { top: 800 },
+                color: 'red-border',
                 duration: 'Comprehensive module',
                 description: 'Focus on digital citizenship, cyber wellness, and human-centered design. Master the 4P Model: People, Practices, Pedagogy, Platforms.',
                 keyPoints: [
@@ -569,8 +554,7 @@
                 title: 'Transformation Agent',
                 subtitle: 'Strategic Leadership',
                 icon: '⭐',
-                color: 'gold-bubble',
-                position: { top: 1050 },
+                color: 'gold-border',
                 duration: 'Ongoing leadership',
                 description: 'You\'ve arrived! As a Transformation Agent, you are now a thought leader driving innovation within your school and the broader WCED community.',
                 keyPoints: [
@@ -591,7 +575,7 @@
                     <div className="modal-content" onClick={(e) => e.stopPropagation()}>
                         <button className="modal-close" onClick={onClose}>×</button>
                         <div className="modal-header">
-                            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>{milestone.icon}</div>
+                            <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>{milestone.icon}</div>
                             <h2 className="modal-title">{milestone.title}</h2>
                             <p className="modal-subtitle">{milestone.subtitle}</p>
                             <div style={{ marginTop: '1rem' }}>
@@ -618,7 +602,7 @@
                             {milestone.dovetailEssentials && (
                                 <div className="modal-section">
                                     <h3>Dovetail Essentials (Highlighted Pathway)</h3>
-                                    <p style={{ fontStyle: 'italic', marginBottom: '1rem', color: '#78BE20' }}>
+                                    <p style={{ fontStyle: 'italic', marginBottom: '1rem', color: '#78BE20', fontWeight: '600' }}>
                                         These 10 sessions form a curated learning pathway within the broader micro-learning landscape.
                                     </p>
                                     <ul>
@@ -642,29 +626,12 @@
         function PathwayVisualization() {
             const [selectedMilestone, setSelectedMilestone] = useState(null);
 
-            // Create a smooth curved path through all milestones
-            const createPathData = () => {
-                const points = MILESTONES.map(m => m.position.top);
-                let path = `M 50% ${points[0]}px`;
-                
-                for (let i = 1; i < points.length; i++) {
-                    const prevY = points[i - 1];
-                    const currentY = points[i];
-                    const midY = (prevY + currentY) / 2;
-                    
-                    // Create smooth S-curve
-                    path += ` Q 50% ${midY}px, 50% ${currentY}px`;
-                }
-                
-                return path;
-            };
-
             return (
                 <>
                     <header className="header">
                         <div className="header-content">
                             <img src="header.png" alt="WCED eLearning" />
-                            <a href="index.html" className="header-link">Upcoming Sessions</a> <a href="my-pd-history.html" className="header-link">📊 My PD History</a>
+                            <a href="my-pd-history.html" className="header-link">📊 My PD History</a>
                         </div>
                     </header>
 
@@ -677,57 +644,56 @@
                         </p>
                     </div>
 
-                    <div className="pathway-container">
-                        <svg className="svg-container" width="100%" height="100%">
-                            <defs>
-                                <linearGradient id="pathGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                                    <stop offset="0%" style={{ stopColor: '#007DBA', stopOpacity: 0.6 }} />
-                                    <stop offset="50%" style={{ stopColor: '#78BE20', stopOpacity: 0.6 }} />
-                                    <stop offset="100%" style={{ stopColor: '#FFD700', stopOpacity: 0.6 }} />
-                                </linearGradient>
-                            </defs>
-                            <path
-                                className="path-line"
-                                d={createPathData()}
-                                stroke="url(#pathGradient)"
-                            />
-                            
-                            {/* Decorative dots along the path */}
-                            {MILESTONES.map((milestone, idx) => {
-                                if (idx === MILESTONES.length - 1) return null; // No dot after last milestone
-                                const nextTop = MILESTONES[idx + 1].position.top;
-                                const currentTop = milestone.position.top;
-                                const midPoint = (currentTop + nextTop) / 2;
-                                
-                                return (
-                                    <circle
-                                        key={`dot-${idx}`}
-                                        className="path-decorator"
-                                        cx="50%"
-                                        cy={`${midPoint}px`}
-                                        r="6"
-                                        fill="#007DBA"
-                                        opacity="0.4"
-                                    />
-                                );
-                            })}
-                        </svg>
+                    <div className="scroll-hint">
+                        ← Scroll horizontally to explore your pathway →
+                    </div>
 
-                        {MILESTONES.map((milestone) => (
-                            <div
-                                key={milestone.id}
-                                className="milestone"
-                                style={{ top: `${milestone.position.top}px` }}
-                                onClick={() => setSelectedMilestone(milestone)}
-                            >
-                                <div className={`milestone-bubble ${milestone.color}`}>
+                    <div className="pathway-container">
+                        <div className="pathway-scroll">
+                            <svg className="connection-line" style={{ 
+                                position: 'absolute',
+                                top: '50%',
+                                left: '140px',
+                                width: 'calc(100% - 280px)',
+                                height: '4px',
+                                transform: 'translateY(-50%)'
+                            }}>
+                                <line 
+                                    className="path-line"
+                                    x1="0" 
+                                    y1="2" 
+                                    x2="100%" 
+                                    y2="2"
+                                    stroke="url(#pathGradient)"
+                                />
+                                <defs>
+                                    <linearGradient id="pathGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                        <stop offset="0%" style={{ stopColor: '#007DBA', stopOpacity: 0.6 }} />
+                                        <stop offset="25%" style={{ stopColor: '#78BE20', stopOpacity: 0.6 }} />
+                                        <stop offset="50%" style={{ stopColor: '#672D82', stopOpacity: 0.6 }} />
+                                        <stop offset="75%" style={{ stopColor: '#E30613', stopOpacity: 0.6 }} />
+                                        <stop offset="100%" style={{ stopColor: '#FFD700', stopOpacity: 0.6 }} />
+                                    </linearGradient>
+                                </defs>
+                            </svg>
+
+                            {MILESTONES.map((milestone) => (
+                                <div
+                                    key={milestone.id}
+                                    className={`milestone-card ${milestone.color}`}
+                                    onClick={() => setSelectedMilestone(milestone)}
+                                >
                                     <div className="milestone-number">{milestone.step}</div>
                                     <div className="milestone-icon">{milestone.icon}</div>
                                     <div className="milestone-title">{milestone.title}</div>
                                     <div className="milestone-subtitle">{milestone.subtitle}</div>
+                                    <div style={{ textAlign: 'center' }}>
+                                        <span className="milestone-duration">{milestone.duration}</span>
+                                    </div>
+                                    <div className="milestone-description">{milestone.description}</div>
                                 </div>
-                            </div>
-                        ))}
+                            ))}
+                        </div>
                     </div>
 
                     {selectedMilestone && (
