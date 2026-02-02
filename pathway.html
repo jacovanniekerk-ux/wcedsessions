@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Adoption & Transformation Pathway - WCED eLearning</title>
+    <title>Adoption & Transformation Pathway - Earn Your Sparks - WCED eLearning</title>
     <link rel="icon" type="image/png" href="favicon.png">
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -254,6 +254,22 @@
             margin-top: 0.5rem;
         }
 
+        .spark-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+            color: #000;
+            padding: 0.4rem 0.9rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            margin-top: 0.75rem;
+            box-shadow: 0 2px 8px rgba(255, 215, 0, 0.4);
+        }
+
+        .spark-badge::before {
+            content: '⚡ ';
+        }
+
         .milestone-description {
             font-size: 0.9rem;
             color: #666;
@@ -469,31 +485,32 @@
 
         const MILESTONES = [
             {
-                id: 'foundation',
+                id: 'adoption',
                 step: 1,
-                title: 'Foundation Phase',
-                subtitle: 'Starting Your Journey',
-                icon: '🌱',
+                title: 'ICT Adoption Strategy',
+                subtitle: 'The Entry Point',
+                icon: '🧭',
                 color: 'blue-border',
-                duration: 'Self-paced beginning',
-                description: 'Explore the Facilitator Toolkit on the ePortal to discover your interests and build foundational digital skills.',
+                duration: '24-hour self-paced course',
+                description: 'A foundational online course providing a broad perspective on the visibility of the digital landscape and the "Transformation Agenda." This journey moves you from digital literacy (the what) toward understanding the possibilities of technology in education.',
                 keyPoints: [
-                    'Access the WCED ePortal and Facilitator Toolkit',
-                    'Explore self-paced resources tailored to your interests',
-                    'Begin building your digital confidence',
-                    'Connect with your local ICT Liaison Officer'
+                    'Comprehensive 12-week self-paced online course',
+                    'Explore the landscape of ICT integration in education',
+                    'Understand the vision of the Transformation Agenda',
+                    'Build foundational digital literacy and confidence',
+                    'Earn your first Spark toward becoming a Transformation Agent'
                 ],
-                next: 'Start with any resource that sparks your curiosity—there\'s no wrong place to begin!'
+                next: 'Begin your transformation journey by exploring the digital landscape and understanding how technology can enhance teaching and learning.'
             },
             {
                 id: 'dovetail',
                 step: 2,
-                title: 'Dovetail Micro-Learning',
-                subtitle: 'Skill Building',
-                icon: '💎',
+                title: 'Dovetail Essentials',
+                subtitle: 'Customisation & Micro-Learning',
+                icon: '🧰',
                 color: 'green-border',
-                duration: '45-60 minute sessions',
-                description: 'Engage in bite-sized, practical sessions covering essential digital skills across four developmental levels.',
+                duration: '10 focused micro-learning sessions',
+                description: 'A non-linear pathway through targeted 60-120 minute sessions that build practical digital competency (the how). Choose the sessions that match your needs and context across four developmental levels.',
                 dovetailEssentials: [
                     'ePedagogy: Building a Digital Lesson',
                     'Integrating digital resources from the ePortal',
@@ -507,63 +524,75 @@
                     'Introduction to Cyber Wellness Education'
                 ],
                 keyPoints: [
-                    'Short, focused learning sessions',
-                    'Four levels: Foundation → Can Do → Better → Summit',
-                    'Flexible attendance—join sessions that match your needs',
-                    'Practical, classroom-ready skills'
+                    'Flexible, non-linear pathway—attend what you need',
+                    'Short, practical sessions (60-120 minutes)',
+                    'Four developmental levels: Laying the Foundation → I Can Do It → I Can Do It Better → The Summit',
+                    'Build practical classroom-ready digital skills',
+                    'Earn your second Spark toward becoming a Transformation Agent'
                 ],
-                next: 'Attend sessions across all four levels to build comprehensive digital literacy.'
+                next: 'Customize your learning journey by selecting sessions that address your specific needs and developmental level.'
             },
             {
-                id: 'spark',
+                id: 'digitalskills',
                 step: 3,
-                title: 'Spark Immersion',
-                subtitle: 'Deep Dive Experience',
-                icon: '⚡',
+                title: 'Digital Skills Course',
+                subtitle: 'The Experiential Shift',
+                icon: '📖',
                 color: 'purple-border',
-                duration: '4-week intensive program',
-                description: 'Participate in immersive learning experiences that transform your teaching practice through hands-on technology integration.',
+                duration: '4-week hybrid immersion',
+                description: 'An experiential hybrid course that shifts your focus from "how to use" to "how to learn." View technology from the learner\'s perspective and develop digital wisdom (the when and why) through hands-on practice, reflection, and collaboration.',
                 keyPoints: [
-                    'Immersive 4-week learning experience',
-                    'Learner-centered pedagogical approach',
-                    'Hands-on technology integration',
-                    'Reflection and peer collaboration'
+                    'Immersive 4-week hybrid learning experience',
+                    'Shift from teacher-centered to learner-centered perspective',
+                    'Synthesize the "what" and "how" into "when" and "why"',
+                    'Develop digital wisdom through experiential learning',
+                    'Foster pedagogical understanding of technology integration',
+                    'Earn your third Spark and become a School-Level Transformation Agent'
                 ],
-                next: 'Develop deeper pedagogical understanding through experiential learning.'
+                next: 'Experience transformation by seeing technology through your learners\' eyes and develop the wisdom to make informed pedagogical decisions.'
             },
             {
                 id: 'cybereffect',
                 step: 4,
-                title: 'Cyber Effect Course',
+                title: 'Cyber Effect Ambassador Course',
                 subtitle: 'Ethical Capstone',
-                icon: '🌍',
+                icon: '🌐',
                 color: 'red-border',
-                duration: 'Comprehensive module',
-                description: 'Focus on digital citizenship, cyber wellness, and human-centered design. Master the 4P Model: People, Practices, Pedagogy, Platforms.',
+                duration: 'Self-paced 4-week course',
+                description: 'Deepen your ability to engage with the ethical, emotional, psychological, and behavioural dimensions of technology use. Master the 4P Affective Transformation Model (People, Practices, Pedagogy, Platforms) and lead with reflective digital responsibility.',
                 keyPoints: [
-                    'Digital citizenship and online safety',
-                    'Cyber wellness for school communities',
-                    'Human-centered technology design',
-                    '4P Model implementation'
+                    'Focus on digital citizenship and cyber wellness',
+                    'Understand human-centered design principles',
+                    'Master the 4P Model: People, Practices, Pedagogy, Platforms',
+                    'Address emotional readiness and psychological safety',
+                    'Promote reflective digital responsibility and ethical technology use',
+                    'Earn your fourth Spark and become a Cluster-Level Transformation Agent'
                 ],
-                next: 'Become a champion for ethical technology use in your school.'
+                next: 'Become a champion for ethical, human-centered technology integration and support your school community in building a positive digital culture.'
             },
             {
                 id: 'agent',
                 step: 5,
                 title: 'Transformation Agent',
                 subtitle: 'Strategic Leadership',
-                icon: '⭐',
+                icon: '🏆',
                 color: 'gold-border',
-                duration: 'Ongoing leadership',
-                description: 'You\'ve arrived! As a Transformation Agent, you are now a thought leader driving innovation within your school and the broader WCED community.',
-                keyPoints: [
-                    'Lead technology integration initiatives',
-                    'Mentor colleagues on their journey',
-                    'Drive innovation in your school',
-                    'Contribute to the decentralized movement'
+                duration: 'Ongoing thought leadership',
+                description: 'You\'ve arrived! As a certified Transformation Agent with 3+ Sparks, you are now a thought leader driving the decentralized, teacher-led movement. Lead innovation, mentor colleagues, co-create content, and shape the future of digital education in the WCED.',
+                agentLevels: [
+                    '3 Sparks - School-Level Agent: Support your school, collaborate with SMT, present sessions, provide mentorship',
+                    '4 Sparks - Cluster-Level Agent: Support neighboring schools, engage with multiple SMTs, mentor across contexts',
+                    '5 Sparks - Provincial-Level Contributor: Develop courseware, serve as thought leader and ambassador, shape provincial strategy'
                 ],
-                next: 'Continue your journey of lifelong learning and leadership.'
+                keyPoints: [
+                    'Lead technology integration initiatives in your context',
+                    'Mentor and support colleagues on their transformation journey',
+                    'Co-create professional development content and resources',
+                    'Contribute to provincial thought leadership and innovation',
+                    'Drive the decentralized, teacher-led movement',
+                    'Champion the 4P Model and human-centered digital transformation'
+                ],
+                next: 'Continue your journey of lifelong learning, leadership, and contribution to building a connected community of innovators.'
             }
         ];
 
@@ -613,6 +642,20 @@
                                 </div>
                             )}
 
+                            {milestone.agentLevels && (
+                                <div className="modal-section">
+                                    <h3>Transformation Agent Levels</h3>
+                                    <p style={{ fontStyle: 'italic', marginBottom: '1rem', color: '#FFD700', fontWeight: '600' }}>
+                                        As you earn more Sparks, you unlock greater agency and responsibility in driving transformation.
+                                    </p>
+                                    <ul>
+                                        {milestone.agentLevels.map((level, idx) => (
+                                            <li key={idx}>{level}</li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
+
                             <div className="modal-section">
                                 <h3>Next Steps</h3>
                                 <p>{milestone.next}</p>
@@ -636,11 +679,9 @@
                     </header>
 
                     <div className="hero">
-                        <h1>Your Journey to Transformation</h1>
+                        <h1>Your Pathway to Transformation</h1>
                         <p>
-                            Professional development is not a series of isolated events—it's a continuous, 
-                            non-linear pathway that empowers you to grow at your own pace. Explore the milestones 
-                            below to understand your journey from adoption to becoming a Transformation Agent.
+                            This is not a linear checklist—it's a dynamic, teacher-led journey. Earn <strong>Sparks</strong> as you progress through key eLearning initiatives, unlocking new roles and responsibilities. From digital literacy to digital wisdom, from learner to leader, you'll move at your own pace on the pathway from adoption to becoming a <strong>Transformation Agent</strong>—a thought leader driving innovation in the WCED community.
                         </p>
                     </div>
 
@@ -690,6 +731,27 @@
                                     <div style={{ textAlign: 'center' }}>
                                         <span className="milestone-duration">{milestone.duration}</span>
                                     </div>
+                                    {milestone.step < 5 && (
+                                        <div style={{ textAlign: 'center' }}>
+                                            <span className="spark-badge">Earn 1 Spark</span>
+                                        </div>
+                                    )}
+                                    {milestone.step === 5 && (
+                                        <div style={{ textAlign: 'center', marginTop: '0.75rem' }}>
+                                            <span style={{ 
+                                                display: 'inline-block',
+                                                background: 'linear-gradient(135deg, #FFD700 0%, #FFA500 100%)',
+                                                color: '#000',
+                                                padding: '0.4rem 0.9rem',
+                                                borderRadius: '20px',
+                                                fontSize: '0.85rem',
+                                                fontWeight: 'bold',
+                                                boxShadow: '0 2px 8px rgba(255, 215, 0, 0.4)'
+                                            }}>
+                                                🏆 3+ Sparks Required
+                                            </span>
+                                        </div>
+                                    )}
                                     <div className="milestone-description">{milestone.description}</div>
                                 </div>
                             ))}
