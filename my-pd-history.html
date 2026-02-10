@@ -167,8 +167,8 @@
                                         <div
                                             key={idx}
                                             className={`flex items-start gap-3 p-3 rounded-lg border-2 ${isCompleted
-                                                    ? 'border-green-500 bg-green-50'
-                                                    : 'border-gray-300 bg-gray-50'
+                                                ? 'border-green-500 bg-green-50'
+                                                : 'border-gray-300 bg-gray-50'
                                                 }`}
                                         >
                                             <div className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center ${isCompleted ? 'bg-green-500' : 'bg-gray-300'
@@ -189,8 +189,8 @@
                                 {type === 'spark' && (
                                     <div
                                         className={`flex items-start gap-3 p-3 rounded-lg border-2 mt-4 ${bonus5Dovetail
-                                                ? 'border-green-500 bg-green-50'
-                                                : 'border-gray-300 bg-gray-50'
+                                            ? 'border-green-500 bg-green-50'
+                                            : 'border-gray-300 bg-gray-50'
                                             }`}
                                     >
                                         <div className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center ${bonus5Dovetail ? 'bg-green-500' : 'bg-gray-300'
@@ -512,8 +512,8 @@
                                             <button
                                                 onClick={() => { setSearchType('id'); setSearchValue(''); }}
                                                 className={`flex-1 py-3 px-4 rounded-lg border-2 transition-colors ${searchType === 'id'
-                                                        ? 'border-wcg-blue bg-wcg-blue text-white'
-                                                        : 'border-gray-300 bg-white text-gray-700 hover:border-wcg-blue'
+                                                    ? 'border-wcg-blue bg-wcg-blue text-white'
+                                                    : 'border-gray-300 bg-white text-gray-700 hover:border-wcg-blue'
                                                     }`}
                                             >
                                                 ID Number
@@ -521,8 +521,8 @@
                                             <button
                                                 onClick={() => { setSearchType('persal'); setSearchValue(''); }}
                                                 className={`flex-1 py-3 px-4 rounded-lg border-2 transition-colors ${searchType === 'persal'
-                                                        ? 'border-wcg-blue bg-wcg-blue text-white'
-                                                        : 'border-gray-300 bg-white text-gray-700 hover:border-wcg-blue'
+                                                    ? 'border-wcg-blue bg-wcg-blue text-white'
+                                                    : 'border-gray-300 bg-white text-gray-700 hover:border-wcg-blue'
                                                     }`}
                                             >
                                                 PERSAL Number
@@ -564,12 +564,16 @@
                                         </label>
                                     </div>
 
+                                    <div className="mb-6 bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-xs text-yellow-800">
+                                        <strong>DISCLAIMER:</strong> This record is generated from self-captured attendance data. Every effort is made to ensure accuracy; discrepancies may occur due to manual entry errors. Please ensure consistency in your submissions to maintain an accurate transformation profile.
+                                    </div>
+
                                     <button
                                         onClick={handleSearch}
                                         disabled={!canSearch}
                                         className={`w-full py-3 px-4 rounded-lg font-semibold transition-colors ${canSearch
-                                                ? 'bg-wcg-blue text-white hover:bg-blue-700'
-                                                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                            ? 'bg-wcg-blue text-white hover:bg-blue-700'
+                                            : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                                             }`}
                                     >
                                         View My History
@@ -724,8 +728,8 @@
                                                     <button
                                                         onClick={() => setViewMode('cards')}
                                                         className={`px-4 py-2 rounded-lg border-2 transition-colors text-sm ${viewMode === 'cards'
-                                                                ? 'border-wcg-blue bg-wcg-blue text-white'
-                                                                : 'border-gray-300 text-gray-700 hover:border-wcg-blue'
+                                                            ? 'border-wcg-blue bg-wcg-blue text-white'
+                                                            : 'border-gray-300 text-gray-700 hover:border-wcg-blue'
                                                             }`}
                                                     >
                                                         Cards
@@ -733,8 +737,8 @@
                                                     <button
                                                         onClick={() => setViewMode('table')}
                                                         className={`px-4 py-2 rounded-lg border-2 transition-colors text-sm ${viewMode === 'table'
-                                                                ? 'border-wcg-blue bg-wcg-blue text-white'
-                                                                : 'border-gray-300 text-gray-700 hover:border-wcg-blue'
+                                                            ? 'border-wcg-blue bg-wcg-blue text-white'
+                                                            : 'border-gray-300 text-gray-700 hover:border-wcg-blue'
                                                             }`}
                                                     >
                                                         Table
@@ -774,7 +778,7 @@
                                                                 <div
                                                                     key={idx}
                                                                     className={`bg-white rounded-lg shadow-md p-5 hover:shadow-lg transition-shadow relative overflow-hidden ${session.isSpark ? 'border-2 border-wcg-yellow spark-overlay' :
-                                                                            session.isDovetail ? 'border-2 border-wcg-pink dovetail-overlay' : ''
+                                                                        session.isDovetail ? 'border-2 border-wcg-pink dovetail-overlay' : ''
                                                                         }`}
                                                                 >
                                                                     <div className="flex justify-between items-start mb-3">
@@ -833,7 +837,7 @@
                                                                 <tr
                                                                     key={idx}
                                                                     className={`hover:bg-gray-50 ${session.isSpark ? 'spark-overlay' :
-                                                                            session.isDovetail ? 'dovetail-overlay' : ''
+                                                                        session.isDovetail ? 'dovetail-overlay' : ''
                                                                         }`}
                                                                 >
                                                                     <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">

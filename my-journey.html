@@ -756,8 +756,8 @@
                                 <div>
                                     <h4 className="font-semibold text-gray-900 mb-1">Status</h4>
                                     <span className={`inline-block px-3 py-1 rounded-full text-sm font-bold ${status.state === 'completed' ? 'bg-green-100 text-green-800' :
-                                            status.state === 'in-progress' ? 'bg-amber-100 text-amber-800' :
-                                                'bg-gray-100 text-gray-500'
+                                        status.state === 'in-progress' ? 'bg-amber-100 text-amber-800' :
+                                            'bg-gray-100 text-gray-500'
                                         }`}>
                                         {status.state === 'completed' ? '✅ Completed' : status.state === 'in-progress' ? '🔄 In Progress' : '⬜ Not Started'}
                                     </span>
@@ -847,8 +847,8 @@
                                             <button
                                                 onClick={() => { setSearchType('id'); setSearchValue(''); }}
                                                 className={`flex-1 py-3 px-4 rounded-lg border-2 font-semibold transition-colors ${searchType === 'id'
-                                                        ? 'border-wcg-blue bg-wcg-blue text-white'
-                                                        : 'border-gray-300 bg-white text-gray-700 hover:border-wcg-blue'
+                                                    ? 'border-wcg-blue bg-wcg-blue text-white'
+                                                    : 'border-gray-300 bg-white text-gray-700 hover:border-wcg-blue'
                                                     }`}
                                             >
                                                 ID Number
@@ -856,8 +856,8 @@
                                             <button
                                                 onClick={() => { setSearchType('persal'); setSearchValue(''); }}
                                                 className={`flex-1 py-3 px-4 rounded-lg border-2 font-semibold transition-colors ${searchType === 'persal'
-                                                        ? 'border-wcg-blue bg-wcg-blue text-white'
-                                                        : 'border-gray-300 bg-white text-gray-700 hover:border-wcg-blue'
+                                                    ? 'border-wcg-blue bg-wcg-blue text-white'
+                                                    : 'border-gray-300 bg-white text-gray-700 hover:border-wcg-blue'
                                                     }`}
                                             >
                                                 PERSAL Number
@@ -899,12 +899,16 @@
                                         </label>
                                     </div>
 
+                                    <div className="mb-6 bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-xs text-yellow-800">
+                                        <strong>DISCLAIMER:</strong> This record is generated from self-captured attendance data. Every effort is made to ensure accuracy; discrepancies may occur due to manual entry errors. Please ensure consistency in your submissions to maintain an accurate transformation profile.
+                                    </div>
+
                                     <button
                                         onClick={handleSearch}
                                         disabled={!canSearch}
                                         className={`w-full py-3 px-4 rounded-lg font-bold text-lg transition-colors ${canSearch
-                                                ? 'bg-wcg-blue text-white hover:bg-blue-800'
-                                                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                            ? 'bg-wcg-blue text-white hover:bg-blue-800'
+                                            : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                                             }`}
                                     >
                                         View My Journey
