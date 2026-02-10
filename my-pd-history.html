@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -36,27 +37,30 @@
             .no-print {
                 display: none !important;
             }
+
             body {
                 background: white !important;
             }
+
             .print-full-width {
                 max-width: 100% !important;
             }
         }
-        
+
         .spark-overlay {
             background: linear-gradient(135deg, rgba(253, 185, 19, 0.05) 0%, rgba(253, 185, 19, 0.1) 100%);
         }
-        
+
         .dovetail-overlay {
             background: linear-gradient(135deg, rgba(200, 18, 110, 0.05) 0%, rgba(200, 18, 110, 0.1) 100%);
         }
-        
+
         .modal-backdrop {
             background-color: rgba(0, 0, 0, 0.5);
         }
     </style>
 </head>
+
 <body class="bg-gray-50">
     <div id="root"></div>
 
@@ -132,9 +136,9 @@
             if (!isOpen) return null;
 
             const title = type === 'spark' ? '⭐ Spark Sessions' : '💎 Dovetail Essentials';
-            
+
             // For Sparks, check if they have bonus spark
-            const uniqueDovetails = type === 'spark' 
+            const uniqueDovetails = type === 'spark'
                 ? [...new Set(allSessions.filter(s => isDovetail(s['Session Name']?.trim())).map(s => s['Session Name']?.trim()))]
                 : [];
             const bonus5Dovetail = type === 'spark' && uniqueDovetails.length >= 5;
@@ -147,7 +151,7 @@
                         <div className="p-6 border-b border-gray-200">
                             <div className="flex justify-between items-center">
                                 <h3 className="text-2xl font-bold text-wcg-dark">{title}</h3>
-                                <button 
+                                <button
                                     onClick={onClose}
                                     className="text-gray-400 hover:text-gray-600 text-2xl leading-none"
                                 >
@@ -160,17 +164,15 @@
                                 {sessionsList.map((session, idx) => {
                                     const isCompleted = completedSessions.includes(session);
                                     return (
-                                        <div 
+                                        <div
                                             key={idx}
-                                            className={`flex items-start gap-3 p-3 rounded-lg border-2 ${
-                                                isCompleted 
-                                                    ? 'border-green-500 bg-green-50' 
+                                            className={`flex items-start gap-3 p-3 rounded-lg border-2 ${isCompleted
+                                                    ? 'border-green-500 bg-green-50'
                                                     : 'border-gray-300 bg-gray-50'
-                                            }`}
+                                                }`}
                                         >
-                                            <div className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center ${
-                                                isCompleted ? 'bg-green-500' : 'bg-gray-300'
-                                            }`}>
+                                            <div className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center ${isCompleted ? 'bg-green-500' : 'bg-gray-300'
+                                                }`}>
                                                 {isCompleted && (
                                                     <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
@@ -183,18 +185,16 @@
                                         </div>
                                     );
                                 })}
-                                
+
                                 {type === 'spark' && (
-                                    <div 
-                                        className={`flex items-start gap-3 p-3 rounded-lg border-2 mt-4 ${
-                                            bonus5Dovetail
-                                                ? 'border-green-500 bg-green-50' 
+                                    <div
+                                        className={`flex items-start gap-3 p-3 rounded-lg border-2 mt-4 ${bonus5Dovetail
+                                                ? 'border-green-500 bg-green-50'
                                                 : 'border-gray-300 bg-gray-50'
-                                        }`}
+                                            }`}
                                     >
-                                        <div className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center ${
-                                            bonus5Dovetail ? 'bg-green-500' : 'bg-gray-300'
-                                        }`}>
+                                        <div className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center ${bonus5Dovetail ? 'bg-green-500' : 'bg-gray-300'
+                                            }`}>
                                             {bonus5Dovetail && (
                                                 <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
@@ -329,19 +329,19 @@
                 let filtered = results.allSessions;
 
                 if (filters.level) {
-                    filtered = filtered.filter(s => 
+                    filtered = filtered.filter(s =>
                         s['Development Level']?.toLowerCase().trim() === filters.level.toLowerCase().trim()
                     );
                 }
 
                 if (filters.district) {
-                    filtered = filtered.filter(s => 
+                    filtered = filtered.filter(s =>
                         s['Hosting District']?.trim() === filters.district
                     );
                 }
 
                 if (filters.mode) {
-                    filtered = filtered.filter(s => 
+                    filtered = filtered.filter(s =>
                         s['Delivery Mode']?.trim() === filters.mode
                     );
                 }
@@ -414,9 +414,9 @@
                 const bonusSpark = uniqueDovetailSessions.length >= 5 ? 1 : 0;
                 const totalSparks = uniqueSparkSessions.length + bonusSpark;
 
-                return { 
-                    total, 
-                    byLevel, 
+                return {
+                    total,
+                    byLevel,
                     uniqueSparks: uniqueSparkSessions,
                     uniqueDovetails: uniqueDovetailSessions,
                     totalSparks,
@@ -485,8 +485,11 @@
             return (
                 <div className="min-h-screen bg-gray-50">
                     <header className="bg-white shadow-sm no-print">
-                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-                            <img src="header.png" alt="WCED Header" className="h-16 mx-auto" />
+                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+                            <img src="header.png" alt="WCED Header" className="h-16" />
+                            <a href="my-journey.html" className="text-sm font-semibold text-wcg-blue border-2 border-wcg-blue px-4 py-2 rounded-lg hover:bg-wcg-blue hover:text-white transition-colors">
+                                🗺️ My Pathway Progress
+                            </a>
                         </div>
                     </header>
 
@@ -508,21 +511,19 @@
                                         <div className="flex gap-4">
                                             <button
                                                 onClick={() => { setSearchType('id'); setSearchValue(''); }}
-                                                className={`flex-1 py-3 px-4 rounded-lg border-2 transition-colors ${
-                                                    searchType === 'id'
+                                                className={`flex-1 py-3 px-4 rounded-lg border-2 transition-colors ${searchType === 'id'
                                                         ? 'border-wcg-blue bg-wcg-blue text-white'
                                                         : 'border-gray-300 bg-white text-gray-700 hover:border-wcg-blue'
-                                                }`}
+                                                    }`}
                                             >
                                                 ID Number
                                             </button>
                                             <button
                                                 onClick={() => { setSearchType('persal'); setSearchValue(''); }}
-                                                className={`flex-1 py-3 px-4 rounded-lg border-2 transition-colors ${
-                                                    searchType === 'persal'
+                                                className={`flex-1 py-3 px-4 rounded-lg border-2 transition-colors ${searchType === 'persal'
                                                         ? 'border-wcg-blue bg-wcg-blue text-white'
                                                         : 'border-gray-300 bg-white text-gray-700 hover:border-wcg-blue'
-                                                }`}
+                                                    }`}
                                             >
                                                 PERSAL Number
                                             </button>
@@ -566,11 +567,10 @@
                                     <button
                                         onClick={handleSearch}
                                         disabled={!canSearch}
-                                        className={`w-full py-3 px-4 rounded-lg font-semibold transition-colors ${
-                                            canSearch
+                                        className={`w-full py-3 px-4 rounded-lg font-semibold transition-colors ${canSearch
                                                 ? 'bg-wcg-blue text-white hover:bg-blue-700'
                                                 : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                                        }`}
+                                            }`}
                                     >
                                         View My History
                                     </button>
@@ -580,7 +580,7 @@
                             <div>
                                 {results.profile ? (
                                     <>
-                                        <ChecklistModal 
+                                        <ChecklistModal
                                             isOpen={modalOpen.isOpen}
                                             onClose={() => setModalOpen({ isOpen: false, type: null })}
                                             type={modalOpen.type}
@@ -636,7 +636,7 @@
                                                     <div className="text-3xl font-bold text-wcg-blue">{metrics.byLevel['The Summit']}</div>
                                                     <div className="text-sm text-gray-600 mt-1">Summit</div>
                                                 </div>
-                                                <div 
+                                                <div
                                                     className="text-center p-4 bg-wcg-yellow/10 rounded-lg cursor-pointer hover:bg-wcg-yellow/20 transition-colors no-print"
                                                     onClick={() => setModalOpen({ isOpen: true, type: 'spark' })}
                                                     title="Click to view checklist"
@@ -644,7 +644,7 @@
                                                     <div className="text-3xl font-bold text-wcg-yellow">⭐ {metrics.totalSparks}</div>
                                                     <div className="text-sm text-gray-600 mt-1">Sparks</div>
                                                 </div>
-                                                <div 
+                                                <div
                                                     className="text-center p-4 bg-wcg-pink/10 rounded-lg cursor-pointer hover:bg-wcg-pink/20 transition-colors no-print"
                                                     onClick={() => setModalOpen({ isOpen: true, type: 'dovetail' })}
                                                     title="Click to view checklist"
@@ -663,7 +663,7 @@
                                                     </label>
                                                     <select
                                                         value={filters.level}
-                                                        onChange={(e) => setFilters({...filters, level: e.target.value})}
+                                                        onChange={(e) => setFilters({ ...filters, level: e.target.value })}
                                                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wcg-blue text-sm"
                                                     >
                                                         <option value="">All Levels</option>
@@ -679,7 +679,7 @@
                                                     </label>
                                                     <select
                                                         value={filters.district}
-                                                        onChange={(e) => setFilters({...filters, district: e.target.value})}
+                                                        onChange={(e) => setFilters({ ...filters, district: e.target.value })}
                                                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wcg-blue text-sm"
                                                     >
                                                         <option value="">All Districts</option>
@@ -695,7 +695,7 @@
                                                     </label>
                                                     <select
                                                         value={filters.mode}
-                                                        onChange={(e) => setFilters({...filters, mode: e.target.value})}
+                                                        onChange={(e) => setFilters({ ...filters, mode: e.target.value })}
                                                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wcg-blue text-sm"
                                                     >
                                                         <option value="">All Modes</option>
@@ -711,7 +711,7 @@
                                                     </label>
                                                     <select
                                                         value={filters.category}
-                                                        onChange={(e) => setFilters({...filters, category: e.target.value})}
+                                                        onChange={(e) => setFilters({ ...filters, category: e.target.value })}
                                                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wcg-blue text-sm"
                                                     >
                                                         <option value="">All Sessions</option>
@@ -723,21 +723,19 @@
                                                 <div className="flex gap-2">
                                                     <button
                                                         onClick={() => setViewMode('cards')}
-                                                        className={`px-4 py-2 rounded-lg border-2 transition-colors text-sm ${
-                                                            viewMode === 'cards'
+                                                        className={`px-4 py-2 rounded-lg border-2 transition-colors text-sm ${viewMode === 'cards'
                                                                 ? 'border-wcg-blue bg-wcg-blue text-white'
                                                                 : 'border-gray-300 text-gray-700 hover:border-wcg-blue'
-                                                        }`}
+                                                            }`}
                                                     >
                                                         Cards
                                                     </button>
                                                     <button
                                                         onClick={() => setViewMode('table')}
-                                                        className={`px-4 py-2 rounded-lg border-2 transition-colors text-sm ${
-                                                            viewMode === 'table'
+                                                        className={`px-4 py-2 rounded-lg border-2 transition-colors text-sm ${viewMode === 'table'
                                                                 ? 'border-wcg-blue bg-wcg-blue text-white'
                                                                 : 'border-gray-300 text-gray-700 hover:border-wcg-blue'
-                                                        }`}
+                                                            }`}
                                                     >
                                                         Table
                                                     </button>
@@ -773,12 +771,11 @@
                                                         </h3>
                                                         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                                                             {sessions.map((session, idx) => (
-                                                                <div 
-                                                                    key={idx} 
-                                                                    className={`bg-white rounded-lg shadow-md p-5 hover:shadow-lg transition-shadow relative overflow-hidden ${
-                                                                        session.isSpark ? 'border-2 border-wcg-yellow spark-overlay' : 
-                                                                        session.isDovetail ? 'border-2 border-wcg-pink dovetail-overlay' : ''
-                                                                    }`}
+                                                                <div
+                                                                    key={idx}
+                                                                    className={`bg-white rounded-lg shadow-md p-5 hover:shadow-lg transition-shadow relative overflow-hidden ${session.isSpark ? 'border-2 border-wcg-yellow spark-overlay' :
+                                                                            session.isDovetail ? 'border-2 border-wcg-pink dovetail-overlay' : ''
+                                                                        }`}
                                                                 >
                                                                     <div className="flex justify-between items-start mb-3">
                                                                         <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getLevelColor(session['Development Level'])}`}>
@@ -833,12 +830,11 @@
                                                         </thead>
                                                         <tbody className="divide-y divide-gray-200">
                                                             {filteredSessions.map((session, idx) => (
-                                                                <tr 
-                                                                    key={idx} 
-                                                                    className={`hover:bg-gray-50 ${
-                                                                        session.isSpark ? 'spark-overlay' : 
-                                                                        session.isDovetail ? 'dovetail-overlay' : ''
-                                                                    }`}
+                                                                <tr
+                                                                    key={idx}
+                                                                    className={`hover:bg-gray-50 ${session.isSpark ? 'spark-overlay' :
+                                                                            session.isDovetail ? 'dovetail-overlay' : ''
+                                                                        }`}
                                                                 >
                                                                     <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
                                                                         {formatDate(session.parsedDate)}
@@ -890,7 +886,7 @@
                                             </div>
                                             <h3 className="text-xl font-semibold text-gray-900 mb-2">No Records Found</h3>
                                             <p className="text-gray-600 mb-6">
-                                                No professional development records were found for the {searchType === 'id' ? 'ID' : 'PERSAL'} number you entered. 
+                                                No professional development records were found for the {searchType === 'id' ? 'ID' : 'PERSAL'} number you entered.
                                                 Please check your details and try again.
                                             </p>
                                             <button
@@ -912,4 +908,5 @@
         ReactDOM.render(<App />, document.getElementById('root'));
     </script>
 </body>
+
 </html>
