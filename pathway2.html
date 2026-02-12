@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Adoption & Transformation Pathway - WCED eLearning</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        :root {
+            --wced-blue: #001489;
+            --wced-light-blue: #007DBA;
+            --wced-green: #78BE20;
+            --wced-purple: #672D82;
+            --wced-red: #E30613;
+            --wced-gold: #FFD700;
+            --path-magenta: #D0006F;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Century Gothic', Arial, Helvetica, sans-serif;
+            background-color: #fcfcfc;
+            color: #333;
+            overflow-x: hidden;
+        }
+
+        .layout {
+            display: flex;
+            min-height: 100vh;
+            position: relative;
+        }
+
+        /* Left Sidebar Title (Visual Style from Image) */
+        .sidebar {
+            width: 80px;
+            background-color: var(--wced-green);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: fixed;
+            height: 100vh;
+            z-index: 10;
+        }
+
+        .sidebar-text {
+            transform: rotate(-90deg);
+            white-space: nowrap;
+            color: var(--wced-blue);
+            font-size: 3rem;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-left: 80px;
+            flex-grow: 1;
+            padding: 2rem;
+            max-width: 1200px;
+            margin-right: auto;
+        }
+
+        .gov-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 4rem;
+        }
+
+        .logo-placeholder {
+            font-weight: bold;
+            color: var(--wced-blue);
+            border-left: 3px solid var(--wced-blue);
+            padding-left: 10px;
+        }
+
+        /* The S-Curve Pathway Logic */
+        .pathway-visual {
+            position: relative;
+            padding: 50px 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* The Background S-Curve (SVG) */
+        .svg-container {
+            position: absolute;
+            top: 0;
+            width: 400px;
+            height: 100%;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .milestone-container {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            max-width: 900px;
+            margin-bottom: 120px;
+            position: relative;
+            z-index: 2;
+        }
+
+        /* Alternate directions like the image */
+        .milestone-container:nth-child(even) { flex-direction: row-reverse; }
+
+        .milestone-text {
+            flex: 1;
+            padding: 0 40px;
+        }
+
+        .milestone-container:nth-child(odd) .milestone-text { text-align: right; }
+        .milestone-container:nth-child(even) .milestone-text { text-align: left; }
+
+        .milestone-title {
+            font-size: 1.8rem;
+            color: var(--path-magenta);
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        .milestone-title:hover { opacity: 0.8; }
+
+        .milestone-brief {
+            font-size: 0.95rem;
+            color: #444;
+            max-width: 400px;
+        }
+        .milestone-container:nth-child(odd) .milestone-brief { margin-left: auto; }
+
+        /* The Central Icon Circle */
+        .milestone-node {
+            width: 120px;
+            height: 120px;
+            background: white;
+            border: 6px solid var(--path-magenta);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            cursor: pointer;
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .milestone-node:hover { transform: scale(1.1); }
+
+        .node-icon { font-size: 3rem; }
+
+        /* Label on the curve (Digital Literacy, Digital Wisdom, etc) */
+        .curve-label {
+            position: absolute;
+            font-size: 0.8rem;
+            font-weight: bold;
+            color: white;
+            background: var(--path-magenta);
+            padding: 4px 12px;
+            border-radius: 12px;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        /* Modal Styles from Original */
+        .modal-backdrop {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 2000; padding: 20px;
+        }
+        .modal-content {
+            background: white; border-radius: 12px;
+            max-width: 600px; width: 100%; max-height: 90vh;
+            overflow-y: auto; position: relative;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+        }
+        .modal-header {
+            padding: 2rem; background: var(--wced-blue); color: white; text-align: center;
+        }
+        .modal-body { padding: 2rem; }
+        .modal-close {
+            position: absolute; top: 15px; right: 15px;
+            background: rgba(255,255,255,0.2); border: none; color: white;
+            width: 30px; height: 30px; border-radius: 50%; cursor: pointer;
+        }
+        
+        .sparked-up {
+            font-size: 4rem; font-weight: bold; color: var(--path-magenta);
+            text-align: center; margin: 4rem 0; text-transform: uppercase;
+        }
+
+        /* Arrow icons */
+        .arrow {
+            font-size: 2rem;
+            color: var(--wced-blue);
+            margin: 0 15px;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar { display: none; }
+            .main-content { margin-left: 0; }
+            .milestone-container, .milestone-container:nth-child(even) {
+                flex-direction: column; text-align: center !important;
+            }
+            .milestone-text { margin: 1rem 0 !important; }
+            .svg-container { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState } = React;
+
+        const MILESTONES = [
+            {
+                id: 'adoption',
+                title: 'ICT Adoption Strategy',
+                label: 'Digital Literacy',
+                brief: 'A foundational 12-week, self-paced online course providing a broad perspective on ICT integration.',
+                icon: '⚙️',
+                duration: '24-hour self-paced course',
+                description: 'A foundational online course providing a broad perspective on the visibility of the digital landscape and the "Transformation Agenda."',
+                keyPoints: [
+                    'Comprehensive 12-week self-paced online course',
+                    'Explore the landscape of ICT integration',
+                    'Understand the vision of the Transformation Agenda',
+                    'Earn your first Spark'
+                ]
+            },
+            {
+                id: 'dovetail',
+                title: 'Dovetail Essentials',
+                label: 'Digital Competence',
+                brief: 'A series of focused micro-learning sessions that build upon the ICT Adoption Strategy.',
+                icon: '💡',
+                duration: '10 micro-learning sessions',
+                description: 'A non-linear pathway through targeted 60-120 minute sessions that build practical digital competency.',
+                keyPoints: [
+                    'Flexible, non-linear pathway',
+                    'Practical classroom-ready skills',
+                    '10 sessions forming a curated pathway'
+                ]
+            },
+            {
+                id: 'digitalskills',
+                title: 'Digital Skills Course',
+                label: 'Digital Competence',
+                brief: 'An experiential 4-week hybrid course focusing on the practical application of digital teaching strategies.',
+                icon: '⚙️',
+                duration: '4-week hybrid immersion',
+                description: 'An experiential hybrid course that shifts your focus from "how to use" to "how to learn."',
+                keyPoints: [
+                    'Shift from teacher-centered to learner-centered',
+                    'Develop digital wisdom',
+                    'Earn your third Spark'
+                ]
+            },
+            {
+                id: 'cybereffect',
+                title: 'Cyber Effect Ambassador Initiation Course',
+                label: 'Digital Wisdom',
+                brief: 'A self-paced 4-week course which aims to equip teachers with the essential knowledge to become a Cyber Effect Ambassador.',
+                icon: '🚀',
+                duration: 'Self-paced 4-week course',
+                description: 'Deepen your ability to engage with the ethical, emotional, and psychological dimensions of technology.',
+                keyPoints: [
+                    'Focus on digital citizenship',
+                    'Master the 4P Model',
+                    'Promote ethical technology use'
+                ]
+            },
+            {
+                id: 'edvance',
+                title: 'Edvance Forward',
+                label: 'Wisdom',
+                brief: 'A structured workshop series for WCED Transformation Agents that builds systems thinking and creative change leadership.',
+                icon: '🏆',
+                duration: 'Ongoing mentorship',
+                description: 'Strategic leadership training for our most advanced agents to drive provincial innovation.',
+                keyPoints: [
+                    'Lead technology integration initiatives',
+                    'Mentor and support colleagues',
+                    'Shape provincial strategy'
+                ]
+            }
+        ];
+
+        function Modal({ milestone, onClose }) {
+            if (!milestone) return null;
+            return (
+                <div className="modal-backdrop" onClick={onClose}>
+                    <div className="modal-content" onClick={e => e.stopPropagation()}>
+                        <button className="modal-close" onClick={onClose}>×</button>
+                        <div className="modal-header">
+                            <div style={{fontSize: '3rem'}}>{milestone.icon}</div>
+                            <h2>{milestone.title}</h2>
+                            <p>{milestone.label}</p>
+                        </div>
+                        <div className="modal-body">
+                            <p style={{marginBottom: '1rem', fontWeight: 'bold'}}>{milestone.duration}</p>
+                            <p style={{marginBottom: '1.5rem'}}>{milestone.description}</p>
+                            <h4 style={{marginBottom: '0.5rem'}}>Key Focus Areas:</h4>
+                            <ul style={{paddingLeft: '1.2rem'}}>
+                                {milestone.keyPoints.map((p, i) => <li key={i} style={{marginBottom: '0.5rem'}}>{p}</li>)}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        function App() {
+            const [selected, setSelected] = useState(null);
+
+            return (
+                <div className="layout">
+                    <aside className="sidebar">
+                        <div className="sidebar-text">Adoption & Transformation Pathway</div>
+                    </aside>
+
+                    <main className="main-content">
+                        <header className="gov-header">
+                            <div className="logo-placeholder">
+                                Western Cape Government<br/>
+                                <span style={{fontSize: '0.8rem'}}>FOR YOU | Education</span>
+                            </div>
+                        </header>
+
+                        <div className="pathway-visual">
+                            {/* SVG S-Curve implementation */}
+                            <svg className="svg-container" viewBox="0 0 400 1200" preserveAspectRatio="none">
+                                <path 
+                                    d="M 200 0 
+                                       C 200 150, 350 150, 350 300 
+                                       S 200 450, 200 600
+                                       S 50 750, 50 900
+                                       S 200 1050, 200 1200" 
+                                    fill="none" 
+                                    stroke="#D0006F" 
+                                    strokeWidth="8" 
+                                    strokeDasharray="15"
+                                />
+                            </svg>
+
+                            {MILESTONES.map((m, idx) => (
+                                <div className="milestone-container" key={m.id}>
+                                    <div className="milestone-text">
+                                        <h3 className="milestone-title" onClick={() => setSelected(m)}>
+                                            {idx % 2 === 0 ? `⬅️ ${m.title}` : `${m.title} ➡️`}
+                                        </h3>
+                                        <p className="milestone-brief">{m.brief}</p>
+                                    </div>
+                                    
+                                    <div className="milestone-node" onClick={() => setSelected(m)}>
+                                        <span className="node-icon">{m.icon}</span>
+                                        <div className="curve-label" style={{ 
+                                            top: idx % 2 === 0 ? '-20px' : 'auto',
+                                            bottom: idx % 2 !== 0 ? '-20px' : 'auto',
+                                            left: '50%',
+                                            transform: 'translateX(-50%)'
+                                        }}>
+                                            {m.label}
+                                        </div>
+                                    </div>
+
+                                    <div style={{ flex: 1 }}></div>
+                                </div>
+                            ))}
+
+                            <div className="sparked-up">Sparked Up!</div>
+                        </div>
+                    </main>
+
+                    {selected && <Modal milestone={selected} onClose={() => setSelected(null)} />}
+                </div>
+            );
+        }
+
+        ReactDOM.render(<App />, document.getElementById('root'));
+    </script>
+</body>
+</html>
