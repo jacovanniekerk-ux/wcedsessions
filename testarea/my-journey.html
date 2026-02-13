@@ -151,6 +151,53 @@
             'Introduction to Cyber Wellness Education'
         ];
 
+        // === COMPONENTS ===
+        function Menu() {
+            const [isOpen, setIsOpen] = useState(false);
+
+            const links = [
+                { href: "index.html", label: "Upcoming Sessions" },
+                { href: "calendar.html", label: "Calendar" },
+                { href: "pathway.html", label: "A&T Pathway" },
+                { href: "my-pd-history.html", label: "My Activity" },
+                { href: "my-journey.html", label: "My Journey" }
+            ];
+
+            return (
+                <div className="relative z-50">
+                    <button
+                        onClick={() => setIsOpen(!isOpen)}
+                        className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-wcg-blue"
+                        aria-label="Menu"
+                    >
+                        {isOpen ? (
+                            <span className="text-xl font-bold leading-none">×</span>
+                        ) : (
+                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                            </svg>
+                        )}
+                    </button>
+
+                    {isOpen && (
+                        <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden animate-fade-in-up">
+                            <div className="py-1">
+                                {links.map((link) => (
+                                    <a
+                                        key={link.href}
+                                        href={link.href}
+                                        className="block px-4 py-3 text-gray-700 hover:bg-gray-50 hover:text-wcg-blue transition-colors border-b border-gray-50 last:border-0 font-medium"
+                                    >
+                                        {link.label}
+                                    </a>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
         // Milestone definitions for the pathway
         const MILESTONES = [
             {
@@ -379,8 +426,6 @@
                                                 <span className="font-medium text-gray-800">{s.date}</span>
                                                 <span className="text-gray-400">•</span>
                                                 <span className="text-gray-700 flex-1 truncate">{s.name}</span>
-                                                <span className="text-gray-400">•</span>
-                                                <span className="text-gray-500">{s.district}</span>
                                             </button>
                                         ))}
                                         {sessions.length > 4 && (
@@ -437,49 +482,6 @@
             );
         }
 
-        function Menu() {
-            const [isOpen, setIsOpen] = useState(false);
-
-            return (
-                <div className="relative z-50">
-                    <button
-                        onClick={() => setIsOpen(!isOpen)}
-                        className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-wcg-blue"
-                        aria-label="Toggle menu"
-                    >
-                        {isOpen ? (
-                            <span className="text-2xl leading-none">×</span>
-                        ) : (
-                            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                            </svg>
-                        )}
-                    </button>
-
-                    {isOpen && (
-                        <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden animate-fade-in-up">
-                            <div className="py-1">
-                                <a href="index.html" className="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-50">
-                                    🏠 Home
-                                </a>
-                                <a href="pathway.html" className="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-50">
-                                    👣 Pathway Info
-                                </a>
-                                <a href="my-pd-history.html" className="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-50">
-                                    📜 My History
-                                </a>
-                                <a href="my-journey.html" className="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-50">
-                                    🗺️ My Journey
-                                </a>
-                                <a href="calendar.html" className="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-50">
-                                    📅 Calendar
-                                </a>
-                            </div>
-                        </div>
-                    )}
-                </div>
-            );
-        }
 
         // === HELPERS ===
         const parseDate = (dateStr) => {
@@ -502,57 +504,81 @@
             return false;
         };
 
-        // === SESSION DETAIL MODAL ===
         function SessionDetailModal({ session, onClose }) {
             if (!session) return null;
+
+            // Helper to format outcomes list
+            const formatOutcomes = (text) => {
+                if (!text) return null;
+                const items = text.split(/\n|⮚|>/).filter(item => item.trim().length > 0);
+                if (items.length <= 1) return <p className="text-gray-600 text-sm mt-2">{text}</p>;
+                return (
+                    <ul className="mt-3 space-y-2">
+                        {items.map((item, idx) => (
+                            <li key={idx} className="text-gray-600 text-sm flex items-start">
+                                <span className="mr-2 mt-1.5 w-1.5 h-1.5 bg-wcg-blue rounded-full flex-shrink-0"></span>
+                                <span>{item.trim()}</span>
+                            </li>
+                        ))}
+                    </ul>
+                );
+            };
+
             return (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 no-print" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }} onClick={onClose}>
-                    <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-                        <div className="p-6 border-b border-gray-200">
-                            <div className="flex justify-between items-start">
-                                <div>
-                                    <h3 className="text-xl font-bold text-wcg-blue">{session.name}</h3>
-                                    <p className="text-sm text-gray-500 mt-1">{session.district} • {session.level}</p>
-                                </div>
-                                <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl">×</button>
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={onClose}>
+                    <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto animate-fade-in-up" onClick={e => e.stopPropagation()}>
+                        <div className="bg-gradient-to-r from-wcg-blue to-blue-800 p-6 text-white text-center rounded-t-2xl relative">
+                            <button onClick={onClose} className="absolute top-4 right-4 text-white/80 hover:text-white text-2xl leading-none">×</button>
+                            <div className="font-bold text-sm bg-white/20 backdrop-blur-sm inline-block px-3 py-1 rounded-full mb-3">
+                                {session.dateStr || session.date}
                             </div>
+                            <h2 className="text-2xl font-bold font-accent mb-1">{session.name}</h2>
+                            {session.time && <div className="text-white/90 text-sm mt-2 flex items-center justify-center gap-2">🕒 {session.time}</div>}
                         </div>
-                        <div className="p-6 space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <span className="text-xs font-bold text-gray-500 uppercase">Date</span>
-                                    <p className="font-semibold text-gray-900">{session.date}</p>
-                                </div>
-                                <div>
-                                    <span className="text-xs font-bold text-gray-500 uppercase">Time</span>
-                                    <p className="font-semibold text-gray-900">{session.time || 'TBA'}</p>
-                                </div>
+
+                        <div className="p-6">
+                            <div className="mb-6">
+                                <h3 className="text-wcg-blue font-bold mb-2 uppercase text-xs tracking-wider">About this Session</h3>
+                                <p className="text-gray-600 text-sm leading-relaxed">
+                                    {session.description || 'No description available.'}
+                                </p>
+                                {session.outcomes && (
+                                    <div className="mt-4 pt-4 border-t border-gray-100">
+                                        <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Learning Outcomes</h4>
+                                        {formatOutcomes(session.outcomes)}
+                                    </div>
+                                )}
                             </div>
 
-                            {session.venue && (
-                                <div>
-                                    <span className="text-xs font-bold text-gray-500 uppercase">Venue</span>
-                                    <p className="text-gray-700">{session.venue}</p>
-                                </div>
-                            )}
+                            <div className="space-y-3 pt-6 border-t border-gray-100">
+                                <a
+                                    href={session.registerLink}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className={`block w-full py-3 bg-wcg-red hover:bg-red-700 text-white font-bold text-center rounded-xl transition-colors shadow-sm hover:shadow-md ${!session.registerLink ? 'opacity-50 pointer-events-none' : ''}`}
+                                >
+                                    Register Now
+                                </a>
 
-                            <div>
-                                <span className="text-xs font-bold text-gray-500 uppercase">Description</span>
-                                <p className="text-gray-700 text-sm mt-1">{session.description || 'No description available.'}</p>
-                            </div>
-
-                            {session.link && (
-                                <div className="pt-4">
+                                <div className="grid grid-cols-2 gap-3">
                                     <a
-                                        href={session.link}
+                                        href={session.googleCal || '#'}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="block w-full text-center bg-wcg-blue text-white font-bold py-3 px-4 rounded-xl hover:bg-blue-800 transition-colors shadow-lg"
+                                        className={`flex items-center justify-center py-2.5 border border-gray-200 hover:border-wcg-blue hover:bg-blue-50 text-gray-600 rounded-lg text-sm font-medium transition-colors ${!session.googleCal ? 'opacity-50 pointer-events-none' : ''}`}
                                     >
-                                        Register Now
+                                        <span className="mr-2">📅</span> Google
+                                    </a>
+                                    <a
+                                        href={session.outlookCal || '#'}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className={`flex items-center justify-center py-2.5 border border-gray-200 hover:border-wcg-blue hover:bg-blue-50 text-gray-600 rounded-lg text-sm font-medium transition-colors ${!session.outlookCal ? 'opacity-50 pointer-events-none' : ''}`}
+                                    >
+                                        <span className="mr-2">📅</span> Outlook
                                     </a>
                                 </div>
-                            )}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -603,7 +629,19 @@
                     download: true,
                     header: true,
                     skipEmptyLines: true,
-                    complete: (result) => { setUpcomingData(result.data); checkDone(); },
+                    complete: (result) => {
+                        const processed = result.data.filter(r => r['Date'] && r['Session Name']).map(r => ({
+                            ...r,
+                            dateObj: parseDate(r['Date']),
+                            description: r['Session Desciption'] || r['Session Description'] || '',
+                            outcomes: r['Session Outcomes'] || '',
+                            googleCal: r['Add To Calendar (Google)'] || '',
+                            outlookCal: r['Add to Calendar (Outlook)'] || '',
+                            registerLink: r['Pre-Register'] || ''
+                        }));
+                        setUpcomingData(processed);
+                        checkDone();
+                    },
                     error: () => checkDone()
                 });
             }, []);

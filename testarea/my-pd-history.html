@@ -205,6 +205,7 @@
                                             <strong>Bonus Spark:</strong> Complete 5+ Dovetail Essentials ({uniqueDovetails.length}/5)
                                         </span>
                                     </div>
+
                                 )}
                             </div>
                         </div>
@@ -213,20 +214,29 @@
             );
         }
 
+        // === MENU COMPONENT ===
         function Menu() {
             const [isOpen, setIsOpen] = useState(false);
+
+            const links = [
+                { href: "index.html", label: "Upcoming Sessions" },
+                { href: "calendar.html", label: "Calendar" },
+                { href: "pathway.html", label: "A&T Pathway" },
+                { href: "my-pd-history.html", label: "My Activity" },
+                { href: "my-journey.html", label: "My Journey" }
+            ];
 
             return (
                 <div className="relative z-50">
                     <button
                         onClick={() => setIsOpen(!isOpen)}
-                        className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-wcg-blue"
-                        aria-label="Toggle menu"
+                        className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-wcg-blue"
+                        aria-label="Menu"
                     >
                         {isOpen ? (
-                            <span className="text-2xl leading-none">×</span>
+                            <span className="text-xl font-bold leading-none">×</span>
                         ) : (
-                            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
                             </svg>
                         )}
@@ -235,21 +245,15 @@
                     {isOpen && (
                         <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden animate-fade-in-up">
                             <div className="py-1">
-                                <a href="index.html" className="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-50">
-                                    🏠 Home
-                                </a>
-                                <a href="pathway.html" className="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-50">
-                                    👣 Pathway Info
-                                </a>
-                                <a href="my-pd-history.html" className="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-50">
-                                    📜 My History
-                                </a>
-                                <a href="my-journey.html" className="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-50">
-                                    🗺️ My Journey
-                                </a>
-                                <a href="calendar.html" className="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-50">
-                                    📅 Calendar
-                                </a>
+                                {links.map((link) => (
+                                    <a
+                                        key={link.href}
+                                        href={link.href}
+                                        className="block px-4 py-3 text-gray-700 hover:bg-gray-50 hover:text-wcg-blue transition-colors border-b border-gray-50 last:border-0 font-medium"
+                                    >
+                                        {link.label}
+                                    </a>
+                                ))}
                             </div>
                         </div>
                     )}

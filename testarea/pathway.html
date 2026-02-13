@@ -776,23 +776,26 @@
         function Menu() {
             const [isOpen, setIsOpen] = useState(false);
 
-            const menuStyle = {
-                position: 'relative',
-                zIndex: 1000
-            };
+            const links = [
+                { href: "index.html", label: "Upcoming Sessions" },
+                { href: "calendar.html", label: "Calendar" },
+                { href: "pathway.html", label: "A&T Pathway" },
+                { href: "my-pd-history.html", label: "My Activity" },
+                { href: "my-journey.html", label: "My Journey" }
+            ];
 
+            const menuStyle = { position: 'relative', zIndex: 1000 };
             const buttonStyle = {
                 padding: '0.5rem',
                 borderRadius: '0.5rem',
-                background: isOpen ? '#f3f4f6' : 'transparent',
+                background: '#f3f4f6',
                 border: 'none',
                 cursor: 'pointer',
-                color: '#4b5563',
+                color: '#374151',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center'
             };
-
             const dropdownStyle = {
                 position: 'absolute',
                 right: 0,
@@ -800,25 +803,27 @@
                 width: '14rem',
                 backgroundColor: 'white',
                 borderRadius: '0.75rem',
-                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-                border: '1px solid #e5e7eb',
+                boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+                border: '1px solid #f3f4f6',
                 overflow: 'hidden',
                 zIndex: 1001,
                 textAlign: 'left'
             };
-
             const linkStyle = {
                 display: 'block',
                 padding: '0.75rem 1rem',
                 color: '#374151',
                 textDecoration: 'none',
-                fontSize: '0.875rem',
+                fontSize: '1rem',
                 borderBottom: '1px solid #f9fafb',
-                fontFamily: 'inherit'
+                fontFamily: 'inherit',
+                transition: 'background-color 0.2s, color 0.2s',
+                fontWeight: 500
             };
 
-            const handleHover = (e, color) => {
-                e.target.style.background = color;
+            const handleHover = (e, isHover) => {
+                e.target.style.backgroundColor = isHover ? '#f9fafb' : 'transparent';
+                e.target.style.color = isHover ? '#004B87' : '#374151';
             };
 
             return (
@@ -826,12 +831,12 @@
                     <button
                         onClick={() => setIsOpen(!isOpen)}
                         style={buttonStyle}
-                        aria-label="Toggle menu"
+                        aria-label="Menu"
                     >
                         {isOpen ? (
-                            <span style={{ fontSize: '1.5rem', lineHeight: 1 }}>×</span>
+                            <span style={{ fontSize: '1.25rem', fontWeight: 'bold', lineHeight: 1 }}>×</span>
                         ) : (
-                            <svg style={{ width: '2rem', height: '2rem' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg style={{ width: '1.5rem', height: '1.5rem' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
                             </svg>
                         )}
@@ -839,21 +844,17 @@
 
                     {isOpen && (
                         <div style={dropdownStyle}>
-                            <a href="index.html" style={linkStyle} onMouseOver={e => handleHover(e, '#f9fafb')} onMouseOut={e => handleHover(e, 'white')}>
-                                🏠 Home
-                            </a>
-                            <a href="pathway.html" style={linkStyle} onMouseOver={e => handleHover(e, '#f9fafb')} onMouseOut={e => handleHover(e, 'white')}>
-                                👣 Pathway Info
-                            </a>
-                            <a href="my-pd-history.html" style={linkStyle} onMouseOver={e => handleHover(e, '#f9fafb')} onMouseOut={e => handleHover(e, 'white')}>
-                                📜 My History
-                            </a>
-                            <a href="my-journey.html" style={linkStyle} onMouseOver={e => handleHover(e, '#f9fafb')} onMouseOut={e => handleHover(e, 'white')}>
-                                🗺️ My Journey
-                            </a>
-                            <a href="calendar.html" style={{ ...linkStyle, borderBottom: 'none' }} onMouseOver={e => handleHover(e, '#f9fafb')} onMouseOut={e => handleHover(e, 'white')}>
-                                📅 Calendar
-                            </a>
+                            {links.map((link) => (
+                                <a
+                                    key={link.href}
+                                    href={link.href}
+                                    style={linkStyle}
+                                    onMouseOver={(e) => handleHover(e, true)}
+                                    onMouseOut={(e) => handleHover(e, false)}
+                                >
+                                    {link.label}
+                                </a>
+                            ))}
                         </div>
                     )}
                 </div>
