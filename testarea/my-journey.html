@@ -92,7 +92,7 @@
         }
 
         .pathway-line-fill {
-            background: linear-gradient(90deg, #001489, #76B82A, #672D82, #E30613, #FFD700);
+            background: linear-gradient(90deg, #00A1A3, #8FAD15, #007DBA, #C8126E);
             transition: width 1.5s ease-out;
         }
 
@@ -169,8 +169,8 @@
                 title: 'ICT Adoption Strategy',
                 subtitle: 'The Entry Point',
                 icon: '🧭',
-                color: '#001489',
-                lightColor: '#E8EAFE',
+                color: '#00A1A3',
+                lightColor: '#E0F7F7',
                 sparkSession: 'Adoption Strategy',
                 duration: '24-hour self-paced course',
                 description: 'A foundational online course providing a broad perspective on the digital landscape and the "Transformation Agenda."'
@@ -181,8 +181,8 @@
                 title: 'Dovetail Essentials',
                 subtitle: 'Customisation & Micro-Learning',
                 icon: '🧰',
-                color: '#76B82A',
-                lightColor: '#F0F9E8',
+                color: '#8FAD15',
+                lightColor: '#F4F8E1',
                 sparkSession: null, // bonus spark from 5+ dovetails
                 duration: '10 focused micro-learning sessions',
                 description: 'A non-linear pathway through targeted 60-120 minute sessions building practical digital competency.'
@@ -193,8 +193,8 @@
                 title: 'Digital Skills Course',
                 subtitle: 'The Experiential Shift',
                 icon: '📖',
-                color: '#672D82',
-                lightColor: '#F3EBF7',
+                color: '#007DBA',
+                lightColor: '#E0F1FA',
                 sparkSession: 'Digital Skills Course',
                 duration: '4-week hybrid immersion',
                 description: 'An experiential hybrid course shifting focus from "how to use" to "how to learn."'
@@ -202,26 +202,14 @@
             {
                 id: 'cybereffect',
                 step: 4,
-                title: 'Cyber Effect Ambassador',
+                title: 'Cyber Ambassador',
                 subtitle: 'Ethical Capstone',
                 icon: '🌐',
-                color: '#E30613',
-                lightColor: '#FDE8E8',
+                color: '#C8126E',
+                lightColor: '#FAE0EE',
                 sparkSession: 'Cyber Effect Ambassador Initiation Course',
                 duration: 'Self-paced 4-week course',
                 description: 'Deepen your ability to engage with the ethical, emotional, and behavioural dimensions of technology use.'
-            },
-            {
-                id: 'agent',
-                step: 5,
-                title: 'Transformation Agent',
-                subtitle: 'Strategic Leadership',
-                icon: '🏆',
-                color: '#B8860B',
-                lightColor: '#FFF8E1',
-                sparkSession: null, // achieved via 3+ sparks
-                duration: 'Ongoing thought leadership',
-                description: 'As a certified Transformation Agent with 3+ Sparks, you are a thought leader driving the teacher-led movement.'
             }
         ];
 
@@ -520,30 +508,56 @@
             );
         }
 
-        // === FACILITATOR ARC CARD ===
-        function FacilitatorARCCard({ hasThinkTank, totalSessions }) {
+        // === TRANSFORMATION ARC SESSIONS ===
+        const TRANSFORMATION_ARC_SESSIONS = [
+            'Facilitator Think Tank',
+            'Elevate',
+            'Shift and Spark'
+        ];
+
+        // === TRANSFORMATION ARC CARD ===
+        function TransformationARCCard({ hasThinkTank, arcSessions, totalSessions }) {
+            const arcCount = arcSessions.length;
+            const hasElevate = arcSessions.includes('Elevate');
+            const hasShiftAndSpark = arcSessions.includes('Shift and Spark');
+
             return (
                 <div className={`rounded-xl p-5 border-2 border-dashed ${hasThinkTank ? 'border-purple-300 bg-purple-50' : 'border-gray-300 bg-gray-50 opacity-60'}`}>
                     <div className="flex items-start gap-3">
                         <span className="text-2xl">🎓</span>
                         <div className="flex-1">
                             <div className="flex items-center gap-2 mb-1">
-                                <h4 className="font-bold text-gray-700">Facilitator ARC</h4>
+                                <h4 className="font-bold text-gray-700">Transformation ARC</h4>
                                 {hasThinkTank ? (
-                                    <span className="text-xs bg-purple-200 text-purple-800 px-2 py-0.5 rounded-full font-semibold">Step 1 Complete</span>
+                                    <span className="text-xs bg-purple-200 text-purple-800 px-2 py-0.5 rounded-full font-semibold">{arcCount} Step{arcCount > 1 ? 's' : ''} Complete</span>
                                 ) : (
                                     <span className="text-xs bg-gray-200 text-gray-500 px-2 py-0.5 rounded-full font-semibold">By Invitation</span>
                                 )}
                             </div>
-                            <p className="text-sm text-gray-600 mb-1">
+                            <p className="text-sm text-gray-600 mb-2">
                                 {hasThinkTank
-                                    ? 'You\'ve completed the Facilitator Think Tank — the first step of the Facilitator ARC developmental pathway. This Spark contributes to your Transformation Agent level.'
-                                    : 'The Facilitator Think Tank is the entry point to the Facilitator ARC — a specialised developmental pathway by invitation. Teachers with strong PD engagement are often considered for this opportunity.'
+                                    ? 'You\'ve entered the Transformation ARC — a specialised developmental pathway. The Facilitator Think Tank is the first step and earns a Spark.'
+                                    : 'The Facilitator Think Tank is the entry point to the Transformation ARC — a specialised developmental pathway by invitation. Teachers with strong PD engagement are often considered.'
                                 }
                             </p>
                             {hasThinkTank && (
-                                <span className="inline-block bg-gradient-to-r from-yellow-400 to-orange-400 text-black text-xs font-bold px-2 py-1 rounded-full shadow mt-1">
-                                    ⭐ Spark Earned
+                                <div className="space-y-1.5 mb-2">
+                                    {[
+                                        { name: 'Facilitator Think Tank', done: true, label: 'Step 1 • ⭐ Spark' },
+                                        { name: 'Elevate', done: hasElevate, label: 'Step 2' },
+                                        { name: 'Shift and Spark', done: hasShiftAndSpark, label: 'Step 3' }
+                                    ].map((step, idx) => (
+                                        <div key={idx} className={`flex items-center gap-2 p-1.5 rounded-lg text-xs font-medium ${step.done ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-400'}`}>
+                                            <span>{step.done ? '✅' : '⬜'}</span>
+                                            <span>{step.name}</span>
+                                            <span className="ml-auto opacity-70">{step.label}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                            {hasThinkTank && (
+                                <span className="inline-block bg-gradient-to-r from-yellow-400 to-orange-400 text-black text-xs font-bold px-2 py-1 rounded-full shadow">
+                                    ⭐ Spark Earned {arcCount > 1 ? `• ${arcCount} ARC Steps Complete` : ''}
                                 </span>
                             )}
                             {!hasThinkTank && totalSessions >= 15 && (
@@ -662,6 +676,9 @@
                 const hasCyberEffect = sessionNames.includes('Cyber Effect Ambassador Initiation Course');
                 const hasThinkTank = sessionNames.includes('Facilitator Think Tank');
 
+                // Track all Transformation ARC sessions completed
+                const arcSessions = TRANSFORMATION_ARC_SESSIONS.filter(s => sessionNames.includes(s));
+
                 // Dovetail progress
                 const completedDovetails = DOVETAIL_SESSIONS.filter(d => sessionNames.includes(d));
                 const dovetailCount = completedDovetails.length;
@@ -705,20 +722,12 @@
                         state: hasCyberEffect ? 'completed' : 'not-started',
                         detail: hasCyberEffect ? null : 'By invitation',
                         completedDate: getCompletionDate('Cyber Effect Ambassador Initiation Course')
-                    },
-                    // Milestone 5: Transformation Agent
-                    {
-                        state: totalSparks >= 3 ? 'completed' : totalSparks > 0 ? 'in-progress' : 'not-started',
-                        detail: totalSparks >= 3
-                            ? (totalSparks >= 5 ? 'Provincial-Level Contributor' : totalSparks >= 4 ? 'Cluster-Level Agent' : 'School-Level Agent')
-                            : `${totalSparks}/3 Sparks earned`,
-                        progress: Math.min((totalSparks / 3) * 100, 100)
                     }
                 ];
 
                 // Calculate overall progress %
                 const completedMilestones = milestoneStatuses.filter(m => m.state === 'completed').length;
-                const overallProgress = (completedMilestones / 5) * 100;
+                const overallProgress = (completedMilestones / 4) * 100;
 
                 // Level distribution
                 const byLevel = {
@@ -734,7 +743,7 @@
 
                 return {
                     milestoneStatuses,
-                    hasAdoption, hasDigitalSkills, hasCyberEffect, hasThinkTank,
+                    hasAdoption, hasDigitalSkills, hasCyberEffect, hasThinkTank, arcSessions,
                     dovetailCount, completedDovetails, remainingDovetails, hasDovetailSpark,
                     pathwaySparks, totalSparks,
                     overallProgress,
@@ -844,8 +853,8 @@
                 if (!pathwayStatus.hasThinkTank && totalSessions >= 15) {
                     items.push({
                         icon: '💡',
-                        title: 'Facilitator Think Tank',
-                        description: `Your strong PD engagement (${totalSessions} sessions) puts you on the path to being considered for the Facilitator Think Tank — the entry point to the Facilitator ARC. This is by invitation and targets teachers with high engagement.`,
+                        title: 'Transformation ARC: Facilitator Think Tank',
+                        description: `Your strong PD engagement (${totalSessions} sessions) puts you on the path to being considered for the Facilitator Think Tank — the entry point to the Transformation ARC. This is by invitation and targets teachers with high engagement.`,
                         type: 'info'
                     });
                 }
@@ -1154,10 +1163,11 @@
                                         </div>
                                     </div>
 
-                                    {/* Facilitator ARC */}
+                                    {/* Transformation ARC */}
                                     <div className="mt-6 pt-4 border-t border-dashed border-gray-200">
-                                        <FacilitatorARCCard
+                                        <TransformationARCCard
                                             hasThinkTank={pathwayStatus.hasThinkTank}
+                                            arcSessions={pathwayStatus.arcSessions}
                                             totalSessions={pathwayStatus.totalSessions}
                                         />
                                     </div>
