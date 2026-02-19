@@ -105,6 +105,16 @@
             box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
         }
 
+        /* Hide scrollbar but keep scrolling on mobile */
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
         @media print {
             .no-print {
                 display: none !important;
@@ -121,7 +131,7 @@
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect, useMemo, useRef } = React;
+        const { useState, useEffect, useMemo } = React;
 
         // === SESSION DEFINITIONS ===
         const SPARK_SESSIONS = [
@@ -150,53 +160,6 @@
             'AI In Education: Work Smarter, not Harder',
             'Introduction to Cyber Wellness Education'
         ];
-
-        // === COMPONENTS ===
-        function Menu() {
-            const [isOpen, setIsOpen] = useState(false);
-
-            const links = [
-                { href: "index.html", label: "Upcoming Sessions" },
-                { href: "calendar.html", label: "Calendar" },
-                { href: "pathway.html", label: "A&T Pathway" },
-                { href: "my-pd-history.html", label: "My Activity" },
-                { href: "my-journey.html", label: "My Journey" }
-            ];
-
-            return (
-                <div className="relative z-50">
-                    <button
-                        onClick={() => setIsOpen(!isOpen)}
-                        className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-wcg-blue"
-                        aria-label="Menu"
-                    >
-                        {isOpen ? (
-                            <span className="text-xl font-bold leading-none">×</span>
-                        ) : (
-                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                            </svg>
-                        )}
-                    </button>
-
-                    {isOpen && (
-                        <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden animate-fade-in-up">
-                            <div className="py-1">
-                                {links.map((link) => (
-                                    <a
-                                        key={link.href}
-                                        href={link.href}
-                                        className="block px-4 py-3 text-gray-700 hover:bg-gray-50 hover:text-wcg-blue transition-colors border-b border-gray-50 last:border-0 font-medium"
-                                    >
-                                        {link.label}
-                                    </a>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-                </div>
-            );
-        }
 
         // Milestone definitions for the pathway
         const MILESTONES = [
@@ -406,27 +369,28 @@
             const colors = typeColors[type] || typeColors.info;
 
             return (
-                <div className={`suggestion-card rounded-xl p-5 border-2 ${colors.bg} ${colors.border}`}>
-                    <div className="flex items-start gap-3">
+                <div className={`suggestion-card rounded-xl p-5 border-2 overflow-hidden ${colors.bg} ${colors.border}`}>
+                    <div className="flex items-start gap-3 min-w-0">
                         <span className={`text-2xl flex-shrink-0`}>{icon}</span>
-                        <div className="flex-1">
+                        <div className="flex-1 min-w-0">
                             <h4 className="font-bold text-gray-900 mb-1">{title}</h4>
                             <p className="text-sm text-gray-700 mb-2">{description}</p>
                             {sessions && sessions.length > 0 && (
-                                <div className="mt-3">
+                                <div className="mt-3 overflow-hidden">
                                     <p className="text-xs font-semibold text-gray-500 uppercase mb-2">Upcoming sessions you could attend:</p>
                                     <div className="space-y-1.5">
                                         {sessions.slice(0, 4).map((s, i) => (
-                                            <button
+                                            <div
                                                 key={i}
+                                                className="flex items-center gap-2 text-xs bg-white rounded-lg px-3 py-2 border border-gray-100 cursor-pointer hover:border-wcg-blue hover:bg-blue-50 transition-colors min-w-0"
                                                 onClick={() => onSessionClick && onSessionClick(s)}
-                                                className="w-full text-left flex items-center gap-2 text-xs bg-white rounded-lg px-3 py-2 border border-gray-100 hover:border-wcg-blue hover:shadow-sm transition-all group"
                                             >
-                                                <span className="text-gray-400 group-hover:text-wcg-blue">📅</span>
-                                                <span className="font-medium text-gray-800">{s.date}</span>
-                                                <span className="text-gray-400">•</span>
+                                                <span className="text-gray-400 flex-shrink-0">📅</span>
+                                                <span className="font-medium text-gray-800 flex-shrink-0">{s.date}</span>
+                                                <span className="text-gray-400 flex-shrink-0">•</span>
                                                 <span className="text-gray-700 flex-1 truncate">{s.name}</span>
-                                            </button>
+                                                <span className="text-wcg-blue flex-shrink-0 text-sm">›</span>
+                                            </div>
                                         ))}
                                         {sessions.length > 4 && (
                                             <p className="text-xs text-gray-500 italic">+ {sessions.length - 4} more sessions available</p>
@@ -439,6 +403,117 @@
                                     {linkText} →
                                 </a>
                             )}
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // === UPCOMING SESSION MODAL ===
+        function UpcomingSessionModal({ session, onClose }) {
+            if (!session) return null;
+
+            const formatOutcomes = (text) => {
+                if (!text) return null;
+                const items = text.split(/\n|⮚|>/).filter(item => item.trim().length > 0);
+                if (items.length <= 1) return <p className="text-gray-600 text-sm mt-2">{text}</p>;
+                return (
+                    <ul className="mt-2 space-y-1.5">
+                        {items.map((item, idx) => (
+                            <li key={idx} className="text-gray-600 text-sm flex items-start">
+                                <span className="mr-2 mt-1.5 w-1.5 h-1.5 bg-wcg-blue rounded-full flex-shrink-0"></span>
+                                <span>{item.trim()}</span>
+                            </li>
+                        ))}
+                    </ul>
+                );
+            };
+
+            const getLevelColor = (level) => {
+                if (!level) return 'bg-gray-100 text-gray-700 border-gray-200';
+                const l = level.toLowerCase();
+                if (l.includes('foundation')) return 'bg-wcg-green text-white border-wcg-green';
+                if (l.includes('better')) return 'bg-wcg-red text-white border-wcg-red';
+                if (l.includes('i can')) return 'bg-wcg-yellow text-black border-wcg-yellow';
+                if (l.includes('summit')) return 'bg-wcg-blue text-white border-wcg-blue';
+                return 'bg-gray-100 text-gray-700 border-gray-200';
+            };
+
+            return (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }} onClick={onClose}>
+                    <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+                        {/* Date header */}
+                        <div className="bg-gray-50 border-b border-gray-100 p-4 rounded-t-2xl flex justify-between items-center">
+                            <div>
+                                <div className="flex items-center gap-2 text-wcg-blue font-bold">
+                                    <span>📅</span>
+                                    <span>{session.date || 'TBA'}</span>
+                                </div>
+                                {session.time && (
+                                    <div className="flex items-center gap-2 text-gray-600 text-sm mt-1 ml-6">
+                                        <span>🕐</span>
+                                        <span>{session.time}</span>
+                                    </div>
+                                )}
+                            </div>
+                            <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">×</button>
+                        </div>
+
+                        {/* Content */}
+                        <div className="p-5">
+                            <div className="flex flex-wrap gap-2 mb-3">
+                                {session.level && (
+                                    <span className={`px-2 py-0.5 rounded-md text-xs font-bold uppercase tracking-wide border ${getLevelColor(session.level)}`}>
+                                        {session.level}
+                                    </span>
+                                )}
+                                {session.district && (
+                                    <span className="px-2 py-0.5 rounded-md text-xs font-bold uppercase tracking-wide bg-white text-wcg-blue border border-wcg-blue/30">
+                                        {session.district}
+                                    </span>
+                                )}
+                            </div>
+
+                            <h3 className="text-lg font-bold text-gray-900 mb-3">{session.name}</h3>
+
+                            {session.description && (
+                                <div className="text-gray-600 text-sm leading-relaxed mb-4">
+                                    {session.description}
+                                </div>
+                            )}
+
+                            {session.outcomes && (
+                                <div className="bg-blue-50/50 rounded-lg p-3 mb-4">
+                                    <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Learning Outcomes</h4>
+                                    {formatOutcomes(session.outcomes)}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Actions */}
+                        <div className="p-4 border-t border-gray-100 space-y-2">
+                            {session.registerLink && (
+                                <a
+                                    href={session.registerLink}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center justify-center bg-wcg-blue hover:bg-blue-800 text-white font-bold py-2.5 px-4 rounded-lg transition-all text-sm shadow-sm w-full"
+                                >
+                                    Register Now ↗
+                                </a>
+                            )}
+                            <div className="grid grid-cols-2 gap-2">
+                                {session.googleCal && session.googleCal !== '#' && (
+                                    <a href={session.googleCal} target="_blank" rel="noreferrer" className="flex items-center justify-center bg-white border border-gray-200 hover:border-wcg-blue text-gray-600 font-medium py-2 px-2 rounded-lg text-xs transition-colors">
+                                        📅 Add to Google
+                                    </a>
+                                )}
+                                {session.outlookCal && session.outlookCal !== '#' && (
+                                    <a href={session.outlookCal} target="_blank" rel="noreferrer" className="flex items-center justify-center bg-white border border-gray-200 hover:border-wcg-blue text-gray-600 font-medium py-2 px-2 rounded-lg text-xs transition-colors">
+                                        📧 Add to Outlook
+                                    </a>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -482,109 +557,6 @@
             );
         }
 
-
-        // === HELPERS ===
-        const parseDate = (dateStr) => {
-            if (!dateStr) return new Date(8640000000000000);
-            const parts = dateStr.split('/');
-            if (parts.length === 3) {
-                const [day, month, year] = parts;
-                return new Date(`${year}-${month}-${day}`);
-            }
-            return new Date(dateStr);
-        };
-
-        const isFutureOrToday = (dateObj) => {
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            if (dateObj instanceof Date && !isNaN(dateObj)) {
-                dateObj.setHours(0, 0, 0, 0);
-                return dateObj >= today;
-            }
-            return false;
-        };
-
-        function SessionDetailModal({ session, onClose }) {
-            if (!session) return null;
-
-            // Helper to format outcomes list
-            const formatOutcomes = (text) => {
-                if (!text) return null;
-                const items = text.split(/\n|⮚|>/).filter(item => item.trim().length > 0);
-                if (items.length <= 1) return <p className="text-gray-600 text-sm mt-2">{text}</p>;
-                return (
-                    <ul className="mt-3 space-y-2">
-                        {items.map((item, idx) => (
-                            <li key={idx} className="text-gray-600 text-sm flex items-start">
-                                <span className="mr-2 mt-1.5 w-1.5 h-1.5 bg-wcg-blue rounded-full flex-shrink-0"></span>
-                                <span>{item.trim()}</span>
-                            </li>
-                        ))}
-                    </ul>
-                );
-            };
-
-            return (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={onClose}>
-                    <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto animate-fade-in-up" onClick={e => e.stopPropagation()}>
-                        <div className="bg-gradient-to-r from-wcg-blue to-blue-800 p-6 text-white text-center rounded-t-2xl relative">
-                            <button onClick={onClose} className="absolute top-4 right-4 text-white/80 hover:text-white text-2xl leading-none">×</button>
-                            <div className="font-bold text-sm bg-white/20 backdrop-blur-sm inline-block px-3 py-1 rounded-full mb-3">
-                                {session.dateStr || session.date}
-                            </div>
-                            <h2 className="text-2xl font-bold font-accent mb-1">{session.name}</h2>
-                            {session.time && <div className="text-white/90 text-sm mt-2 flex items-center justify-center gap-2">🕒 {session.time}</div>}
-                        </div>
-
-                        <div className="p-6">
-                            <div className="mb-6">
-                                <h3 className="text-wcg-blue font-bold mb-2 uppercase text-xs tracking-wider">About this Session</h3>
-                                <p className="text-gray-600 text-sm leading-relaxed">
-                                    {session.description || 'No description available.'}
-                                </p>
-                                {session.outcomes && (
-                                    <div className="mt-4 pt-4 border-t border-gray-100">
-                                        <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Learning Outcomes</h4>
-                                        {formatOutcomes(session.outcomes)}
-                                    </div>
-                                )}
-                            </div>
-
-                            <div className="space-y-3 pt-6 border-t border-gray-100">
-                                <a
-                                    href={session.registerLink}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className={`block w-full py-3 bg-wcg-red hover:bg-red-700 text-white font-bold text-center rounded-xl transition-colors shadow-sm hover:shadow-md ${!session.registerLink ? 'opacity-50 pointer-events-none' : ''}`}
-                                >
-                                    Register Now
-                                </a>
-
-                                <div className="grid grid-cols-2 gap-3">
-                                    <a
-                                        href={session.googleCal || '#'}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className={`flex items-center justify-center py-2.5 border border-gray-200 hover:border-wcg-blue hover:bg-blue-50 text-gray-600 rounded-lg text-sm font-medium transition-colors ${!session.googleCal ? 'opacity-50 pointer-events-none' : ''}`}
-                                    >
-                                        <span className="mr-2">📅</span> Google
-                                    </a>
-                                    <a
-                                        href={session.outlookCal || '#'}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className={`flex items-center justify-center py-2.5 border border-gray-200 hover:border-wcg-blue hover:bg-blue-50 text-gray-600 rounded-lg text-sm font-medium transition-colors ${!session.outlookCal ? 'opacity-50 pointer-events-none' : ''}`}
-                                    >
-                                        <span className="mr-2">📅</span> Outlook
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            );
-        }
-
         // === MAIN APP ===
         function App() {
             const [attendanceData, setAttendanceData] = useState([]);
@@ -595,22 +567,8 @@
             const [acknowledged, setAcknowledged] = useState(false);
             const [results, setResults] = useState(null);
             const [selectedMilestone, setSelectedMilestone] = useState(null);
+            const [menuOpen, setMenuOpen] = useState(false);
             const [selectedSession, setSelectedSession] = useState(null);
-            const shouldAutoSearchRef = useRef(false);
-
-            // Persistence: Check session storage on mount
-            useEffect(() => {
-                const storedType = sessionStorage.getItem('tpd_searchType');
-                const storedValue = sessionStorage.getItem('tpd_searchValue');
-                const storedAck = sessionStorage.getItem('tpd_acknowledged');
-
-                if (storedType && storedValue && storedAck === 'true') {
-                    setSearchType(storedType);
-                    setSearchValue(storedValue);
-                    setAcknowledged(true);
-                    shouldAutoSearchRef.current = true;
-                }
-            }, []);
 
             // Load CSVs on mount
             useEffect(() => {
@@ -629,19 +587,7 @@
                     download: true,
                     header: true,
                     skipEmptyLines: true,
-                    complete: (result) => {
-                        const processed = result.data.filter(r => r['Date'] && r['Session Name']).map(r => ({
-                            ...r,
-                            dateObj: parseDate(r['Date']),
-                            description: r['Session Desciption'] || r['Session Description'] || '',
-                            outcomes: r['Session Outcomes'] || '',
-                            googleCal: r['Add To Calendar (Google)'] || '',
-                            outlookCal: r['Add to Calendar (Outlook)'] || '',
-                            registerLink: r['Pre-Register'] || ''
-                        }));
-                        setUpcomingData(processed);
-                        checkDone();
-                    },
+                    complete: (result) => { setUpcomingData(result.data); checkDone(); },
                     error: () => checkDone()
                 });
             }, []);
@@ -660,8 +606,8 @@
             }, [attendanceData]);
 
             // Handle search
-            const handleSearch = (isAuto = false) => {
-                if (!searchValue.trim() || (!isAuto && !acknowledged)) return;
+            const handleSearch = () => {
+                if (!searchValue.trim() || !acknowledged) return;
                 const searchKey = searchValue.trim();
                 let records = searchType === 'id'
                     ? (indexes.idIndex[searchKey] || [])
@@ -671,11 +617,6 @@
                     setResults({ profile: null, sessions: [] });
                     return;
                 }
-
-                // Save to session storage on successful search
-                sessionStorage.setItem('tpd_searchType', searchType);
-                sessionStorage.setItem('tpd_searchValue', searchKey);
-                sessionStorage.setItem('tpd_acknowledged', 'true');
 
                 const sortedRecords = [...records].sort((a, b) => {
                     const dateA = parseTimestamp(a.Timestamp);
@@ -706,24 +647,7 @@
                     }));
 
                 setResults({ profile, sessions: uniqueSessions });
-
-                // Reset auto search ref if it was used
-                if (isAuto) shouldAutoSearchRef.current = false;
             };
-
-            // Auto-search when data is loaded
-            useEffect(() => {
-                if (!loading && shouldAutoSearchRef.current && Object.keys(indexes.idIndex).length > 0) {
-                    const searchKey = searchValue.trim();
-                    const hasData = searchType === 'id'
-                        ? (indexes.idIndex[searchKey])
-                        : (indexes.persalIndex[searchKey]);
-
-                    if (hasData) {
-                        handleSearch(true);
-                    }
-                }
-            }, [loading, indexes, searchValue, searchType]);
 
             // === COMPUTE PATHWAY STATUS ===
             const pathwayStatus = useMemo(() => {
@@ -840,25 +764,15 @@
                     const upcomingDovetailSessions = upcomingData
                         .filter(row => {
                             const name = row['Session Name']?.trim();
-                            const matchesName = remainingDovetails.some(d =>
+                            return remainingDovetails.some(d =>
                                 name && name.toLowerCase().includes(d.toLowerCase().split(':')[0].toLowerCase())
                             );
-                            if (!matchesName) return false;
-
-                            const dateStr = row['Date']?.trim();
-                            return isFutureOrToday(parseDate(dateStr));
                         })
                         .map(row => ({
                             date: row['Date']?.trim() || 'TBA',
                             name: row['Session Name']?.trim(),
-                            district: row['HOSTING DISTRICT']?.trim() || '',
-                            time: row['Time'] || '',
-                            venue: row['Venue'] || '',
-                            link: row['Registration Link'] || row['Pre-Register'] || '',
-                            description: row['Session Description'] || '',
-                            level: row['Developmental Level'] || ''
+                            district: row['HOSTING DISTRICT']?.trim() || ''
                         }))
-                        .sort((a, b) => parseDate(a.date) - parseDate(b.date))
                         .slice(0, 8);
 
                     if (dovetailCount === 0) {
@@ -1025,10 +939,38 @@
             return (
                 <div className="min-h-screen bg-gray-50">
                     {/* Header */}
-                    <header className="bg-white shadow-sm no-print">
+                    <header className="bg-white shadow-sm no-print relative">
                         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
                             <img src="header.png" alt="WCED Header" className="h-12 sm:h-16" />
-                            <Menu />
+                            <div className="relative">
+                                <button
+                                    onClick={() => setMenuOpen(!menuOpen)}
+                                    className="flex items-center justify-center w-10 h-10 rounded-lg border-2 border-gray-300 hover:border-wcg-blue hover:bg-gray-50 transition-colors"
+                                    aria-label="Menu"
+                                >
+                                    {menuOpen ? (
+                                        <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                                    ) : (
+                                        <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
+                                    )}
+                                </button>
+                                {menuOpen && (
+                                    <div className="absolute right-0 top-12 bg-white rounded-xl shadow-lg border border-gray-200 py-2 w-52 z-50">
+                                        <a href="pathway.html" className="block px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:text-wcg-blue transition-colors">
+                                            Pathway Overview
+                                        </a>
+                                        <a href="my-pd-history.html" className="block px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:text-wcg-blue transition-colors">
+                                            Full PD History
+                                        </a>
+                                        <a href="index.html" className="block px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:text-wcg-blue transition-colors">
+                                            Upcoming Sessions
+                                        </a>
+                                        <a href="calendar.html" className="block px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:text-wcg-blue transition-colors">
+                                            Calendar
+                                        </a>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </header>
 
@@ -1158,15 +1100,10 @@
                                                 </div>
                                             </div>
                                             <button
-                                                onClick={() => {
-                                                    setResults(null);
-                                                    setSearchValue('');
-                                                    setAcknowledged(false);
-                                                    sessionStorage.clear();
-                                                }}
-                                                className="no-print text-sm text-red-600 hover:text-red-700 border border-red-200 rounded-lg px-3 py-2 hover:bg-red-50 flex items-center gap-2"
+                                                onClick={() => setResults(null)}
+                                                className="no-print text-sm text-gray-500 hover:text-gray-700 border border-gray-300 rounded-lg px-3 py-2 hover:bg-gray-50"
                                             >
-                                                <span>🚪</span> Logout
+                                                New Search
                                             </button>
                                         </div>
                                     </div>
@@ -1187,9 +1124,9 @@
                                         />
                                     </div>
 
-                                    {/* Milestone cards - horizontal scroll */}
-                                    <div className="overflow-x-auto pb-4 -mx-2">
-                                        <div className="flex gap-4 px-2" style={{ minWidth: 'min-content' }}>
+                                    {/* Milestone cards - responsive: wrap on desktop, scroll on mobile */}
+                                    <div className="overflow-x-auto hide-scrollbar pt-4 -mx-2">
+                                        <div className="flex flex-wrap lg:flex-nowrap lg:flex-wrap gap-4 px-2 justify-center" style={{ minWidth: 'min-content' }}>
                                             {MILESTONES.map((milestone, idx) => (
                                                 <React.Fragment key={milestone.id}>
                                                     <MilestoneCard
@@ -1199,15 +1136,17 @@
                                                     />
                                                     {idx < MILESTONES.length - 1 && (
                                                         <div className="flex items-center flex-shrink-0">
-                                                            <div className="w-8 h-0.5" style={{
-                                                                background: pathwayStatus.milestoneStatuses[idx].state === 'completed' ? milestone.color : '#e5e7eb'
-                                                            }} />
-                                                            <span className={`text-lg ${pathwayStatus.milestoneStatuses[idx].state === 'completed' ? 'text-green-500' : 'text-gray-300'}`}>
-                                                                →
-                                                            </span>
-                                                            <div className="w-8 h-0.5" style={{
-                                                                background: pathwayStatus.milestoneStatuses[idx + 1].state !== 'not-started' ? MILESTONES[idx + 1].color : '#e5e7eb'
-                                                            }} />
+                                                            <svg
+                                                                className="w-6 h-6"
+                                                                viewBox="0 0 24 24"
+                                                                fill="none"
+                                                                stroke={pathwayStatus.milestoneStatuses[idx].state === 'completed' ? milestone.color : '#d1d5db'}
+                                                                strokeWidth="2.5"
+                                                                strokeLinecap="round"
+                                                                strokeLinejoin="round"
+                                                            >
+                                                                <polyline points="9 18 15 12 9 6" />
+                                                            </svg>
                                                         </div>
                                                     )}
                                                 </React.Fragment>
@@ -1230,11 +1169,25 @@
                                         <h3 className="text-lg font-bold text-wcg-dark mb-4">📋 Your Next Steps</h3>
                                         <div className="grid gap-4 md:grid-cols-2">
                                             {suggestions.map((suggestion, idx) => (
-                                                <SuggestionCard
-                                                    key={idx}
-                                                    {...suggestion}
-                                                    onSessionClick={setSelectedSession}
-                                                />
+                                                <SuggestionCard key={idx} {...suggestion} onSessionClick={(s) => {
+                                                    // Find the full session data from upcomingData
+                                                    const full = upcomingData.find(row =>
+                                                        (row['Session Name']?.trim() || '') === s.name &&
+                                                        (row['Date']?.trim() || '') === s.date
+                                                    );
+                                                    setSelectedSession({
+                                                        name: s.name,
+                                                        date: s.date,
+                                                        district: s.district,
+                                                        time: full?.['Time']?.trim() || '',
+                                                        level: full?.['Developmental Level']?.trim() || '',
+                                                        description: full?.['Session Desciption']?.trim() || full?.['Session Description']?.trim() || '',
+                                                        outcomes: full?.['Session Outcomes']?.trim() || '',
+                                                        registerLink: full?.['Pre-Register']?.trim() || '',
+                                                        googleCal: full?.['Add To Calendar (Google)']?.trim() || '',
+                                                        outlookCal: full?.['Add to Calendar (Outlook)']?.trim() || ''
+                                                    });
+                                                }} />
                                             ))}
                                         </div>
                                     </div>
@@ -1275,16 +1228,6 @@
                                     </div>
                                 </div>
 
-                                {/* Footer Disclaimer */}
-                                <div className="mt-8 border-t border-gray-200 pt-6 text-center text-xs text-gray-500">
-                                    <p className="mb-2">
-                                        <strong>DISCLAIMER:</strong> This record is generated from self-captured attendance data. Every effort is made to ensure accuracy; discrepancies may occur due to manual entry errors. Please ensure consistency in your submissions to maintain an accurate transformation profile.
-                                    </p>
-                                    <p className="font-medium text-gray-400">
-                                        Attendance data is updated at the beginning of each month.
-                                    </p>
-                                </div>
-
                                 {/* Footer link */}
                                 <div className="text-center py-4 no-print">
                                     <p className="text-sm text-gray-500">
@@ -1307,9 +1250,9 @@
                         />
                     )}
 
-                    {/* Session Detail Modal */}
+                    {/* Upcoming Session Detail Modal */}
                     {selectedSession && (
-                        <SessionDetailModal
+                        <UpcomingSessionModal
                             session={selectedSession}
                             onClose={() => setSelectedSession(null)}
                         />
