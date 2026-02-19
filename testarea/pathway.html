@@ -235,39 +235,20 @@
             box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
         }
 
+        .milestone-card.teal-border {
+            border-left: 6px solid #00A1A3;
+        }
+
+        .milestone-card.olive-border {
+            border-left: 6px solid #8FAD15;
+        }
+
         .milestone-card.blue-border {
             border-left: 6px solid #007DBA;
-            border-top: none;
-            border-right: none;
-            border-bottom: none;
         }
 
-        .milestone-card.green-border {
-            border-left: 6px solid #78BE20;
-            border-top: none;
-            border-right: none;
-            border-bottom: none;
-        }
-
-        .milestone-card.purple-border {
-            border-left: 6px solid #672D82;
-            border-top: none;
-            border-right: none;
-            border-bottom: none;
-        }
-
-        .milestone-card.red-border {
-            border-left: 6px solid #E30613;
-            border-top: none;
-            border-right: none;
-            border-bottom: none;
-        }
-
-        .milestone-card.gold-border {
-            border-left: 6px solid #FFD700;
-            border-top: none;
-            border-right: none;
-            border-bottom: none;
+        .milestone-card.pink-border {
+            border-left: 6px solid #C8126E;
         }
 
         .milestone-number {
@@ -297,7 +278,7 @@
         .milestone-title {
             font-size: 1.3rem;
             font-weight: bold;
-            color: #001489;
+            color: #1a1a1a;
             margin-bottom: 0.5rem;
             text-align: center;
         }
@@ -597,7 +578,8 @@
                 title: 'ICT Adoption Strategy',
                 subtitle: 'The Entry Point',
                 icon: '🧭',
-                color: 'blue-border',
+                color: 'teal-border',
+                accentColor: '#00A1A3',
                 duration: '24-hour self-paced course',
                 description: 'A foundational online course providing a broad perspective on the visibility of the digital landscape and the "Transformation Agenda." This journey moves you from digital literacy (the what) toward understanding the possibilities of technology in education.',
                 keyPoints: [
@@ -615,7 +597,8 @@
                 title: 'Dovetail Essentials',
                 subtitle: 'Customisation & Micro-Learning',
                 icon: '🧰',
-                color: 'green-border',
+                color: 'olive-border',
+                accentColor: '#8FAD15',
                 duration: '10 focused micro-learning sessions',
                 description: 'A non-linear pathway through targeted 60-120 minute sessions that build practical digital competency (the how). Choose the sessions that match your needs and context across four developmental levels.',
                 dovetailEssentials: [
@@ -645,7 +628,8 @@
                 title: 'Digital Skills Course',
                 subtitle: 'The Experiential Shift',
                 icon: '📖',
-                color: 'purple-border',
+                color: 'blue-border',
+                accentColor: '#007DBA',
                 duration: '4-week hybrid immersion',
                 description: 'An experiential hybrid course that shifts your focus from "how to use" to "how to learn." View technology from the learner\'s perspective and develop digital wisdom (the when and why) through hands-on practice, reflection, and collaboration.',
                 keyPoints: [
@@ -661,10 +645,11 @@
             {
                 id: 'cybereffect',
                 step: 4,
-                title: 'Cyber Effect Ambassador Course',
+                title: 'Cyber Ambassador',
                 subtitle: 'Ethical Capstone',
                 icon: '🌐',
-                color: 'red-border',
+                color: 'pink-border',
+                accentColor: '#C8126E',
                 duration: 'Self-paced 4-week course',
                 description: 'Deepen your ability to engage with the ethical, emotional, psychological, and behavioural dimensions of technology use. Master the 4P Affective Transformation Model (People, Practices, Pedagogy, Platforms) and lead with reflective digital responsibility.',
                 keyPoints: [
@@ -676,32 +661,20 @@
                     'Earn your fourth Spark and become a Cluster-Level Transformation Agent'
                 ],
                 next: 'Become a champion for ethical, human-centered technology integration and support your school community in building a positive digital culture.'
-            },
-            {
-                id: 'agent',
-                step: 5,
-                title: 'Transformation Agent',
-                subtitle: 'Strategic Leadership',
-                icon: '🏆',
-                color: 'gold-border',
-                duration: 'Ongoing thought leadership',
-                description: 'You\'ve arrived! As a certified Transformation Agent with 3+ Sparks, you are now a thought leader driving the decentralized, teacher-led movement. Lead innovation, mentor colleagues, co-create content, and shape the future of digital education in the WCED.',
-                agentLevels: [
-                    '3 Sparks - School-Level Agent: Support your school, collaborate with SMT, present sessions, provide mentorship',
-                    '4 Sparks - Cluster-Level Agent: Support neighboring schools, engage with multiple SMTs, mentor across contexts',
-                    '5 Sparks - Provincial-Level Contributor: Develop courseware, serve as thought leader and ambassador, shape provincial strategy'
-                ],
-                keyPoints: [
-                    'Lead technology integration initiatives in your context',
-                    'Mentor and support colleagues on their transformation journey',
-                    'Co-create professional development content and resources',
-                    'Contribute to provincial thought leadership and innovation',
-                    'Drive the decentralized, teacher-led movement',
-                    'Champion the 4P Model and human-centered digital transformation'
-                ],
-                next: 'Continue your journey of lifelong learning, leadership, and contribution to building a connected community of innovators.'
             }
         ];
+
+        const TRANSFORMATION_ARC = {
+            icon: '🎓',
+            title: 'Transformation ARC',
+            subtitle: 'By Invitation',
+            steps: [
+                { name: 'Facilitator Think Tank', label: 'Step 1', spark: true },
+                { name: 'Elevate', label: 'Step 2', spark: false },
+                { name: 'Shift and Spark', label: 'Step 3', spark: false }
+            ],
+            description: 'A specialised developmental pathway for teachers with strong PD engagement. The Facilitator Think Tank is the entry point and earns a Spark. Elevate and Shift and Spark deepen your capacity as a transformation leader.'
+        };
 
         function Modal({ milestone, onClose }) {
             if (!milestone) return null;
@@ -710,7 +683,7 @@
                 <div className="modal-backdrop" onClick={onClose}>
                     <div className="modal-content" onClick={(e) => e.stopPropagation()}>
                         <button className="modal-close" onClick={onClose}>×</button>
-                        <div className="modal-header">
+                        <div className="modal-header" style={{ background: `linear-gradient(135deg, ${milestone.accentColor} 0%, ${milestone.accentColor}cc 100%)` }}>
                             <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>{milestone.icon}</div>
                             <h2 className="modal-title">{milestone.title}</h2>
                             <p className="modal-subtitle">{milestone.subtitle}</p>
@@ -749,19 +722,6 @@
                                 </div>
                             )}
 
-                            {milestone.agentLevels && (
-                                <div className="modal-section">
-                                    <h3>Transformation Agent Levels</h3>
-                                    <p style={{ fontStyle: 'italic', marginBottom: '1rem', color: '#FFD700', fontWeight: '600' }}>
-                                        As you earn more Sparks, you unlock greater agency and responsibility in driving transformation.
-                                    </p>
-                                    <ul>
-                                        {milestone.agentLevels.map((level, idx) => (
-                                            <li key={idx}>{level}</li>
-                                        ))}
-                                    </ul>
-                                </div>
-                            )}
 
                             <div className="modal-section">
                                 <h3>Next Steps</h3>
@@ -769,94 +729,6 @@
                             </div>
                         </div>
                     </div>
-                </div>
-            );
-        }
-
-        function Menu() {
-            const [isOpen, setIsOpen] = useState(false);
-
-            const links = [
-                { href: "index.html", label: "Upcoming Sessions" },
-                { href: "calendar.html", label: "Calendar" },
-                { href: "pathway.html", label: "A&T Pathway" },
-                { href: "my-pd-history.html", label: "My Activity" },
-                { href: "my-journey.html", label: "My Journey" }
-            ];
-
-            const menuStyle = { position: 'relative', zIndex: 1000 };
-            const buttonStyle = {
-                padding: '0.5rem',
-                borderRadius: '0.5rem',
-                background: '#f3f4f6',
-                border: 'none',
-                cursor: 'pointer',
-                color: '#374151',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-            };
-            const dropdownStyle = {
-                position: 'absolute',
-                right: 0,
-                marginTop: '0.5rem',
-                width: '14rem',
-                backgroundColor: 'white',
-                borderRadius: '0.75rem',
-                boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
-                border: '1px solid #f3f4f6',
-                overflow: 'hidden',
-                zIndex: 1001,
-                textAlign: 'left'
-            };
-            const linkStyle = {
-                display: 'block',
-                padding: '0.75rem 1rem',
-                color: '#374151',
-                textDecoration: 'none',
-                fontSize: '1rem',
-                borderBottom: '1px solid #f9fafb',
-                fontFamily: 'inherit',
-                transition: 'background-color 0.2s, color 0.2s',
-                fontWeight: 500
-            };
-
-            const handleHover = (e, isHover) => {
-                e.target.style.backgroundColor = isHover ? '#f9fafb' : 'transparent';
-                e.target.style.color = isHover ? '#004B87' : '#374151';
-            };
-
-            return (
-                <div style={menuStyle}>
-                    <button
-                        onClick={() => setIsOpen(!isOpen)}
-                        style={buttonStyle}
-                        aria-label="Menu"
-                    >
-                        {isOpen ? (
-                            <span style={{ fontSize: '1.25rem', fontWeight: 'bold', lineHeight: 1 }}>×</span>
-                        ) : (
-                            <svg style={{ width: '1.5rem', height: '1.5rem' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                            </svg>
-                        )}
-                    </button>
-
-                    {isOpen && (
-                        <div style={dropdownStyle}>
-                            {links.map((link) => (
-                                <a
-                                    key={link.href}
-                                    href={link.href}
-                                    style={linkStyle}
-                                    onMouseOver={(e) => handleHover(e, true)}
-                                    onMouseOut={(e) => handleHover(e, false)}
-                                >
-                                    {link.label}
-                                </a>
-                            ))}
-                        </div>
-                    )}
                 </div>
             );
         }
@@ -903,7 +775,9 @@
                         <div className="header-content">
                             <img src="header.png" alt="WCED eLearning" />
                             <div className="header-links">
-                                <Menu />
+                                <a href="my-journey.html" className="header-link">🗺️ Check My Progress</a>
+                                <a href="index.html" className="header-link">📅 Upcoming Sessions</a>
+                                <a href="my-pd-history.html" className="header-link">📊 My PD History</a>
                             </div>
                         </div>
                     </header>
@@ -938,11 +812,10 @@
                                 />
                                 <defs>
                                     <linearGradient id="pathGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                                        <stop offset="0%" style={{ stopColor: '#007DBA', stopOpacity: 0.6 }} />
-                                        <stop offset="25%" style={{ stopColor: '#78BE20', stopOpacity: 0.6 }} />
-                                        <stop offset="50%" style={{ stopColor: '#672D82', stopOpacity: 0.6 }} />
-                                        <stop offset="75%" style={{ stopColor: '#E30613', stopOpacity: 0.6 }} />
-                                        <stop offset="100%" style={{ stopColor: '#FFD700', stopOpacity: 0.6 }} />
+                                        <stop offset="0%" style={{ stopColor: '#00A1A3', stopOpacity: 0.6 }} />
+                                        <stop offset="33%" style={{ stopColor: '#8FAD15', stopOpacity: 0.6 }} />
+                                        <stop offset="66%" style={{ stopColor: '#007DBA', stopOpacity: 0.6 }} />
+                                        <stop offset="100%" style={{ stopColor: '#C8126E', stopOpacity: 0.6 }} />
                                     </linearGradient>
                                 </defs>
                             </svg>
@@ -960,27 +833,9 @@
                                     <div style={{ textAlign: 'center' }}>
                                         <span className="milestone-duration">{milestone.duration}</span>
                                     </div>
-                                    {milestone.step < 5 && (
-                                        <div style={{ textAlign: 'center' }}>
-                                            <span className="spark-badge">Earn 1 Spark</span>
-                                        </div>
-                                    )}
-                                    {milestone.step === 5 && (
-                                        <div style={{ textAlign: 'center', marginTop: '0.75rem' }}>
-                                            <span style={{
-                                                display: 'inline-block',
-                                                background: 'linear-gradient(135deg, #FFD700 0%, #FFA500 100%)',
-                                                color: '#000',
-                                                padding: '0.4rem 0.9rem',
-                                                borderRadius: '20px',
-                                                fontSize: '0.85rem',
-                                                fontWeight: 'bold',
-                                                boxShadow: '0 2px 8px rgba(255, 215, 0, 0.4)'
-                                            }}>
-                                                🏆 3+ Sparks Required
-                                            </span>
-                                        </div>
-                                    )}
+                                    <div style={{ textAlign: 'center' }}>
+                                        <span className="spark-badge">Earn 1 Spark</span>
+                                    </div>
                                 </div>
                             ))}
                         </div>
@@ -992,6 +847,61 @@
                             onClose={() => setSelectedMilestone(null)}
                         />
                     )}
+
+                    {/* Transformation ARC */}
+                    <div style={{ maxWidth: '860px', margin: '0 auto 3rem', padding: '0 2rem', position: 'relative', zIndex: 1 }}>
+                        <div style={{
+                            background: 'white',
+                            borderRadius: '16px',
+                            padding: '1.5rem 2rem',
+                            boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                            borderLeft: '6px solid #672D82',
+                            display: 'flex',
+                            alignItems: 'flex-start',
+                            gap: '1rem'
+                        }}>
+                            <span style={{ fontSize: '2rem', flexShrink: 0 }}>🎓</span>
+                            <div style={{ flex: 1 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '0.5rem' }}>
+                                    <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#672D82', margin: 0 }}>Transformation ARC</h3>
+                                    <span style={{ fontSize: '0.75rem', background: '#f3ebf7', color: '#672D82', padding: '0.2rem 0.6rem', borderRadius: '20px', fontWeight: '600' }}>By Invitation</span>
+                                </div>
+                                <p style={{ fontSize: '0.9rem', color: '#555', marginBottom: '1rem', lineHeight: 1.6 }}>
+                                    A specialised developmental pathway for teachers with strong PD engagement. The <strong>Facilitator Think Tank</strong> is the entry point and earns a Spark. The remaining steps deepen your capacity as a transformation leader.
+                                </p>
+                                <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                                    {TRANSFORMATION_ARC.steps.map((step, idx) => (
+                                        <div key={idx} style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '0.4rem',
+                                            background: '#f9f5fc',
+                                            border: '1px solid #e0d0eb',
+                                            borderRadius: '8px',
+                                            padding: '0.4rem 0.75rem',
+                                            fontSize: '0.85rem',
+                                            color: '#444'
+                                        }}>
+                                            <span style={{ fontWeight: '600', color: '#672D82' }}>{step.label}</span>
+                                            <span>·</span>
+                                            <span>{step.name}</span>
+                                            {step.spark && (
+                                                <span style={{
+                                                    background: 'linear-gradient(135deg, #FFD700, #FFA500)',
+                                                    color: '#000',
+                                                    fontSize: '0.7rem',
+                                                    fontWeight: 'bold',
+                                                    padding: '0.1rem 0.4rem',
+                                                    borderRadius: '10px',
+                                                    marginLeft: '0.25rem'
+                                                }}>⚡ Spark</span>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </>
             );
         }
