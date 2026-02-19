@@ -65,7 +65,7 @@
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect, useMemo, useRef } = React;
+        const { useState, useEffect, useMemo } = React;
 
         // Sparks sessions
         const SPARK_SESSIONS = [
@@ -205,58 +205,10 @@
                                             <strong>Bonus Spark:</strong> Complete 5+ Dovetail Essentials ({uniqueDovetails.length}/5)
                                         </span>
                                     </div>
-
                                 )}
                             </div>
                         </div>
                     </div>
-                </div>
-            );
-        }
-
-        // === MENU COMPONENT ===
-        function Menu() {
-            const [isOpen, setIsOpen] = useState(false);
-
-            const links = [
-                { href: "index.html", label: "Upcoming Sessions" },
-                { href: "calendar.html", label: "Calendar" },
-                { href: "pathway.html", label: "A&T Pathway" },
-                { href: "my-pd-history.html", label: "My Activity" },
-                { href: "my-journey.html", label: "My Journey" }
-            ];
-
-            return (
-                <div className="relative z-50">
-                    <button
-                        onClick={() => setIsOpen(!isOpen)}
-                        className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-wcg-blue"
-                        aria-label="Menu"
-                    >
-                        {isOpen ? (
-                            <span className="text-xl font-bold leading-none">×</span>
-                        ) : (
-                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                            </svg>
-                        )}
-                    </button>
-
-                    {isOpen && (
-                        <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden animate-fade-in-up">
-                            <div className="py-1">
-                                {links.map((link) => (
-                                    <a
-                                        key={link.href}
-                                        href={link.href}
-                                        className="block px-4 py-3 text-gray-700 hover:bg-gray-50 hover:text-wcg-blue transition-colors border-b border-gray-50 last:border-0 font-medium"
-                                    >
-                                        {link.label}
-                                    </a>
-                                ))}
-                            </div>
-                        </div>
-                    )}
                 </div>
             );
         }
@@ -276,21 +228,6 @@
                 category: ''
             });
             const [modalOpen, setModalOpen] = useState({ isOpen: false, type: null });
-            const shouldAutoSearchRef = useRef(false);
-
-            // Persistence: Check session storage on mount
-            useEffect(() => {
-                const storedType = sessionStorage.getItem('tpd_searchType');
-                const storedValue = sessionStorage.getItem('tpd_searchValue');
-                const storedAck = sessionStorage.getItem('tpd_acknowledged');
-
-                if (storedType && storedValue && storedAck === 'true') {
-                    setSearchType(storedType);
-                    setSearchValue(storedValue);
-                    setAcknowledged(true);
-                    shouldAutoSearchRef.current = true;
-                }
-            }, []);
 
             // Load CSV on mount
             useEffect(() => {
@@ -332,8 +269,8 @@
             }, [data]);
 
             // Handle search
-            const handleSearch = (isAuto = false) => {
-                if (!searchValue.trim() || (!isAuto && !acknowledged)) return;
+            const handleSearch = () => {
+                if (!searchValue.trim() || !acknowledged) return;
 
                 const searchKey = searchValue.trim();
                 let records = [];
@@ -348,11 +285,6 @@
                     setResults({ profile: null, sessions: [], allSessions: [] });
                     return;
                 }
-
-                // Save to session storage on successful search
-                sessionStorage.setItem('tpd_searchType', searchType);
-                sessionStorage.setItem('tpd_searchValue', searchKey);
-                sessionStorage.setItem('tpd_acknowledged', 'true');
 
                 // Sort by timestamp (newest first)
                 const sortedRecords = [...records].sort((a, b) => {
@@ -388,25 +320,7 @@
 
                 setResults({ profile, sessions: uniqueSessions, allSessions: uniqueSessions });
                 setFilters({ level: '', district: '', mode: '', category: '' });
-
-                // Reset auto search ref if it was used
-                if (isAuto) shouldAutoSearchRef.current = false;
             };
-
-            // Auto-search when data is loaded
-            useEffect(() => {
-                if (!loading && shouldAutoSearchRef.current && Object.keys(indexes.idIndex).length > 0) {
-                    // Check if we have the data to search
-                    const searchKey = searchValue.trim();
-                    const hasData = searchType === 'id'
-                        ? (indexes.idIndex[searchKey])
-                        : (indexes.persalIndex[searchKey]);
-
-                    if (hasData) {
-                        handleSearch(true);
-                    }
-                }
-            }, [loading, indexes, searchValue, searchType]);
 
             // Apply filters
             const filteredSessions = useMemo(() => {
@@ -573,7 +487,9 @@
                     <header className="bg-white shadow-sm no-print">
                         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
                             <img src="header.png" alt="WCED Header" className="h-16" />
-                            <Menu />
+                            <a href="my-journey.html" className="text-sm font-semibold text-wcg-blue border-2 border-wcg-blue px-4 py-2 rounded-lg hover:bg-wcg-blue hover:text-white transition-colors">
+                                🗺️ My Pathway Progress
+                            </a>
                         </div>
                     </header>
 
@@ -963,15 +879,6 @@
                                                 </div>
                                             </div>
                                         )}
-
-                                        <div className="mt-8 border-t border-gray-200 pt-6 text-center text-xs text-gray-500">
-                                            <p className="mb-2">
-                                                <strong>DISCLAIMER:</strong> This record is generated from self-captured attendance data. Every effort is made to ensure accuracy; discrepancies may occur due to manual entry errors. Please ensure consistency in your submissions to maintain an accurate transformation profile.
-                                            </p>
-                                            <p className="font-medium text-gray-400">
-                                                Attendance data is updated at the beginning of each month.
-                                            </p>
-                                        </div>
                                     </>
                                 ) : (
                                     <div className="max-w-2xl mx-auto">
@@ -998,7 +905,7 @@
                             </div>
                         )}
                     </div>
-                </div >
+                </div>
             );
         }
 
