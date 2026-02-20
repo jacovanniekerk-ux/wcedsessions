@@ -67,6 +67,10 @@
     <script type="text/babel">
         const { useState, useEffect, useMemo } = React;
 
+        // *** UPDATE THIS DATE WHEN YOU UPDATE THE CSV FILE ***
+        const DATA_LAST_UPDATED = '2026-02-20'; // Format: YYYY-MM-DD
+        // *****************************************************
+        
         // Sparks sessions
         const SPARK_SESSIONS = [
             'Adoption Strategy',
@@ -606,6 +610,9 @@
                                                     </p>
                                                     <p className="text-sm text-gray-500 mt-2">
                                                         Generated: {new Date().toLocaleDateString('en-GB')}
+                                                    </p>
+                                                    <p className="text-xs text-gray-400 mt-1">
+                                                            ⚠️ Based on static data last updated: {new Date(DATA_LAST_UPDATED).toLocaleDateString('en-GB')}
                                                     </p>
                                                 </div>
                                                 <button
