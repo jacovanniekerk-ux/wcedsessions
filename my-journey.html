@@ -92,7 +92,7 @@
         }
 
         .pathway-line-fill {
-            background: linear-gradient(90deg, #001489, #76B82A, #672D82, #E30613, #FFD700);
+            background: linear-gradient(90deg, #00A1A3, #8FAD15, #007DBA, #C8126E);
             transition: width 1.5s ease-out;
         }
 
@@ -103,6 +103,16 @@
         .suggestion-card:hover {
             transform: translateY(-2px);
             box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Hide scrollbar but keep scrolling on mobile */
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
         }
 
         @media print {
@@ -159,8 +169,8 @@
                 title: 'ICT Adoption Strategy',
                 subtitle: 'The Entry Point',
                 icon: '🧭',
-                color: '#001489',
-                lightColor: '#E8EAFE',
+                color: '#00A1A3',
+                lightColor: '#E0F7F7',
                 sparkSession: 'Adoption Strategy',
                 duration: '24-hour self-paced course',
                 description: 'A foundational online course providing a broad perspective on the digital landscape and the "Transformation Agenda."'
@@ -171,8 +181,8 @@
                 title: 'Dovetail Essentials',
                 subtitle: 'Customisation & Micro-Learning',
                 icon: '🧰',
-                color: '#76B82A',
-                lightColor: '#F0F9E8',
+                color: '#8FAD15',
+                lightColor: '#F4F8E1',
                 sparkSession: null, // bonus spark from 5+ dovetails
                 duration: '10 focused micro-learning sessions',
                 description: 'A non-linear pathway through targeted 60-120 minute sessions building practical digital competency.'
@@ -183,8 +193,8 @@
                 title: 'Digital Skills Course',
                 subtitle: 'The Experiential Shift',
                 icon: '📖',
-                color: '#672D82',
-                lightColor: '#F3EBF7',
+                color: '#007DBA',
+                lightColor: '#E0F1FA',
                 sparkSession: 'Digital Skills Course',
                 duration: '4-week hybrid immersion',
                 description: 'An experiential hybrid course shifting focus from "how to use" to "how to learn."'
@@ -192,26 +202,14 @@
             {
                 id: 'cybereffect',
                 step: 4,
-                title: 'Cyber Effect Ambassador',
+                title: 'Cyber Ambassador',
                 subtitle: 'Ethical Capstone',
                 icon: '🌐',
-                color: '#E30613',
-                lightColor: '#FDE8E8',
+                color: '#C8126E',
+                lightColor: '#FAE0EE',
                 sparkSession: 'Cyber Effect Ambassador Initiation Course',
                 duration: 'Self-paced 4-week course',
                 description: 'Deepen your ability to engage with the ethical, emotional, and behavioural dimensions of technology use.'
-            },
-            {
-                id: 'agent',
-                step: 5,
-                title: 'Transformation Agent',
-                subtitle: 'Strategic Leadership',
-                icon: '🏆',
-                color: '#B8860B',
-                lightColor: '#FFF8E1',
-                sparkSession: null, // achieved via 3+ sparks
-                duration: 'Ongoing thought leadership',
-                description: 'As a certified Transformation Agent with 3+ Sparks, you are a thought leader driving the teacher-led movement.'
             }
         ];
 
@@ -348,7 +346,7 @@
         }
 
         // === SUGGESTION CARD ===
-        function SuggestionCard({ icon, title, description, type, sessions, linkText, linkHref }) {
+        function SuggestionCard({ icon, title, description, type, sessions, linkText, linkHref, onSessionClick }) {
             const typeColors = {
                 action: { bg: 'bg-blue-50', border: 'border-blue-200', icon: 'text-blue-600' },
                 progress: { bg: 'bg-amber-50', border: 'border-amber-200', icon: 'text-amber-600' },
@@ -359,24 +357,27 @@
             const colors = typeColors[type] || typeColors.info;
 
             return (
-                <div className={`suggestion-card rounded-xl p-5 border-2 ${colors.bg} ${colors.border}`}>
-                    <div className="flex items-start gap-3">
+                <div className={`suggestion-card rounded-xl p-5 border-2 overflow-hidden ${colors.bg} ${colors.border}`}>
+                    <div className="flex items-start gap-3 min-w-0">
                         <span className={`text-2xl flex-shrink-0`}>{icon}</span>
-                        <div className="flex-1">
+                        <div className="flex-1 min-w-0">
                             <h4 className="font-bold text-gray-900 mb-1">{title}</h4>
                             <p className="text-sm text-gray-700 mb-2">{description}</p>
                             {sessions && sessions.length > 0 && (
-                                <div className="mt-3">
+                                <div className="mt-3 overflow-hidden">
                                     <p className="text-xs font-semibold text-gray-500 uppercase mb-2">Upcoming sessions you could attend:</p>
                                     <div className="space-y-1.5">
                                         {sessions.slice(0, 4).map((s, i) => (
-                                            <div key={i} className="flex items-center gap-2 text-xs bg-white rounded-lg px-3 py-2 border border-gray-100">
-                                                <span className="text-gray-400">📅</span>
-                                                <span className="font-medium text-gray-800">{s.date}</span>
-                                                <span className="text-gray-400">•</span>
+                                            <div
+                                                key={i}
+                                                className="flex items-center gap-2 text-xs bg-white rounded-lg px-3 py-2 border border-gray-100 cursor-pointer hover:border-wcg-blue hover:bg-blue-50 transition-colors min-w-0"
+                                                onClick={() => onSessionClick && onSessionClick(s)}
+                                            >
+                                                <span className="text-gray-400 flex-shrink-0">📅</span>
+                                                <span className="font-medium text-gray-800 flex-shrink-0">{s.date}</span>
+                                                <span className="text-gray-400 flex-shrink-0">•</span>
                                                 <span className="text-gray-700 flex-1 truncate">{s.name}</span>
-                                                <span className="text-gray-400">•</span>
-                                                <span className="text-gray-500">{s.district}</span>
+                                                <span className="text-wcg-blue flex-shrink-0 text-sm">›</span>
                                             </div>
                                         ))}
                                         {sessions.length > 4 && (
@@ -396,30 +397,170 @@
             );
         }
 
-        // === FACILITATOR ARC CARD ===
-        function FacilitatorARCCard({ hasThinkTank, totalSessions }) {
+        // === UPCOMING SESSION MODAL ===
+        function UpcomingSessionModal({ session, onClose }) {
+            if (!session) return null;
+
+            const formatOutcomes = (text) => {
+                if (!text) return null;
+                const items = text.split(/\n|⮚|>/).filter(item => item.trim().length > 0);
+                if (items.length <= 1) return <p className="text-gray-600 text-sm mt-2">{text}</p>;
+                return (
+                    <ul className="mt-2 space-y-1.5">
+                        {items.map((item, idx) => (
+                            <li key={idx} className="text-gray-600 text-sm flex items-start">
+                                <span className="mr-2 mt-1.5 w-1.5 h-1.5 bg-wcg-blue rounded-full flex-shrink-0"></span>
+                                <span>{item.trim()}</span>
+                            </li>
+                        ))}
+                    </ul>
+                );
+            };
+
+            const getLevelColor = (level) => {
+                if (!level) return 'bg-gray-100 text-gray-700 border-gray-200';
+                const l = level.toLowerCase();
+                if (l.includes('foundation')) return 'bg-wcg-green text-white border-wcg-green';
+                if (l.includes('better')) return 'bg-wcg-red text-white border-wcg-red';
+                if (l.includes('i can')) return 'bg-wcg-yellow text-black border-wcg-yellow';
+                if (l.includes('summit')) return 'bg-wcg-blue text-white border-wcg-blue';
+                return 'bg-gray-100 text-gray-700 border-gray-200';
+            };
+
+            return (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }} onClick={onClose}>
+                    <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+                        {/* Date header */}
+                        <div className="bg-gray-50 border-b border-gray-100 p-4 rounded-t-2xl flex justify-between items-center">
+                            <div>
+                                <div className="flex items-center gap-2 text-wcg-blue font-bold">
+                                    <span>📅</span>
+                                    <span>{session.date || 'TBA'}</span>
+                                </div>
+                                {session.time && (
+                                    <div className="flex items-center gap-2 text-gray-600 text-sm mt-1 ml-6">
+                                        <span>🕐</span>
+                                        <span>{session.time}</span>
+                                    </div>
+                                )}
+                            </div>
+                            <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">×</button>
+                        </div>
+
+                        {/* Content */}
+                        <div className="p-5">
+                            <div className="flex flex-wrap gap-2 mb-3">
+                                {session.level && (
+                                    <span className={`px-2 py-0.5 rounded-md text-xs font-bold uppercase tracking-wide border ${getLevelColor(session.level)}`}>
+                                        {session.level}
+                                    </span>
+                                )}
+                                {session.district && (
+                                    <span className="px-2 py-0.5 rounded-md text-xs font-bold uppercase tracking-wide bg-white text-wcg-blue border border-wcg-blue/30">
+                                        {session.district}
+                                    </span>
+                                )}
+                            </div>
+
+                            <h3 className="text-lg font-bold text-gray-900 mb-3">{session.name}</h3>
+
+                            {session.description && (
+                                <div className="text-gray-600 text-sm leading-relaxed mb-4">
+                                    {session.description}
+                                </div>
+                            )}
+
+                            {session.outcomes && (
+                                <div className="bg-blue-50/50 rounded-lg p-3 mb-4">
+                                    <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Learning Outcomes</h4>
+                                    {formatOutcomes(session.outcomes)}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Actions */}
+                        <div className="p-4 border-t border-gray-100 space-y-2">
+                            {session.registerLink && (
+                                <a
+                                    href={session.registerLink}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center justify-center bg-wcg-blue hover:bg-blue-800 text-white font-bold py-2.5 px-4 rounded-lg transition-all text-sm shadow-sm w-full"
+                                >
+                                    Register Now ↗
+                                </a>
+                            )}
+                            <div className="grid grid-cols-2 gap-2">
+                                {session.googleCal && session.googleCal !== '#' && (
+                                    <a href={session.googleCal} target="_blank" rel="noreferrer" className="flex items-center justify-center bg-white border border-gray-200 hover:border-wcg-blue text-gray-600 font-medium py-2 px-2 rounded-lg text-xs transition-colors">
+                                        📅 Add to Google
+                                    </a>
+                                )}
+                                {session.outlookCal && session.outlookCal !== '#' && (
+                                    <a href={session.outlookCal} target="_blank" rel="noreferrer" className="flex items-center justify-center bg-white border border-gray-200 hover:border-wcg-blue text-gray-600 font-medium py-2 px-2 rounded-lg text-xs transition-colors">
+                                        📧 Add to Outlook
+                                    </a>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // === TRANSFORMATION ARC SESSIONS ===
+        const TRANSFORMATION_ARC_SESSIONS = [
+            'Facilitator Think Tank',
+            'Elevate',
+            'Shift and Spark'
+        ];
+
+        // === DATA LAST UPDATED (manually update this when refreshing data) ===
+        const DATA_LAST_UPDATED = '2 March 2026';
+
+        // === TRANSFORMATION ARC CARD ===
+        function TransformationARCCard({ hasThinkTank, arcSessions, totalSessions }) {
+            const arcCount = arcSessions.length;
+            const hasElevate = arcSessions.includes('Elevate');
+            const hasShiftAndSpark = arcSessions.includes('Shift and Spark');
+
             return (
                 <div className={`rounded-xl p-5 border-2 border-dashed ${hasThinkTank ? 'border-purple-300 bg-purple-50' : 'border-gray-300 bg-gray-50 opacity-60'}`}>
                     <div className="flex items-start gap-3">
                         <span className="text-2xl">🎓</span>
                         <div className="flex-1">
                             <div className="flex items-center gap-2 mb-1">
-                                <h4 className="font-bold text-gray-700">Facilitator ARC</h4>
+                                <h4 className="font-bold text-gray-700">Transformation ARC</h4>
                                 {hasThinkTank ? (
-                                    <span className="text-xs bg-purple-200 text-purple-800 px-2 py-0.5 rounded-full font-semibold">Step 1 Complete</span>
+                                    <span className="text-xs bg-purple-200 text-purple-800 px-2 py-0.5 rounded-full font-semibold">{arcCount} Step{arcCount > 1 ? 's' : ''} Complete</span>
                                 ) : (
                                     <span className="text-xs bg-gray-200 text-gray-500 px-2 py-0.5 rounded-full font-semibold">By Invitation</span>
                                 )}
                             </div>
-                            <p className="text-sm text-gray-600 mb-1">
+                            <p className="text-sm text-gray-600 mb-2">
                                 {hasThinkTank
-                                    ? 'You\'ve completed the Facilitator Think Tank — the first step of the Facilitator ARC developmental pathway. This Spark contributes to your Transformation Agent level.'
-                                    : 'The Facilitator Think Tank is the entry point to the Facilitator ARC — a specialised developmental pathway by invitation. Teachers with strong PD engagement are often considered for this opportunity.'
+                                    ? 'You\'ve entered the Transformation ARC — a specialised developmental pathway. The Facilitator Think Tank is the first step and earns a Spark.'
+                                    : 'The Facilitator Think Tank is the entry point to the Transformation ARC — a specialised developmental pathway by invitation. Teachers with strong PD engagement are often considered.'
                                 }
                             </p>
                             {hasThinkTank && (
-                                <span className="inline-block bg-gradient-to-r from-yellow-400 to-orange-400 text-black text-xs font-bold px-2 py-1 rounded-full shadow mt-1">
-                                    ⭐ Spark Earned
+                                <div className="space-y-1.5 mb-2">
+                                    {[
+                                        { name: 'Facilitator Think Tank', done: true, label: 'Step 1 • ⭐ Spark' },
+                                        { name: 'Elevate', done: hasElevate, label: 'Step 2' },
+                                        { name: 'Shift and Spark', done: hasShiftAndSpark, label: 'Step 3' }
+                                    ].map((step, idx) => (
+                                        <div key={idx} className={`flex items-center gap-2 p-1.5 rounded-lg text-xs font-medium ${step.done ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-400'}`}>
+                                            <span>{step.done ? '✅' : '⬜'}</span>
+                                            <span>{step.name}</span>
+                                            <span className="ml-auto opacity-70">{step.label}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                            {hasThinkTank && (
+                                <span className="inline-block bg-gradient-to-r from-yellow-400 to-orange-400 text-black text-xs font-bold px-2 py-1 rounded-full shadow">
+                                    ⭐ Spark Earned {arcCount > 1 ? `• ${arcCount} ARC Steps Complete` : ''}
                                 </span>
                             )}
                             {!hasThinkTank && totalSessions >= 15 && (
@@ -443,6 +584,8 @@
             const [acknowledged, setAcknowledged] = useState(false);
             const [results, setResults] = useState(null);
             const [selectedMilestone, setSelectedMilestone] = useState(null);
+            const [menuOpen, setMenuOpen] = useState(false);
+            const [selectedSession, setSelectedSession] = useState(null);
 
             // Load CSVs on mount
             useEffect(() => {
@@ -465,6 +608,58 @@
                     error: () => checkDone()
                 });
             }, []);
+
+            // Auto-login from localStorage (shared with My PD History)
+            useEffect(() => {
+                if (!loading && attendanceData.length > 0 && !results) {
+                    try {
+                        const saved = JSON.parse(localStorage.getItem('wced_pd_credentials') || 'null');
+                        if (saved && saved.searchType && saved.searchValue) {
+                            const searchKey = saved.searchValue.trim();
+                            const idIndex = {};
+                            const persalIndex = {};
+                            attendanceData.forEach(record => {
+                                const id = record['ID/Passport Number']?.trim();
+                                const persal = record['PERSAL Number']?.trim();
+                                if (id) { if (!idIndex[id]) idIndex[id] = []; idIndex[id].push(record); }
+                                if (persal) { if (!persalIndex[persal]) persalIndex[persal] = []; persalIndex[persal].push(record); }
+                            });
+                            const records = saved.searchType === 'id'
+                                ? (idIndex[searchKey] || [])
+                                : (persalIndex[searchKey] || []);
+                            if (records.length > 0) {
+                                const sortedRecords = [...records].sort((a, b) => parseTimestamp(b.Timestamp) - parseTimestamp(a.Timestamp));
+                                const mostRecent = sortedRecords[0];
+                                const seenSessions = new Set();
+                                const uniqueSessions = sortedRecords
+                                    .filter(record => {
+                                        const key = `${record['Session Name']}_${record.Timestamp}`;
+                                        if (seenSessions.has(key)) return false;
+                                        seenSessions.add(key);
+                                        return true;
+                                    })
+                                    .map(record => ({
+                                        ...record,
+                                        parsedDate: parseTimestamp(record.Timestamp),
+                                        isSpark: isSpark(record['Session Name']),
+                                        isDovetail: isDovetail(record['Session Name'])
+                                    }));
+                                setSearchType(saved.searchType);
+                                setSearchValue(saved.searchValue);
+                                setAcknowledged(true);
+                                setResults({
+                                    profile: {
+                                        name: `${mostRecent['First Name']} ${mostRecent['Surname']}`.trim(),
+                                        school: mostRecent['School'] || 'N/A',
+                                        district: mostRecent['District'] || 'N/A'
+                                    },
+                                    sessions: uniqueSessions
+                                });
+                            }
+                        }
+                    } catch (e) { /* ignore parse errors */ }
+                }
+            }, [loading, attendanceData]);
 
             // Build lookup indexes
             const indexes = useMemo(() => {
@@ -521,6 +716,9 @@
                     }));
 
                 setResults({ profile, sessions: uniqueSessions });
+
+                // Save credentials to localStorage for cross-page login
+                localStorage.setItem('wced_pd_credentials', JSON.stringify({ searchType, searchValue: searchKey }));
             };
 
             // === COMPUTE PATHWAY STATUS ===
@@ -535,6 +733,9 @@
                 const hasDigitalSkills = sessionNames.includes('Digital Skills Course');
                 const hasCyberEffect = sessionNames.includes('Cyber Effect Ambassador Initiation Course');
                 const hasThinkTank = sessionNames.includes('Facilitator Think Tank');
+
+                // Track all Transformation ARC sessions completed
+                const arcSessions = TRANSFORMATION_ARC_SESSIONS.filter(s => sessionNames.includes(s));
 
                 // Dovetail progress
                 const completedDovetails = DOVETAIL_SESSIONS.filter(d => sessionNames.includes(d));
@@ -579,20 +780,12 @@
                         state: hasCyberEffect ? 'completed' : 'not-started',
                         detail: hasCyberEffect ? null : 'By invitation',
                         completedDate: getCompletionDate('Cyber Effect Ambassador Initiation Course')
-                    },
-                    // Milestone 5: Transformation Agent
-                    {
-                        state: totalSparks >= 3 ? 'completed' : totalSparks > 0 ? 'in-progress' : 'not-started',
-                        detail: totalSparks >= 3
-                            ? (totalSparks >= 5 ? 'Provincial-Level Contributor' : totalSparks >= 4 ? 'Cluster-Level Agent' : 'School-Level Agent')
-                            : `${totalSparks}/3 Sparks earned`,
-                        progress: Math.min((totalSparks / 3) * 100, 100)
                     }
                 ];
 
                 // Calculate overall progress %
                 const completedMilestones = milestoneStatuses.filter(m => m.state === 'completed').length;
-                const overallProgress = (completedMilestones / 5) * 100;
+                const overallProgress = (completedMilestones / 4) * 100;
 
                 // Level distribution
                 const byLevel = {
@@ -608,7 +801,7 @@
 
                 return {
                     milestoneStatuses,
-                    hasAdoption, hasDigitalSkills, hasCyberEffect, hasThinkTank,
+                    hasAdoption, hasDigitalSkills, hasCyberEffect, hasThinkTank, arcSessions,
                     dovetailCount, completedDovetails, remainingDovetails, hasDovetailSpark,
                     pathwaySparks, totalSparks,
                     overallProgress,
@@ -718,8 +911,8 @@
                 if (!pathwayStatus.hasThinkTank && totalSessions >= 15) {
                     items.push({
                         icon: '💡',
-                        title: 'Facilitator Think Tank',
-                        description: `Your strong PD engagement (${totalSessions} sessions) puts you on the path to being considered for the Facilitator Think Tank — the entry point to the Facilitator ARC. This is by invitation and targets teachers with high engagement.`,
+                        title: 'Transformation ARC: Facilitator Think Tank',
+                        description: `Your strong PD engagement (${totalSessions} sessions) puts you on the path to being considered for the Facilitator Think Tank — the entry point to the Transformation ARC. This is by invitation and targets teachers with high engagement.`,
                         type: 'info'
                     });
                 }
@@ -813,19 +1006,37 @@
             return (
                 <div className="min-h-screen bg-gray-50">
                     {/* Header */}
-                    <header className="bg-white shadow-sm no-print">
+                    <header className="bg-white shadow-sm no-print relative">
                         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
                             <img src="header.png" alt="WCED Header" className="h-12 sm:h-16" />
-                            <div className="flex gap-2 sm:gap-3 flex-wrap justify-end">
-                                <a href="pathway.html" className="text-xs sm:text-sm font-semibold text-wcg-blue border-2 border-wcg-blue px-3 py-1.5 rounded-lg hover:bg-wcg-blue hover:text-white transition-colors">
-                                    🗺️ Pathway
-                                </a>
-                                <a href="my-pd-history.html" className="text-xs sm:text-sm font-semibold text-wcg-blue border-2 border-wcg-blue px-3 py-1.5 rounded-lg hover:bg-wcg-blue hover:text-white transition-colors">
-                                    📊 Full PD History
-                                </a>
-                                <a href="index.html" className="text-xs sm:text-sm font-semibold text-wcg-blue border-2 border-wcg-blue px-3 py-1.5 rounded-lg hover:bg-wcg-blue hover:text-white transition-colors">
-                                    📅 Sessions
-                                </a>
+                            <div className="relative">
+                                <button
+                                    onClick={() => setMenuOpen(!menuOpen)}
+                                    className="flex items-center justify-center w-10 h-10 rounded-lg border-2 border-gray-300 hover:border-wcg-blue hover:bg-gray-50 transition-colors"
+                                    aria-label="Menu"
+                                >
+                                    {menuOpen ? (
+                                        <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                                    ) : (
+                                        <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
+                                    )}
+                                </button>
+                                {menuOpen && (
+                                    <div className="absolute right-0 top-12 bg-white rounded-xl shadow-lg border border-gray-200 py-2 w-52 z-50">
+                                        <a href="pathway.html" className="block px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:text-wcg-blue transition-colors">
+                                            Pathway Overview
+                                        </a>
+                                        <a href="my-pd-history.html" className="block px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:text-wcg-blue transition-colors">
+                                            Full PD History
+                                        </a>
+                                        <a href="index.html" className="block px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:text-wcg-blue transition-colors">
+                                            Upcoming Sessions
+                                        </a>
+                                        <a href="calendar.html" className="block px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:text-wcg-blue transition-colors">
+                                            Calendar
+                                        </a>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </header>
@@ -901,6 +1112,7 @@
 
                                     <div className="mb-6 bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-xs text-yellow-800">
                                         <strong>DISCLAIMER:</strong> This record is generated from self-captured attendance data. Every effort is made to ensure accuracy; discrepancies may occur due to manual entry errors. Please ensure consistency in your submissions to maintain an accurate transformation profile.
+                                        <br /><strong>Data last updated:</strong> {DATA_LAST_UPDATED}
                                     </div>
 
                                     <button
@@ -925,7 +1137,7 @@
                                         We couldn't find any PD records matching your search. Please check your {searchType === 'id' ? 'ID' : 'PERSAL'} number and try again.
                                     </p>
                                     <button
-                                        onClick={() => setResults(null)}
+                                        onClick={() => { localStorage.removeItem('wced_pd_credentials'); setResults(null); }}
                                         className="bg-wcg-blue text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-800"
                                     >
                                         Try Again
@@ -942,6 +1154,7 @@
                                             <h2 className="text-2xl font-bold text-wcg-dark">{results.profile.name}</h2>
                                             <p className="text-gray-600"><span className="font-semibold">School:</span> {results.profile.school}</p>
                                             <p className="text-gray-600"><span className="font-semibold">District:</span> {results.profile.district}</p>
+                                            <p className="text-xs text-gray-400 mt-1">Data last updated: {DATA_LAST_UPDATED}</p>
                                         </div>
                                         <div className="flex items-center gap-4">
                                             <div className="text-center px-4 py-2 bg-gradient-to-r from-yellow-50 to-orange-50 rounded-xl border border-yellow-200">
@@ -956,10 +1169,10 @@
                                                 </div>
                                             </div>
                                             <button
-                                                onClick={() => setResults(null)}
-                                                className="no-print text-sm text-gray-500 hover:text-gray-700 border border-gray-300 rounded-lg px-3 py-2 hover:bg-gray-50"
+                                                onClick={() => { localStorage.removeItem('wced_pd_credentials'); setResults(null); }}
+                                                className="no-print text-sm text-red-500 hover:text-red-700 border border-red-300 rounded-lg px-3 py-2 hover:bg-red-50 transition-colors"
                                             >
-                                                New Search
+                                                Log Out
                                             </button>
                                         </div>
                                     </div>
@@ -980,9 +1193,9 @@
                                         />
                                     </div>
 
-                                    {/* Milestone cards - horizontal scroll */}
-                                    <div className="overflow-x-auto pb-4 -mx-2">
-                                        <div className="flex gap-4 px-2" style={{ minWidth: 'min-content' }}>
+                                    {/* Milestone cards - responsive: wrap on desktop, scroll on mobile */}
+                                    <div className="overflow-x-auto hide-scrollbar pt-4 -mx-2">
+                                        <div className="flex flex-wrap lg:flex-nowrap lg:flex-wrap gap-4 px-2 justify-center" style={{ minWidth: 'min-content' }}>
                                             {MILESTONES.map((milestone, idx) => (
                                                 <React.Fragment key={milestone.id}>
                                                     <MilestoneCard
@@ -992,15 +1205,17 @@
                                                     />
                                                     {idx < MILESTONES.length - 1 && (
                                                         <div className="flex items-center flex-shrink-0">
-                                                            <div className="w-8 h-0.5" style={{
-                                                                background: pathwayStatus.milestoneStatuses[idx].state === 'completed' ? milestone.color : '#e5e7eb'
-                                                            }} />
-                                                            <span className={`text-lg ${pathwayStatus.milestoneStatuses[idx].state === 'completed' ? 'text-green-500' : 'text-gray-300'}`}>
-                                                                →
-                                                            </span>
-                                                            <div className="w-8 h-0.5" style={{
-                                                                background: pathwayStatus.milestoneStatuses[idx + 1].state !== 'not-started' ? MILESTONES[idx + 1].color : '#e5e7eb'
-                                                            }} />
+                                                            <svg
+                                                                className="w-6 h-6"
+                                                                viewBox="0 0 24 24"
+                                                                fill="none"
+                                                                stroke={pathwayStatus.milestoneStatuses[idx].state === 'completed' ? milestone.color : '#d1d5db'}
+                                                                strokeWidth="2.5"
+                                                                strokeLinecap="round"
+                                                                strokeLinejoin="round"
+                                                            >
+                                                                <polyline points="9 18 15 12 9 6" />
+                                                            </svg>
                                                         </div>
                                                     )}
                                                 </React.Fragment>
@@ -1008,10 +1223,11 @@
                                         </div>
                                     </div>
 
-                                    {/* Facilitator ARC */}
+                                    {/* Transformation ARC */}
                                     <div className="mt-6 pt-4 border-t border-dashed border-gray-200">
-                                        <FacilitatorARCCard
+                                        <TransformationARCCard
                                             hasThinkTank={pathwayStatus.hasThinkTank}
+                                            arcSessions={pathwayStatus.arcSessions}
                                             totalSessions={pathwayStatus.totalSessions}
                                         />
                                     </div>
@@ -1023,7 +1239,25 @@
                                         <h3 className="text-lg font-bold text-wcg-dark mb-4">📋 Your Next Steps</h3>
                                         <div className="grid gap-4 md:grid-cols-2">
                                             {suggestions.map((suggestion, idx) => (
-                                                <SuggestionCard key={idx} {...suggestion} />
+                                                <SuggestionCard key={idx} {...suggestion} onSessionClick={(s) => {
+                                                    // Find the full session data from upcomingData
+                                                    const full = upcomingData.find(row =>
+                                                        (row['Session Name']?.trim() || '') === s.name &&
+                                                        (row['Date']?.trim() || '') === s.date
+                                                    );
+                                                    setSelectedSession({
+                                                        name: s.name,
+                                                        date: s.date,
+                                                        district: s.district,
+                                                        time: full?.['Time']?.trim() || '',
+                                                        level: full?.['Developmental Level']?.trim() || '',
+                                                        description: full?.['Session Desciption']?.trim() || full?.['Session Description']?.trim() || '',
+                                                        outcomes: full?.['Session Outcomes']?.trim() || '',
+                                                        registerLink: full?.['Pre-Register']?.trim() || '',
+                                                        googleCal: full?.['Add To Calendar (Google)']?.trim() || '',
+                                                        outlookCal: full?.['Add to Calendar (Outlook)']?.trim() || ''
+                                                    });
+                                                }} />
                                             ))}
                                         </div>
                                     </div>
@@ -1064,6 +1298,11 @@
                                     </div>
                                 </div>
 
+                                {/* Disclaimer */}
+                                <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-4 text-xs text-yellow-800">
+                                    <strong>DISCLAIMER:</strong> This record is generated from self-captured attendance data. Every effort is made to ensure accuracy; discrepancies may occur due to manual entry errors. Please ensure consistency in your submissions to maintain an accurate transformation profile.
+                                </div>
+
                                 {/* Footer link */}
                                 <div className="text-center py-4 no-print">
                                     <p className="text-sm text-gray-500">
@@ -1083,6 +1322,14 @@
                             milestone={MILESTONES[selectedMilestone]}
                             status={pathwayStatus.milestoneStatuses[selectedMilestone]}
                             onClose={() => setSelectedMilestone(null)}
+                        />
+                    )}
+
+                    {/* Upcoming Session Detail Modal */}
+                    {selectedSession && (
+                        <UpcomingSessionModal
+                            session={selectedSession}
+                            onClose={() => setSelectedSession(null)}
                         />
                     )}
                 </div>
