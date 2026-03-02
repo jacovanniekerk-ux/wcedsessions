@@ -622,10 +622,15 @@
                                 <div className="flex items-center justify-center md:justify-start gap-3">
                                     <img src="header.png" alt="WCG" className="h-10 md:h-16 w-auto object-contain" />
                                 </div>
-                                <div className="flex items-center gap-3">
-                                    <div className="relative w-full md:w-80 lg:w-96">
+                                <div className="flex items-center gap-2 md:gap-3">
+                                    <a href="index.html" className="flex items-center justify-center h-10 w-10 md:w-auto md:px-4 rounded-lg border-2 border-gray-300 hover:border-wcg-blue hover:bg-gray-50 transition-colors text-gray-700 flex-shrink-0 gap-2" title="Tiles View">
+                                        <Icons.Grid />
+                                        <span className="hidden md:inline font-bold text-xs uppercase tracking-wide">Tiles</span>
+                                    </a>
+
+                                    <div className="relative flex-1 md:w-80 lg:w-96 hidden md:block">
                                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400"><Icons.Search /></div>
-                                        <input type="text" placeholder="Search sessions..." className="block w-full pl-10 pr-4 py-2 border border-gray-200 rounded-full bg-gray-50 sm:text-sm" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                                        <input type="text" placeholder="Search sessions..." className="block w-full pl-10 pr-4 py-2 border border-gray-200 rounded-full bg-gray-50 sm:text-sm focus:outline-none focus:bg-white focus:border-wcg-blue focus:ring-1 focus:ring-wcg-blue transition-all" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
                                     </div>
                                     <div className="relative">
                                         <button
@@ -650,7 +655,7 @@
                                                 <a href="my-pd-history.html" className="block px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:text-wcg-blue transition-colors">
                                                     Full PD History
                                                 </a>
-                                                <a href="index.html" className="block px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:text-wcg-blue transition-colors">
+                                                <a href="index.html" className="block px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:text-wcg-blue transition-colors font-bold border-l-4 border-wcg-blue bg-blue-50">
                                                     Upcoming Sessions
                                                 </a>
                                             </div>
@@ -659,16 +664,16 @@
                                 </div>
                             </div>
 
-                            <div className="mt-3 md:mt-6 flex flex-wrap gap-2 md:gap-3 items-center pt-3 md:pt-4 border-t border-gray-100">
-                                <select value={selectedDistrict} onChange={(e) => setSelectedDistrict(e.target.value)} className="bg-white border border-gray-200 text-gray-700 py-1.5 px-3 rounded-lg text-xs md:text-sm font-medium shadow-sm">
+                            <div className="mt-3 md:mt-6 hidden md:flex flex-wrap gap-2 md:gap-3 items-center pt-3 md:pt-4 border-t border-gray-100">
+                                <select value={selectedDistrict} onChange={(e) => setSelectedDistrict(e.target.value)} className="bg-white border border-gray-200 text-gray-700 py-1.5 px-3 rounded-lg text-xs md:text-sm font-medium shadow-sm cursor-pointer">
                                     {districts.map(d => <option key={d} value={d}>{d === 'All' ? 'All Districts' : d}</option>)}
                                 </select>
 
-                                <select value={selectedLevel} onChange={(e) => setSelectedLevel(e.target.value)} className="bg-white border border-gray-200 text-gray-700 py-1.5 px-3 rounded-lg text-xs md:text-sm font-medium shadow-sm">
+                                <select value={selectedLevel} onChange={(e) => setSelectedLevel(e.target.value)} className="bg-white border border-gray-200 text-gray-700 py-1.5 px-3 rounded-lg text-xs md:text-sm font-medium shadow-sm cursor-pointer">
                                     {levels.map(l => <option key={l} value={l}>{l === 'All' ? 'All Levels' : l}</option>)}
                                 </select>
 
-                                <select value={selectedSessionName} onChange={(e) => setSelectedSessionName(e.target.value)} className="bg-white border border-gray-200 text-gray-700 py-1.5 px-3 rounded-lg text-xs md:text-sm font-medium shadow-sm max-w-[160px] truncate">
+                                <select value={selectedSessionName} onChange={(e) => setSelectedSessionName(e.target.value)} className="bg-white border border-gray-200 text-gray-700 py-1.5 px-3 rounded-lg text-xs md:text-sm font-medium shadow-sm max-w-[160px] truncate cursor-pointer">
                                     {sessionNames.map(name => <option key={name} value={name}>{name === 'All' ? 'All Sessions' : name}</option>)}
                                 </select>
 

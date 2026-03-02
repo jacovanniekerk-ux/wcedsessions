@@ -1154,6 +1154,7 @@
                                             <h2 className="text-2xl font-bold text-wcg-dark">{results.profile.name}</h2>
                                             <p className="text-gray-600"><span className="font-semibold">School:</span> {results.profile.school}</p>
                                             <p className="text-gray-600"><span className="font-semibold">District:</span> {results.profile.district}</p>
+                                            <p className="text-xs text-gray-400 mt-1">Data last updated: {DATA_LAST_UPDATED}</p>
                                         </div>
                                         <div className="flex items-center gap-4">
                                             <div className="text-center px-4 py-2 bg-gradient-to-r from-yellow-50 to-orange-50 rounded-xl border border-yellow-200">
@@ -1169,9 +1170,9 @@
                                             </div>
                                             <button
                                                 onClick={() => { localStorage.removeItem('wced_pd_credentials'); setResults(null); }}
-                                                className="no-print text-sm text-gray-500 hover:text-gray-700 border border-gray-300 rounded-lg px-3 py-2 hover:bg-gray-50"
+                                                className="no-print text-sm text-red-500 hover:text-red-700 border border-red-300 rounded-lg px-3 py-2 hover:bg-red-50 transition-colors"
                                             >
-                                                New Search
+                                                Log Out
                                             </button>
                                         </div>
                                     </div>
@@ -1295,6 +1296,11 @@
                                             <div className="text-xs text-gray-600 mt-1 font-medium">Summit</div>
                                         </div>
                                     </div>
+                                </div>
+
+                                {/* Disclaimer */}
+                                <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-4 text-xs text-yellow-800">
+                                    <strong>DISCLAIMER:</strong> This record is generated from self-captured attendance data. Every effort is made to ensure accuracy; discrepancies may occur due to manual entry errors. Please ensure consistency in your submissions to maintain an accurate transformation profile.
                                 </div>
 
                                 {/* Footer link */}
