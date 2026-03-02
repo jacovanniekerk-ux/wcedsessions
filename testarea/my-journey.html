@@ -508,8 +508,8 @@
             );
         }
 
-        // === TRANSFORMATION ARC SESSIONS ===
-        const TRANSFORMATION_ARC_SESSIONS = [
+        // === EDVANCE ARC SESSIONS ===
+        const EDVANCE_ARC_SESSIONS = [
             'Facilitator Think Tank',
             'Elevate',
             'Shift and Spark'
@@ -518,8 +518,8 @@
         // === DATA LAST UPDATED (manually update this when refreshing data) ===
         const DATA_LAST_UPDATED = '2 March 2026';
 
-        // === TRANSFORMATION ARC CARD ===
-        function TransformationARCCard({ hasThinkTank, arcSessions, totalSessions }) {
+        // === EDVANCE ARC CARD ===
+        function EdvanceARCCard({ hasThinkTank, arcSessions, totalSessions }) {
             const arcCount = arcSessions.length;
             const hasElevate = arcSessions.includes('Elevate');
             const hasShiftAndSpark = arcSessions.includes('Shift and Spark');
@@ -530,7 +530,7 @@
                         <span className="text-2xl">🎓</span>
                         <div className="flex-1">
                             <div className="flex items-center gap-2 mb-1">
-                                <h4 className="font-bold text-gray-700">Transformation ARC</h4>
+                                <h4 className="font-bold text-gray-700">Edvance ARC</h4>
                                 {hasThinkTank ? (
                                     <span className="text-xs bg-purple-200 text-purple-800 px-2 py-0.5 rounded-full font-semibold">{arcCount} Step{arcCount > 1 ? 's' : ''} Complete</span>
                                 ) : (
@@ -539,8 +539,8 @@
                             </div>
                             <p className="text-sm text-gray-600 mb-2">
                                 {hasThinkTank
-                                    ? 'You\'ve entered the Transformation ARC — a specialised developmental pathway. The Facilitator Think Tank is the first step and earns a Spark.'
-                                    : 'The Facilitator Think Tank is the entry point to the Transformation ARC — a specialised developmental pathway by invitation. Teachers with strong PD engagement are often considered.'
+                                    ? 'You\'ve entered the Edvance ARC — a specialised developmental pathway. The Facilitator Think Tank is the first step and earns a Spark.'
+                                    : 'The Facilitator Think Tank is the entry point to the Edvance ARC — a specialised developmental pathway by invitation. Teachers with strong PD engagement are often considered.'
                                 }
                             </p>
                             {hasThinkTank && (
@@ -734,8 +734,8 @@
                 const hasCyberEffect = sessionNames.includes('Cyber Effect Ambassador Initiation Course');
                 const hasThinkTank = sessionNames.includes('Facilitator Think Tank');
 
-                // Track all Transformation ARC sessions completed
-                const arcSessions = TRANSFORMATION_ARC_SESSIONS.filter(s => sessionNames.includes(s));
+                // Track all Edvance ARC sessions completed
+                const arcSessions = EDVANCE_ARC_SESSIONS.filter(s => sessionNames.includes(s));
 
                 // Dovetail progress
                 const completedDovetails = DOVETAIL_SESSIONS.filter(d => sessionNames.includes(d));
@@ -911,8 +911,8 @@
                 if (!pathwayStatus.hasThinkTank && totalSessions >= 15) {
                     items.push({
                         icon: '💡',
-                        title: 'Transformation ARC: Facilitator Think Tank',
-                        description: `Your strong PD engagement (${totalSessions} sessions) puts you on the path to being considered for the Facilitator Think Tank — the entry point to the Transformation ARC. This is by invitation and targets teachers with high engagement.`,
+                        title: 'Edvance ARC: Facilitator Think Tank',
+                        description: `Your strong PD engagement (${totalSessions} sessions) puts you on the path to being considered for the Facilitator Think Tank — the entry point to the Edvance ARC. This is by invitation and targets teachers with high engagement.`,
                         type: 'info'
                     });
                 }
@@ -1223,9 +1223,9 @@
                                         </div>
                                     </div>
 
-                                    {/* Transformation ARC */}
+                                    {/* Edvance ARC */}
                                     <div className="mt-6 pt-4 border-t border-dashed border-gray-200">
-                                        <TransformationARCCard
+                                        <EdvanceARCCard
                                             hasThinkTank={pathwayStatus.hasThinkTank}
                                             arcSessions={pathwayStatus.arcSessions}
                                             totalSessions={pathwayStatus.totalSessions}
