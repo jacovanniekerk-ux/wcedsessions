@@ -515,6 +515,9 @@
             'Shift and Spark'
         ];
 
+        // === DATA LAST UPDATED (manually update this when refreshing data) ===
+        const DATA_LAST_UPDATED = '2 March 2026';
+
         // === TRANSFORMATION ARC CARD ===
         function TransformationARCCard({ hasThinkTank, arcSessions, totalSessions }) {
             const arcCount = arcSessions.length;
@@ -606,6 +609,58 @@
                 });
             }, []);
 
+            // Auto-login from localStorage (shared with My PD History)
+            useEffect(() => {
+                if (!loading && attendanceData.length > 0 && !results) {
+                    try {
+                        const saved = JSON.parse(localStorage.getItem('wced_pd_credentials') || 'null');
+                        if (saved && saved.searchType && saved.searchValue) {
+                            const searchKey = saved.searchValue.trim();
+                            const idIndex = {};
+                            const persalIndex = {};
+                            attendanceData.forEach(record => {
+                                const id = record['ID/Passport Number']?.trim();
+                                const persal = record['PERSAL Number']?.trim();
+                                if (id) { if (!idIndex[id]) idIndex[id] = []; idIndex[id].push(record); }
+                                if (persal) { if (!persalIndex[persal]) persalIndex[persal] = []; persalIndex[persal].push(record); }
+                            });
+                            const records = saved.searchType === 'id'
+                                ? (idIndex[searchKey] || [])
+                                : (persalIndex[searchKey] || []);
+                            if (records.length > 0) {
+                                const sortedRecords = [...records].sort((a, b) => parseTimestamp(b.Timestamp) - parseTimestamp(a.Timestamp));
+                                const mostRecent = sortedRecords[0];
+                                const seenSessions = new Set();
+                                const uniqueSessions = sortedRecords
+                                    .filter(record => {
+                                        const key = `${record['Session Name']}_${record.Timestamp}`;
+                                        if (seenSessions.has(key)) return false;
+                                        seenSessions.add(key);
+                                        return true;
+                                    })
+                                    .map(record => ({
+                                        ...record,
+                                        parsedDate: parseTimestamp(record.Timestamp),
+                                        isSpark: isSpark(record['Session Name']),
+                                        isDovetail: isDovetail(record['Session Name'])
+                                    }));
+                                setSearchType(saved.searchType);
+                                setSearchValue(saved.searchValue);
+                                setAcknowledged(true);
+                                setResults({
+                                    profile: {
+                                        name: `${mostRecent['First Name']} ${mostRecent['Surname']}`.trim(),
+                                        school: mostRecent['School'] || 'N/A',
+                                        district: mostRecent['District'] || 'N/A'
+                                    },
+                                    sessions: uniqueSessions
+                                });
+                            }
+                        }
+                    } catch (e) { /* ignore parse errors */ }
+                }
+            }, [loading, attendanceData]);
+
             // Build lookup indexes
             const indexes = useMemo(() => {
                 const idIndex = {};
@@ -661,6 +716,9 @@
                     }));
 
                 setResults({ profile, sessions: uniqueSessions });
+
+                // Save credentials to localStorage for cross-page login
+                localStorage.setItem('wced_pd_credentials', JSON.stringify({ searchType, searchValue: searchKey }));
             };
 
             // === COMPUTE PATHWAY STATUS ===
@@ -1054,6 +1112,7 @@
 
                                     <div className="mb-6 bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-xs text-yellow-800">
                                         <strong>DISCLAIMER:</strong> This record is generated from self-captured attendance data. Every effort is made to ensure accuracy; discrepancies may occur due to manual entry errors. Please ensure consistency in your submissions to maintain an accurate transformation profile.
+                                        <br /><strong>Data last updated:</strong> {DATA_LAST_UPDATED}
                                     </div>
 
                                     <button
@@ -1078,7 +1137,7 @@
                                         We couldn't find any PD records matching your search. Please check your {searchType === 'id' ? 'ID' : 'PERSAL'} number and try again.
                                     </p>
                                     <button
-                                        onClick={() => setResults(null)}
+                                        onClick={() => { localStorage.removeItem('wced_pd_credentials'); setResults(null); }}
                                         className="bg-wcg-blue text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-800"
                                     >
                                         Try Again
@@ -1109,7 +1168,7 @@
                                                 </div>
                                             </div>
                                             <button
-                                                onClick={() => setResults(null)}
+                                                onClick={() => { localStorage.removeItem('wced_pd_credentials'); setResults(null); }}
                                                 className="no-print text-sm text-gray-500 hover:text-gray-700 border border-gray-300 rounded-lg px-3 py-2 hover:bg-gray-50"
                                             >
                                                 New Search

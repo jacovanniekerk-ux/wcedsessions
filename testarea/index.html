@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,7 +8,7 @@
     <link rel="icon" type="image/png" href="favicon.png">
 
     <script src="https://cdn.tailwindcss.com"></script>
-    
+
     <script>
         tailwind.config = {
             theme: {
@@ -37,11 +38,11 @@
                             '50%': { transform: 'translateY(-2px)' },
                         },
                         'pulse-glow': {
-                            '0%, 100%': { 
+                            '0%, 100%': {
                                 transform: 'scale(1)',
                                 boxShadow: '0 0 0 0 rgba(238, 59, 59, 0.7)'
                             },
-                            '50%': { 
+                            '50%': {
                                 transform: 'scale(1.05)',
                                 boxShadow: '0 0 20px 10px rgba(238, 59, 59, 0)'
                             }
@@ -51,23 +52,58 @@
             }
         }
     </script>
-    
+
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 
-    <link href="https://fonts.googleapis.com/css2?family=Didact+Gothic&family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Didact+Gothic&family=Montserrat:wght@400;600;700&display=swap"
+        rel="stylesheet">
 
     <style>
-        body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
-        .fade-in { animation: fadeIn 0.5s ease-in-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .spin { animation: spin 1s linear infinite; }
-        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        .icon-hover:hover svg { animation: bounce-slight 0.5s ease-in-out; color: #004B87; }
+        body {
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .spin {
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .icon-hover:hover svg {
+            animation: bounce-slight 0.5s ease-in-out;
+            color: #004B87;
+        }
     </style>
 </head>
+
 <body class="bg-gray-50 text-wcg-darkText font-sans">
 
     <div id="root"></div>
@@ -76,27 +112,27 @@
         const { useState, useMemo, useEffect, useRef } = React;
 
         const Icons = {
-            Calendar: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>,
-            Search: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>,
-            ChevronDown: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>,
-            ChevronUp: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m18 15-6-6-6 6"/></svg>,
-            ExternalLink: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" x2="21" y1="14" y2="3"/></svg>,
-            Clock: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>,
-            Info: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>,
-            CalendarCheck: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/><path d="m9 16 2 2 4-4"/></svg>,
-            CalendarPlus: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/><line x1="10" x2="14" y1="16" y2="16"/><line x1="12" x2="12" y1="14" y2="18"/></svg>,
-            Upload: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>,
-            Loader: () => <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="spin"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>,
-            AlertTriangle: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>,
-            Video: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m22 8-6 4 6 4V8Z"/><rect width="14" height="12" x="2" y="6" rx="2" ry="2"/></svg>
+            Calendar: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2" /><line x1="16" x2="16" y1="2" y2="6" /><line x1="8" x2="8" y1="2" y2="6" /><line x1="3" x2="21" y1="10" y2="10" /></svg>,
+            Search: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg>,
+            ChevronDown: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>,
+            ChevronUp: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m18 15-6-6-6 6" /></svg>,
+            ExternalLink: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" x2="21" y1="14" y2="3" /></svg>,
+            Clock: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>,
+            Info: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><path d="M12 16v-4" /><path d="M12 8h.01" /></svg>,
+            CalendarCheck: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2" /><line x1="16" x2="16" y1="2" y2="6" /><line x1="8" x2="8" y1="2" y2="6" /><line x1="3" x2="21" y1="10" y2="10" /><path d="m9 16 2 2 4-4" /></svg>,
+            CalendarPlus: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2" /><line x1="16" x2="16" y1="2" y2="6" /><line x1="8" x2="8" y1="2" y2="6" /><line x1="3" x2="21" y1="10" y2="10" /><line x1="10" x2="14" y1="16" y2="16" /><line x1="12" x2="12" y1="14" y2="18" /></svg>,
+            Upload: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" x2="12" y1="3" y2="15" /></svg>,
+            Loader: () => <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="spin"><path d="M21 12a9 9 0 1 1-6.219-8.56" /></svg>,
+            AlertTriangle: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" /><line x1="12" x2="12" y1="9" y2="13" /><line x1="12" x2="12.01" y1="17" y2="17" /></svg>,
+            Video: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m22 8-6 4 6 4V8Z" /><rect width="14" height="12" x="2" y="6" rx="2" ry="2" /></svg>
         };
 
         const parseDate = (dateStr) => {
-            if (!dateStr) return new Date(8640000000000000); 
+            if (!dateStr) return new Date(8640000000000000);
             const parts = dateStr.split('/');
             if (parts.length === 3) {
-                 const [day, month, year] = parts;
-                 return new Date(`${year}-${month}-${day}`);
+                const [day, month, year] = parts;
+                return new Date(`${year}-${month}-${day}`);
             }
             return new Date(dateStr);
         };
@@ -109,8 +145,8 @@
         const isToday = (dateObj) => {
             const today = new Date();
             return dateObj.getDate() === today.getDate() &&
-                   dateObj.getMonth() === today.getMonth() &&
-                   dateObj.getFullYear() === today.getFullYear();
+                dateObj.getMonth() === today.getMonth() &&
+                dateObj.getFullYear() === today.getFullYear();
         };
 
         const isFutureOrToday = (dateObj) => {
@@ -121,7 +157,7 @@
         };
 
         const processCSVData = (results) => {
-             return results.data.map((row, index) => ({
+            return results.data.map((row, index) => ({
                 id: index,
                 date: row['Date'] || '',
                 time: row['Time'] || '',
@@ -142,7 +178,7 @@
             let colorClass = 'bg-gray-100 text-gray-700 border-gray-200';
             const text = (children || '').toString();
             const level = text.toLowerCase();
-            
+
             if (type === 'level') {
                 if (level.includes('foundation')) colorClass = 'bg-wcg-green text-white border-wcg-green';
                 else if (level.includes('better')) colorClass = 'bg-wcg-red text-white border-wcg-red';
@@ -165,7 +201,7 @@
             const [isExpanded, setIsExpanded] = useState(false);
             const dateObj = parseDate(session.date);
             const isTodaySession = isToday(dateObj);
-            
+
             const formatOutcomes = (text) => {
                 if (!text) return null;
                 const items = text.split(/\n|⮚|>/).filter(item => item.trim().length > 0);
@@ -209,10 +245,10 @@
                         <h3 className="text-lg font-bold font-accent text-gray-900 mb-2 leading-tight group-hover:text-wcg-blue transition-colors">
                             {session.name}
                         </h3>
-                        
+
                         <div className="text-gray-600 text-sm leading-relaxed mb-4 flex-grow">
-                             {isExpanded ? session.description : `${session.description?.substring(0, 100) || ''}...`}
-                             
+                            {isExpanded ? session.description : `${session.description?.substring(0, 100) || ''}...`}
+
                             {isExpanded && (
                                 <div className="mt-4 pt-4 border-t border-gray-100 fade-in bg-blue-50/30 -mx-2 px-3 pb-2 rounded-lg">
                                     <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-2">
@@ -223,7 +259,7 @@
                             )}
                         </div>
 
-                        <button 
+                        <button
                             onClick={() => setIsExpanded(!isExpanded)}
                             className="text-wcg-blue text-xs font-bold uppercase tracking-wide flex items-center hover:text-wcg-red transition-colors focus:outline-none self-start mt-auto icon-hover"
                         >
@@ -268,6 +304,7 @@
             const [selectedDistrict, setSelectedDistrict] = useState('All');
             const [selectedSessionName, setSelectedSessionName] = useState('All');
             const fileInputRef = useRef(null);
+            const [menuOpen, setMenuOpen] = useState(false);
 
             useEffect(() => {
                 const TARGET_FILE = 'Upcoming Sessions - Scheduled Sessions.csv';
@@ -314,11 +351,11 @@
                     const sessionDate = parseDate(session.date);
                     if (!isFutureOrToday(sessionDate)) return false;
 
-                    const matchesSearch = (session.name || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
-                                          (session.description || '').toLowerCase().includes(searchTerm.toLowerCase());
+                    const matchesSearch = (session.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                        (session.description || '').toLowerCase().includes(searchTerm.toLowerCase());
                     const matchesDistrict = selectedDistrict === 'All' || session.district === selectedDistrict;
                     const matchesSessionName = selectedSessionName === 'All' || session.name === selectedSessionName;
-                    
+
                     return matchesSearch && matchesDistrict && matchesSessionName;
                 }).sort((a, b) => parseDate(a.date) - parseDate(b.date));
             }, [data, searchTerm, selectedDistrict, selectedSessionName]);
@@ -350,23 +387,50 @@
                             <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 md:gap-6">
                                 <div className="flex items-center justify-center md:justify-start gap-3">
                                     <img src="header.png" alt="WCG Logo" className="h-10 md:h-16 w-auto object-contain" />
-                                    <a href="calendar.html" className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg text-xs font-bold text-gray-700 transition-colors flex items-center gap-2">
-                                        <Icons.Calendar />
-                                        <span className="hidden sm:inline">Calendar View</span>
-                                    </a>
                                 </div>
-                                
-                                <div className="relative w-full md:w-80 lg:w-96 icon-hover">
-                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
-                                        <Icons.Search />
+
+                                <div className="flex items-center gap-3">
+                                    <div className="relative w-full md:w-80 lg:w-96 icon-hover">
+                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                                            <Icons.Search />
+                                        </div>
+                                        <input
+                                            type="text"
+                                            placeholder="Search by topic, description..."
+                                            className="block w-full pl-10 pr-4 py-2 md:py-2.5 border border-gray-200 rounded-full bg-gray-50 focus:outline-none focus:bg-white focus:border-wcg-blue focus:ring-1 focus:ring-wcg-blue sm:text-sm transition-all"
+                                            value={searchTerm}
+                                            onChange={(e) => setSearchTerm(e.target.value)}
+                                        />
                                     </div>
-                                    <input
-                                        type="text"
-                                        placeholder="Search by topic, description..."
-                                        className="block w-full pl-10 pr-4 py-2 md:py-2.5 border border-gray-200 rounded-full bg-gray-50 focus:outline-none focus:bg-white focus:border-wcg-blue focus:ring-1 focus:ring-wcg-blue sm:text-sm transition-all"
-                                        value={searchTerm}
-                                        onChange={(e) => setSearchTerm(e.target.value)}
-                                    />
+                                    <div className="relative">
+                                        <button
+                                            onClick={() => setMenuOpen(!menuOpen)}
+                                            className="flex items-center justify-center w-10 h-10 rounded-lg border-2 border-gray-300 hover:border-wcg-blue hover:bg-gray-50 transition-colors flex-shrink-0"
+                                            aria-label="Menu"
+                                        >
+                                            {menuOpen ? (
+                                                <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                                            ) : (
+                                                <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
+                                            )}
+                                        </button>
+                                        {menuOpen && (
+                                            <div className="absolute right-0 top-12 bg-white rounded-xl shadow-lg border border-gray-200 py-2 w-52 z-50">
+                                                <a href="my-journey.html" className="block px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:text-wcg-blue transition-colors">
+                                                    My PD Journey
+                                                </a>
+                                                <a href="pathway.html" className="block px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:text-wcg-blue transition-colors">
+                                                    Pathway Overview
+                                                </a>
+                                                <a href="my-pd-history.html" className="block px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:text-wcg-blue transition-colors">
+                                                    Full PD History
+                                                </a>
+                                                <a href="calendar.html" className="block px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:text-wcg-blue transition-colors">
+                                                    Calendar
+                                                </a>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
 
@@ -396,10 +460,10 @@
                                         <Icons.ChevronDown />
                                     </div>
                                 </div>
-                                
+
                                 {(selectedDistrict !== 'All' || selectedSessionName !== 'All' || searchTerm !== '') && (
-                                    <button 
-                                        onClick={() => {setSelectedDistrict('All'); setSelectedSessionName('All'); setSearchTerm('');}}
+                                    <button
+                                        onClick={() => { setSelectedDistrict('All'); setSelectedSessionName('All'); setSearchTerm(''); }}
                                         className="text-xs md:text-sm text-wcg-red hover:text-red-700 font-bold ml-auto px-2 md:px-3 py-1 rounded hover:bg-red-50 transition-colors uppercase tracking-wide"
                                     >
                                         Clear
@@ -411,7 +475,7 @@
 
                     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                         {error && (
-                             <div className="mb-8 p-6 bg-red-50 border border-red-100 rounded-xl shadow-sm">
+                            <div className="mb-8 p-6 bg-red-50 border border-red-100 rounded-xl shadow-sm">
                                 <div className="flex items-start gap-4">
                                     <span className="text-wcg-red mt-1"><Icons.AlertTriangle /></span>
                                     <div>
@@ -432,7 +496,7 @@
                         {Object.keys(groupedSessions).length === 0 && !loading && !error ? (
                             <div className="text-center py-24 bg-white rounded-2xl shadow-sm border border-dashed border-gray-300">
                                 <h3 className="text-xl font-bold text-gray-900 font-accent">No sessions found</h3>
-                                <button onClick={() => {setSelectedDistrict('All'); setSelectedSessionName('All'); setSearchTerm('');}} className="mt-6 text-wcg-blue hover:text-blue-800 font-bold uppercase text-sm tracking-wide">Clear all filters</button>
+                                <button onClick={() => { setSelectedDistrict('All'); setSelectedSessionName('All'); setSearchTerm(''); }} className="mt-6 text-wcg-blue hover:text-blue-800 font-bold uppercase text-sm tracking-wide">Clear all filters</button>
                             </div>
                         ) : (
                             <div className="space-y-12">
@@ -453,7 +517,7 @@
                             </div>
                         )}
                     </main>
-                    
+
                     <footer className="bg-white border-t border-gray-200 mt-20 py-8">
                         <div className="max-w-7xl mx-auto px-4 text-center">
                             <p className="text-gray-400 text-xs font-accent font-bold tracking-widest uppercase">© 2026 Western Cape Government</p>
@@ -467,4 +531,5 @@
         root.render(<App />);
     </script>
 </body>
+
 </html>
