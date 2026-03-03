@@ -6,6 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Dovetail Essentials</title>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
   <style>
     *,
     *::before,
@@ -70,7 +71,6 @@
     .site-header-top {
       display: flex;
       align-items: center;
-      justify-content: space-between;
       gap: 12px;
       flex-wrap: wrap;
     }
@@ -80,42 +80,6 @@
       width: auto;
       object-fit: contain;
       display: block;
-    }
-
-    .header-nav {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-
-    .nav-link {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      padding: 6px 14px;
-      border-radius: 8px;
-      border: 2px solid #d1d5db;
-      background: var(--white);
-      font-family: 'Century Gothic', 'Didact Gothic', sans-serif;
-      font-size: 11px;
-      font-weight: 700;
-      color: #374151;
-      text-decoration: none;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-      transition: border-color 0.15s, color 0.15s, background 0.15s;
-    }
-
-    .nav-link:hover {
-      border-color: var(--blue);
-      color: var(--blue);
-    }
-
-    .nav-link.active {
-      border-color: var(--blue);
-      background: var(--blue-light);
-      color: var(--blue);
     }
 
     .header-bottom-row {
@@ -419,9 +383,9 @@
     }
 
     .node-label {
-      font-size: clamp(9px, 1.55vw, 13px);
+      font-size: clamp(10.5px, 1.7vw, 14.5px);
       font-weight: 700;
-      line-height: 1.25;
+      line-height: 1.3;
       color: var(--dark);
       pointer-events: none;
     }
@@ -609,6 +573,170 @@
       border-color: var(--better);
     }
 
+    /* ── UPCOMING DATES SECTION ─────────────────────────── */
+    .dates-section {
+      margin-top: 22px;
+      padding-top: 18px;
+      border-top: 1px solid #eee;
+    }
+
+    .dates-heading {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--blue);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .dates-heading span {
+      background: var(--blue);
+      color: #fff;
+      font-size: 10px;
+      font-weight: 800;
+      padding: 2px 8px;
+      border-radius: 10px;
+    }
+
+    .date-row {
+      border: 1px solid #e4e9ef;
+      border-radius: 10px;
+      margin-bottom: 8px;
+      overflow: hidden;
+      background: #fff;
+      transition: border-color 0.15s;
+    }
+
+    .date-row:hover {
+      border-color: var(--blue-mid);
+    }
+
+    .date-row-top {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+    }
+
+    .date-cal-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      background: var(--blue);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      overflow: hidden;
+    }
+
+    .date-cal-month {
+      font-size: 7px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: rgba(255, 255, 255, 0.85);
+      background: rgba(0, 0, 0, 0.2);
+      width: 100%;
+      text-align: center;
+      padding: 1px 0;
+    }
+
+    .date-cal-day {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 15px;
+      font-weight: 800;
+      color: #fff;
+      line-height: 1;
+      margin-top: 1px;
+    }
+
+    .date-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .date-main {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--dark);
+    }
+
+    .date-sub {
+      font-size: 11px;
+      color: var(--grey);
+      margin-top: 1px;
+    }
+
+    .date-actions {
+      display: flex;
+      gap: 6px;
+      padding: 8px 14px;
+      background: #fafbfc;
+      border-top: 1px solid #f0f2f5;
+      flex-wrap: wrap;
+    }
+
+    .btn-register {
+      flex: 1;
+      padding: 7px 12px;
+      border-radius: 7px;
+      background: var(--blue);
+      color: #fff;
+      font-family: 'Century Gothic', 'Didact Gothic', sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      text-decoration: none;
+      text-align: center;
+      border: none;
+      cursor: pointer;
+      transition: background 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+    }
+
+    .btn-register:hover {
+      background: #003a6e;
+    }
+
+    .btn-cal {
+      padding: 7px 10px;
+      border-radius: 7px;
+      background: #fff;
+      border: 1px solid #dde3ea;
+      font-size: 11px;
+      font-weight: 600;
+      color: #555;
+      text-decoration: none;
+      transition: border-color 0.15s, color 0.15s;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      white-space: nowrap;
+    }
+
+    .btn-cal:hover {
+      border-color: var(--blue);
+      color: var(--blue);
+    }
+
+    .no-dates {
+      padding: 16px;
+      text-align: center;
+      background: #fafbfc;
+      border: 1px dashed #dde3ea;
+      border-radius: 10px;
+      font-size: 12px;
+      color: var(--grey);
+    }
+
     .close-btn {
       position: absolute;
       top: 14px;
@@ -702,7 +830,7 @@
       </div>
       <div class="header-bottom-row">
         <span class="page-title">Dovetail Essentials</span>
-        <span class="page-sub">WCED eTPD Programme &mdash; Digital Skills Pathway</span>
+        <span class="page-sub">WCED eTPD Programme</span>
         <div class="header-pills">
           <div class="h-pill"><strong>10</strong> Sessions</div>
           <div class="h-pill"><strong>3</strong> Levels</div>
@@ -762,10 +890,127 @@
       <div class="card-desc" id="cardDesc"></div>
       <div class="outcomes-label">Session Outcomes</div>
       <div class="outcomes-text" id="cardOutcomes"></div>
+      <div class="dates-section" id="datesSection"></div>
     </div>
   </div>
 
   <script>
+    // ── CSV LOADING ──────────────────────────────────────
+    let upcomingData = [];
+    Papa.parse('Upcoming Sessions - Scheduled Sessions.csv', {
+      download: true,
+      header: true,
+      skipEmptyLines: true,
+      complete: (result) => { upcomingData = result.data; },
+      error: () => { upcomingData = []; }
+    });
+
+    function parseSessionDate(dateStr) {
+      if (!dateStr) return null;
+      try {
+        const parts = dateStr.trim().split('/');
+        if (parts.length === 3) {
+          const [d, m, y] = parts;
+          return new Date(+y, +m - 1, +d);
+        }
+      } catch (e) { }
+      return null;
+    }
+
+    function isUpcoming(dateStr) {
+      const d = parseSessionDate(dateStr);
+      if (!d) return false;
+      const today = new Date(); today.setHours(0, 0, 0, 0);
+      return d >= today;
+    }
+
+    // Match a course name from the CSV to one of our 10 COURSES
+    // Uses same fuzzy approach as my-journey.html
+    function matchCourseName(csvName, courseName) {
+      if (!csvName || !courseName) return false;
+      const a = csvName.trim().toLowerCase();
+      const b = courseName.trim().toLowerCase();
+      if (a === b) return true;
+      // Try matching on first significant word-group (before colon)
+      const aKey = a.split(':')[0].trim();
+      const bKey = b.split(':')[0].trim();
+      if (aKey === bKey) return true;
+      // Contains match
+      if (a.includes(bKey) || b.includes(aKey)) return true;
+      return false;
+    }
+
+    function getUpcomingSessions(courseName) {
+      return upcomingData
+        .filter(row => {
+          const csvName = row['Session Name']?.trim() || '';
+          return matchCourseName(csvName, courseName) && isUpcoming(row['Date']);
+        })
+        .map(row => ({
+          date: row['Date']?.trim() || '',
+          time: row['Time']?.trim() || '',
+          district: row['HOSTING DISTRICT']?.trim() || '',
+          register: row['Pre-Register']?.trim() || '',
+          googleCal: row['Add To Calendar (Google)']?.trim() || '',
+          outlookCal: row['Add to Calendar (Outlook)']?.trim() || ''
+        }))
+        .sort((a, b) => {
+          const da = parseSessionDate(a.date), db = parseSessionDate(b.date);
+          if (!da && !db) return 0;
+          if (!da) return 1;
+          if (!db) return -1;
+          return da - db;
+        });
+    }
+
+    function formatCalDate(dateStr) {
+      const d = parseSessionDate(dateStr);
+      if (!d) return { day: '?', month: '??', full: dateStr };
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      return {
+        day: String(d.getDate()).padStart(2, '0'),
+        month: months[d.getMonth()],
+        full: d.toLocaleDateString('en-ZA', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' })
+      };
+    }
+
+    function buildDatesHTML(courseName) {
+      const sessions = getUpcomingSessions(courseName);
+      if (sessions.length === 0) {
+        return `<div class="dates-heading">📅 Upcoming Dates</div>
+      <div class="no-dates">No upcoming sessions scheduled at this time.<br>Check back soon — new dates are added regularly.</div>`;
+      }
+      const rows = sessions.map(s => {
+        const cal = formatCalDate(s.date);
+        const districtBit = s.district ? `<span class="date-sub">${s.district}${s.time ? ' · ' + s.time : ''}</span>` : (s.time ? `<span class="date-sub">${s.time}</span>` : '');
+        const regBtn = s.register
+          ? `<a href="${s.register}" target="_blank" rel="noopener noreferrer" class="btn-register">
+           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+           Register
+         </a>` : '';
+        const gCalBtn = s.googleCal && s.googleCal !== '#'
+          ? `<a href="${s.googleCal}" target="_blank" rel="noopener noreferrer" class="btn-cal">📅 Google</a>` : '';
+        const oCalBtn = s.outlookCal && s.outlookCal !== '#'
+          ? `<a href="${s.outlookCal}" target="_blank" rel="noopener noreferrer" class="btn-cal">📧 Outlook</a>` : '';
+        const hasActions = regBtn || gCalBtn || oCalBtn;
+        return `<div class="date-row">
+      <div class="date-row-top">
+        <div class="date-cal-icon">
+          <div class="date-cal-month">${cal.month}</div>
+          <div class="date-cal-day">${cal.day}</div>
+        </div>
+        <div class="date-info">
+          <div class="date-main">${cal.full}</div>
+          ${districtBit}
+        </div>
+      </div>
+      ${hasActions ? `<div class="date-actions">${regBtn}${gCalBtn}${oCalBtn}</div>` : ''}
+    </div>`;
+      }).join('');
+
+      return `<div class="dates-heading">📅 Upcoming Dates <span>${sessions.length} scheduled</span></div>${rows}`;
+    }
+
     const COURSES = [
       { name: "ePedagogy: Building a Digital Lesson", level: "foundation", ll: "Laying the Foundation", desc: "Enhance your teaching skills with a practical template and essential theoretical knowledge to seamlessly integrate ICT into your lesson plans and engage your students.", outcomes: "• E-Learning as an Add-in, not an Add-on\n• Using the TPACK Model for self-evaluation\n• The SAMR Model to evaluate and enhance teaching practice\n• Using a Digital Lesson Plan template to improve lessons", dur: 120 },
       { name: "Integrating Digital Resources from the ePortal", level: "foundation", ll: "Laying the Foundation", desc: "Discover a treasure trove of digital resources on the WCED ePortal. Learn smart ways to integrate them into your teaching, making lesson planning a breeze and student engagement a guarantee!", outcomes: "Navigating the ePortal\n  ○ What is on the ePortal\n  ○ Quick ways to find things\n\nSharing resources\n  ○ Saving resources from the ePortal\n  ○ Dynamic vs static sharing\n\nIntegrating and Curating\n  ○ Creating a Hyperdoc / Published Doc\n  ○ Creating a Wakelet with curated resources", dur: 90 },
@@ -793,18 +1038,13 @@
       const cx = size / 2, cy = size / 2;
       const n = COURSES.length;
 
-      // Node diameter should be large enough to read, but orbit must fit all 10
-      // Minimum orbit circumference = n * (nodeD + minGap)
-      // So minOrbitR = n * (nodeD + minGap) / (2 * PI)
-      const nodeD = size * 0.155;          // node diameter — larger for legibility
-      const minGap = size * 0.022;          // minimum gap between adjacent node edges
-      const minOrbitR = n * (nodeD + minGap) / (2 * Math.PI);
-
-      // Hub radius
-      const hubR = size * 0.115;
-
-      // Orbit radius is the greater of: geometry-required, or hub-edge + half-node + padding
-      const orbitR = Math.max(minOrbitR, hubR + nodeD / 2 + size * 0.04);
+      // nodeD: set so that 10 nodes fit around the orbit with a small gap
+      // Arc between adjacent node centres = 2π*orbitR/10
+      // We want arc > nodeD + gap, so: orbitR > 10*(nodeD+gap)/(2π)
+      // Use orbitR = size*0.38 (leaves ~6% margin each side beyond nodes)
+      // Then nodeD = orbitR * 2*PI/10 * 0.72  (nodes occupy 72% of arc, 28% gap)
+      const orbitR = size * 0.38;
+      const nodeD = Math.min(orbitR * 2 * Math.PI / n * 0.82, size * 0.215);
 
       const startAngle = -Math.PI / 2;
       const svgW = 860;
@@ -884,6 +1124,8 @@
       const ot = document.getElementById('cardOutcomes');
       ot.className = 'outcomes-text ' + c.level;
       ot.textContent = c.outcomes;
+      // Populate upcoming dates
+      document.getElementById('datesSection').innerHTML = buildDatesHTML(c.name);
       document.querySelectorAll('.node').forEach(n => n.classList.remove('active'));
       nodeEl.classList.add('active');
       overlay.classList.add('show');
