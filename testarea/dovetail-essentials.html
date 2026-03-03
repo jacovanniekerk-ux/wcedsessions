@@ -1,632 +1,999 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Dovetail Essentials</title>
-<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&display=swap" rel="stylesheet"/>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-<style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dovetail Essentials</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
-:root{
-  --blue:       #004B87;
-  --blue-light: #e8f0f9;
-  --blue-mid:   #d0e2f4;
-  --grey:       #968C83;
-  --red:        #EE3B3B;
-  --yellow:     #FFD700;
-  --green:      #32CD32;
-  --dark:       #333333;
-  --bg:         #F3F4F6;
-  --white:      #ffffff;
+    :root {
+      --blue: #004B87;
+      --blue-light: #e8f0f9;
+      --blue-mid: #d0e2f4;
+      --grey: #968C83;
+      --red: #EE3B3B;
+      --yellow: #FFD700;
+      --green: #32CD32;
+      --dark: #333333;
+      --bg: #F3F4F6;
+      --white: #ffffff;
 
-  --foundation: #32CD32;
-  --cando:      #FFD700;
-  --better:     #EE3B3B;
+      --foundation: #32CD32;
+      --cando: #FFD700;
+      --better: #EE3B3B;
 
-  --foundation-soft: #edfaf0;
-  --cando-soft:      #fffbea;
-  --better-soft:     #fff0f0;
-  --foundation-border: #b6edbc;
-  --cando-border:      #ffe57a;
-  --better-border:     #f8b8b8;
-}
+      --foundation-soft: #edfaf0;
+      --cando-soft: #fffbea;
+      --better-soft: #fff0f0;
+      --foundation-border: #b6edbc;
+      --cando-border: #ffe57a;
+      --better-border: #f8b8b8;
+    }
 
-html,body{
-  min-height:100vh;
-  background:var(--bg);
-  font-family:'Century Gothic','Didact Gothic',Segoe UI,sans-serif;
-  color:var(--dark);
-  -webkit-font-smoothing:antialiased;
-}
+    html,
+    body {
+      min-height: 100vh;
+      background: var(--bg);
+      font-family: 'Century Gothic', 'Didact Gothic', Segoe UI, sans-serif;
+      color: var(--dark);
+      -webkit-font-smoothing: antialiased;
+    }
 
-/* ── HEADER ─────────────────────────────────────────── */
-.site-header{
-  background:var(--white);
-  border-bottom:1px solid #e5e7eb;
-  box-shadow:0 1px 4px rgba(0,0,0,0.06);
-  position:sticky;top:0;z-index:30;
-}
-.site-header-inner{
-  max-width:1280px;margin:0 auto;
-  padding:10px 24px 12px;
-  display:flex;flex-direction:column;gap:8px;
-}
-.site-header-top{
-  display:flex;align-items:center;gap:12px;
-  flex-wrap:wrap;
-}
-.header-logo img{
-  height:56px;width:auto;object-fit:contain;display:block;
-}
+    /* ── HEADER ─────────────────────────────────────────── */
+    .site-header {
+      background: var(--white);
+      border-bottom: 1px solid #e5e7eb;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+      position: sticky;
+      top: 0;
+      z-index: 30;
+    }
 
-.header-bottom-row{
-  display:flex;align-items:center;gap:14px;
-  padding-top:8px;
-  border-top:1px solid #f3f4f6;
-  flex-wrap:wrap;
-}
-.page-title{
-  font-family:'Montserrat',sans-serif;
-  font-size:14px;font-weight:800;
-  color:var(--blue);
-}
-.page-sub{
-  font-size:12px;color:var(--grey);font-weight:600;
-}
-.header-pills{
-  margin-left:auto;
-  display:flex;gap:8px;flex-wrap:wrap;
-}
-.h-pill{
-  display:flex;align-items:center;gap:6px;
-  padding:4px 12px;border-radius:20px;
-  background:var(--blue-light);
-  border:1px solid var(--blue-mid);
-  font-family:'Montserrat',sans-serif;
-  font-size:11px;font-weight:700;color:var(--blue);
-}
-.h-pill strong{font-size:14px;font-weight:800;}
+    .site-header-inner {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 10px 24px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
 
-/* ── PAGE BODY ──────────────────────────────────────── */
-.page{
-  display:flex;flex-direction:column;
-  align-items:center;
-  padding:20px 20px 40px;
-}
+    .site-header-top {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
 
-/* ── SUBTITLE ───────────────────────────────────────── */
-.subtitle{
-  font-size:13px;font-weight:600;
-  color:var(--grey);
-  text-align:center;
-  margin-bottom:8px;
-  max-width:480px;
-}
+    .header-logo img {
+      height: 56px;
+      width: auto;
+      object-fit: contain;
+      display: block;
+    }
 
-/* ── FILTER TABS ────────────────────────────────────── */
-.filter-tabs{
-  display:flex;gap:6px;flex-wrap:wrap;justify-content:center;
-  margin-bottom:20px;
-}
-.ftab{
-  display:flex;align-items:center;gap:6px;
-  padding:7px 16px;border-radius:20px;
-  border:1.5px solid #dde3ea;
-  background:var(--white);
-  font-family:'Century Gothic','Didact Gothic',sans-serif;
-  font-size:12px;font-weight:700;
-  color:#666;cursor:pointer;
-  transition:all 0.18s;
-  box-shadow:0 1px 4px rgba(0,0,0,0.05);
-}
-.ftab:hover{border-color:var(--blue);color:var(--blue);}
-.ftab.active{background:var(--blue);border-color:var(--blue);color:#fff;box-shadow:0 3px 10px rgba(0,75,135,0.25);}
-.ftab.f-foundation.active{background:var(--foundation);border-color:var(--foundation);color:#fff;box-shadow:0 3px 10px rgba(50,205,50,0.3);}
-.ftab.f-cando.active{background:#c9a000;border-color:#c9a000;color:#fff;box-shadow:0 3px 10px rgba(201,160,0,0.3);}
-.ftab.f-better.active{background:var(--better);border-color:var(--better);color:#fff;box-shadow:0 3px 10px rgba(238,59,59,0.3);}
-.ftab-dot{width:9px;height:9px;border-radius:50%;}
+    .header-bottom-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding-top: 8px;
+      border-top: 1px solid #f3f4f6;
+      flex-wrap: wrap;
+    }
 
-/* ── CONSTELLATION ──────────────────────────────────── */
-.constellation-wrap{
-  position:relative;
-  width:min(860px,96vw);
-  aspect-ratio:1;
-  margin:0 auto;
-}
+    .page-title {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--blue);
+    }
 
-#lines{
-  position:absolute;inset:0;width:100%;height:100%;
-  pointer-events:none;overflow:visible;
-}
+    .page-sub {
+      font-size: 12px;
+      color: var(--grey);
+      font-weight: 600;
+    }
 
-/* ── HUB ────────────────────────────────────────────── */
-.hub{
-  position:absolute;
-  top:50%;left:50%;
-  transform:translate(-50%,-50%);
-  width:clamp(150px,22%,190px);
-  height:clamp(150px,22%,190px);
-  border-radius:50%;
-  background:var(--blue);
-  display:flex;flex-direction:column;
-  align-items:center;justify-content:center;
-  text-align:center;padding:16px;
-  z-index:10;
-  box-shadow:
-    0 0 0 8px rgba(0,75,135,0.1),
-    0 0 0 16px rgba(0,75,135,0.05),
-    0 8px 32px rgba(0,75,135,0.35);
-  animation:hubGlow 3.5s ease-in-out infinite;
-}
-@keyframes hubGlow{
-  0%,100%{box-shadow:0 0 0 8px rgba(0,75,135,0.1),0 0 0 16px rgba(0,75,135,0.05),0 8px 32px rgba(0,75,135,0.35);}
-  50%{box-shadow:0 0 0 10px rgba(0,75,135,0.15),0 0 0 22px rgba(0,75,135,0.07),0 8px 40px rgba(0,75,135,0.45);}
-}
-.hub-title{
-  font-family:'Montserrat',sans-serif;
-  font-size:clamp(13px,2.4vw,18px);
-  font-weight:800;color:#fff;
-  line-height:1.2;letter-spacing:-0.2px;
-}
-.hub-title em{
-  font-style:normal;
-  color:var(--yellow);
-  display:block;margin-top:2px;
-}
-.hub-sub{
-  font-size:clamp(8px,1vw,10px);
-  font-weight:700;
-  color:rgba(255,255,255,0.65);
-  letter-spacing:0.1em;text-transform:uppercase;
-  margin-top:6px;
-}
+    .header-pills {
+      margin-left: auto;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
 
-/* ── NODE ───────────────────────────────────────────── */
-.node{
-  position:absolute;
-  transform:translate(-50%,-50%);
-  border-radius:50%;
-  display:flex;align-items:center;justify-content:center;
-  text-align:center;padding:10px;
-  cursor:pointer;z-index:5;
-  border:2.5px solid transparent;
-  background:var(--white);
-  box-shadow:0 3px 14px rgba(0,0,0,0.10);
-  transition:transform 0.22s cubic-bezier(0.34,1.56,0.64,1),
-             box-shadow 0.22s, border-color 0.22s;
-  opacity:0;
-  animation:nodeIn 0.45s forwards;
-}
-@keyframes nodeIn{
-  from{opacity:0;transform:translate(-50%,-50%) scale(0.5);}
-  to{opacity:1;transform:translate(-50%,-50%) scale(1);}
-}
-.node.foundation{border-color:var(--foundation);background:var(--foundation-soft);}
-.node.cando     {border-color:#c9a000;background:var(--cando-soft);}
-.node.better    {border-color:var(--better);background:var(--better-soft);}
+    .h-pill {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      border-radius: 20px;
+      background: var(--blue-light);
+      border: 1px solid var(--blue-mid);
+      font-family: 'Montserrat', sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--blue);
+    }
 
-.node:hover{
-  transform:translate(-50%,-50%) scale(1.12) !important;
-  z-index:20;
-}
-.node.foundation:hover{box-shadow:0 6px 24px rgba(50,205,50,0.3);}
-.node.cando:hover     {box-shadow:0 6px 24px rgba(201,160,0,0.3);}
-.node.better:hover    {box-shadow:0 6px 24px rgba(238,59,59,0.3);}
+    .h-pill strong {
+      font-size: 14px;
+      font-weight: 800;
+    }
 
-.node.active{
-  transform:translate(-50%,-50%) scale(1.15) !important;
-  z-index:20;
-}
-.node.foundation.active{box-shadow:0 6px 28px rgba(50,205,50,0.4);border-width:3px;}
-.node.cando.active     {box-shadow:0 6px 28px rgba(201,160,0,0.4);border-width:3px;}
-.node.better.active    {box-shadow:0 6px 28px rgba(238,59,59,0.4);border-width:3px;}
+    /* ── PAGE BODY ──────────────────────────────────────── */
+    .page {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px 20px 40px;
+    }
 
-.node.dimmed{opacity:0.2 !important;pointer-events:none !important;transform:translate(-50%,-50%) scale(1) !important;}
+    /* ── SUBTITLE ───────────────────────────────────────── */
+    .subtitle {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--grey);
+      text-align: center;
+      margin-bottom: 8px;
+      max-width: 480px;
+    }
 
-.node-label{
-  font-size:clamp(10.5px,1.7vw,14.5px);
-  font-weight:700;line-height:1.3;
-  color:var(--dark);pointer-events:none;
-}
-.node.foundation .node-label{color:#1a6e1a;}
-.node.cando      .node-label{color:#7a5000;}
-.node.better     .node-label{color:#8c1010;}
+    /* ── FILTER TABS ────────────────────────────────────── */
+    .filter-tabs {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
 
-/* ── CARD OVERLAY ───────────────────────────────────── */
-.overlay{
-  position:fixed;inset:0;z-index:300;
-  display:flex;align-items:center;justify-content:center;
-  padding:20px;
-  background:rgba(0,30,60,0.45);
-  backdrop-filter:blur(4px);
-  opacity:0;pointer-events:none;
-  transition:opacity 0.25s;
-}
-.overlay.show{opacity:1;pointer-events:all;}
+    .ftab {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 16px;
+      border-radius: 20px;
+      border: 1.5px solid #dde3ea;
+      background: var(--white);
+      font-family: 'Century Gothic', 'Didact Gothic', sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      color: #666;
+      cursor: pointer;
+      transition: all 0.18s;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+    }
 
-.detail-card{
-  background:var(--white);
-  border-radius:20px;
-  max-width:520px;width:100%;
-  max-height:88vh;overflow-y:auto;
-  padding:32px 32px 28px;
-  position:relative;
-  box-shadow:0 24px 64px rgba(0,30,60,0.2),0 0 0 1px rgba(0,0,0,0.04);
-  transform:scale(0.92) translateY(16px);
-  transition:transform 0.32s cubic-bezier(0.34,1.56,0.64,1);
-  scrollbar-width:thin;
-  scrollbar-color:#ccc transparent;
-}
-.overlay.show .detail-card{transform:scale(1) translateY(0);}
-.detail-card::-webkit-scrollbar{width:4px;}
-.detail-card::-webkit-scrollbar-thumb{background:#ddd;border-radius:4px;}
+    .ftab:hover {
+      border-color: var(--blue);
+      color: var(--blue);
+    }
 
-.card-top-bar{
-  height:5px;border-radius:5px;
-  margin-bottom:22px;
-}
-.card-top-bar.foundation{background:linear-gradient(90deg,var(--foundation),#7effa0);}
-.card-top-bar.cando     {background:linear-gradient(90deg,#c9a000,var(--yellow));}
-.card-top-bar.better    {background:linear-gradient(90deg,var(--better),#ff9090);}
+    .ftab.active {
+      background: var(--blue);
+      border-color: var(--blue);
+      color: #fff;
+      box-shadow: 0 3px 10px rgba(0, 75, 135, 0.25);
+    }
 
-.card-badge{
-  display:inline-flex;align-items:center;gap:5px;
-  padding:3px 12px;border-radius:20px;
-  font-size:10px;font-weight:700;
-  letter-spacing:0.1em;text-transform:uppercase;
-  margin-bottom:12px;
-}
-.card-badge.foundation{background:var(--foundation-soft);color:#1a7a1a;border:1px solid var(--foundation-border);}
-.card-badge.cando     {background:var(--cando-soft);color:#7a5000;border:1px solid var(--cando-border);}
-.card-badge.better    {background:var(--better-soft);color:#9a1010;border:1px solid var(--better-border);}
+    .ftab.f-foundation.active {
+      background: var(--foundation);
+      border-color: var(--foundation);
+      color: #fff;
+      box-shadow: 0 3px 10px rgba(50, 205, 50, 0.3);
+    }
 
-.card-title{
-  font-family:'Montserrat',sans-serif;
-  font-size:clamp(16px,2.5vw,20px);
-  font-weight:800;color:var(--blue);
-  line-height:1.3;margin-bottom:12px;
-}
-.card-meta-row{
-  display:flex;gap:8px;flex-wrap:wrap;
-  margin-bottom:16px;
-}
-.meta-chip{
-  display:flex;align-items:center;gap:5px;
-  padding:5px 12px;border-radius:8px;
-  background:var(--blue-light);
-  border:1px solid var(--blue-mid);
-  font-size:12px;font-weight:700;color:var(--blue);
-}
-.card-desc{
-  font-size:13.5px;color:#555;line-height:1.75;
-  margin-bottom:20px;
-  padding-bottom:20px;
-  border-bottom:1px solid #eee;
-}
-.outcomes-label{
-  font-size:10px;font-weight:700;
-  letter-spacing:0.14em;text-transform:uppercase;
-  color:var(--blue);margin-bottom:10px;
-}
-.outcomes-text{
-  font-size:13px;color:#444;line-height:1.85;
-  white-space:pre-line;
-  padding:14px 16px;
-  border-radius:10px;
-  border-left:3px solid;
-}
-.outcomes-text.foundation{background:var(--foundation-soft);border-color:var(--foundation);}
-.outcomes-text.cando     {background:var(--cando-soft);border-color:#c9a000;}
-.outcomes-text.better    {background:var(--better-soft);border-color:var(--better);}
+    .ftab.f-cando.active {
+      background: #c9a000;
+      border-color: #c9a000;
+      color: #fff;
+      box-shadow: 0 3px 10px rgba(201, 160, 0, 0.3);
+    }
 
-/* ── UPCOMING DATES SECTION ─────────────────────────── */
-.dates-section{margin-top:22px;padding-top:18px;border-top:1px solid #eee;}
-.dates-heading{
-  font-size:10px;font-weight:700;
-  letter-spacing:0.14em;text-transform:uppercase;
-  color:var(--blue);margin-bottom:12px;
-  display:flex;align-items:center;gap:8px;
-}
-.dates-heading span{
-  background:var(--blue);color:#fff;
-  font-size:10px;font-weight:800;
-  padding:2px 8px;border-radius:10px;
-}
-.date-row{
-  border:1px solid #e4e9ef;
-  border-radius:10px;
-  margin-bottom:8px;
-  overflow:hidden;
-  background:#fff;
-  transition:border-color 0.15s;
-}
-.date-row:hover{border-color:var(--blue-mid);}
-.date-row-top{
-  display:flex;align-items:center;gap:10px;
-  padding:10px 14px;
-}
-.date-cal-icon{
-  width:36px;height:36px;border-radius:8px;
-  background:var(--blue);
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  flex-shrink:0;
-  overflow:hidden;
-}
-.date-cal-month{
-  font-size:7px;font-weight:800;
-  text-transform:uppercase;letter-spacing:0.08em;
-  color:rgba(255,255,255,0.85);
-  background:rgba(0,0,0,0.2);
-  width:100%;text-align:center;padding:1px 0;
-}
-.date-cal-day{
-  font-family:'Montserrat',sans-serif;
-  font-size:15px;font-weight:800;color:#fff;
-  line-height:1;margin-top:1px;
-}
-.date-info{flex:1;min-width:0;}
-.date-main{
-  font-family:'Montserrat',sans-serif;
-  font-size:12px;font-weight:700;color:var(--dark);
-}
-.date-sub{
-  font-size:11px;color:var(--grey);margin-top:1px;
-}
-.date-actions{
-  display:flex;gap:6px;
-  padding:8px 14px;
-  background:#fafbfc;
-  border-top:1px solid #f0f2f5;
-  flex-wrap:wrap;
-}
-.btn-register{
-  flex:1;
-  padding:7px 12px;border-radius:7px;
-  background:var(--blue);color:#fff;
-  font-family:'Century Gothic','Didact Gothic',sans-serif;
-  font-size:11px;font-weight:700;
-  text-decoration:none;text-align:center;
-  border:none;cursor:pointer;
-  transition:background 0.15s;
-  display:flex;align-items:center;justify-content:center;gap:5px;
-}
-.btn-register:hover{background:#003a6e;}
-.btn-cal{
-  padding:7px 10px;border-radius:7px;
-  background:#fff;border:1px solid #dde3ea;
-  font-size:11px;font-weight:600;color:#555;
-  text-decoration:none;
-  transition:border-color 0.15s,color 0.15s;
-  display:flex;align-items:center;gap:4px;
-  white-space:nowrap;
-}
-.btn-cal:hover{border-color:var(--blue);color:var(--blue);}
-.no-dates{
-  padding:16px;
-  text-align:center;
-  background:#fafbfc;
-  border:1px dashed #dde3ea;
-  border-radius:10px;
-  font-size:12px;color:var(--grey);
-}
+    .ftab.f-better.active {
+      background: var(--better);
+      border-color: var(--better);
+      color: #fff;
+      box-shadow: 0 3px 10px rgba(238, 59, 59, 0.3);
+    }
 
-.close-btn{
-  position:absolute;top:14px;right:14px;
-  width:32px;height:32px;border-radius:50%;
-  background:#f3f4f6;border:1px solid #e0e4ea;
-  font-size:14px;cursor:pointer;color:#666;
-  display:flex;align-items:center;justify-content:center;
-  transition:background 0.15s,color 0.15s;line-height:1;
-}
-.close-btn:hover{background:#e8f0f9;color:var(--blue);}
+    .ftab-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+    }
 
-/* ── FOOTER BAR ─────────────────────────────────────── */
-.footer-bar{
-  margin-top:28px;
-  padding:16px 28px;
-  background:var(--white);
-  border:1px solid #e0e6ed;
-  border-radius:14px;
-  display:flex;gap:24px;flex-wrap:wrap;justify-content:center;
-  box-shadow:0 2px 10px rgba(0,0,0,0.05);
-}
-.stat{text-align:center;}
-.stat strong{
-  display:block;
-  font-family:'Montserrat',sans-serif;
-  font-size:22px;font-weight:800;color:var(--blue);
-}
-.stat span{
-  font-size:10px;font-weight:700;
-  letter-spacing:0.1em;text-transform:uppercase;
-  color:var(--grey);margin-top:1px;display:block;
-}
+    /* ── CONSTELLATION ──────────────────────────────────── */
+    .constellation-wrap {
+      position: relative;
+      width: min(860px, 96vw);
+      aspect-ratio: 1;
+      margin: 0 auto;
+    }
 
-@media(max-width:520px){
-  .detail-card{padding:22px 18px 20px;}
-  .site-header-top{flex-direction:column;align-items:flex-start;}
-  .header-pills{margin-left:0;}
-  .header-logo img{height:44px;}
-}
-</style>
+    #lines {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      overflow: visible;
+    }
+
+    /* ── HUB ────────────────────────────────────────────── */
+    .hub {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: clamp(150px, 22%, 190px);
+      height: clamp(150px, 22%, 190px);
+      border-radius: 50%;
+      background: var(--blue);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 16px;
+      z-index: 10;
+      box-shadow:
+        0 0 0 8px rgba(0, 75, 135, 0.1),
+        0 0 0 16px rgba(0, 75, 135, 0.05),
+        0 8px 32px rgba(0, 75, 135, 0.35);
+      animation: hubGlow 3.5s ease-in-out infinite;
+    }
+
+    @keyframes hubGlow {
+
+      0%,
+      100% {
+        box-shadow: 0 0 0 8px rgba(0, 75, 135, 0.1), 0 0 0 16px rgba(0, 75, 135, 0.05), 0 8px 32px rgba(0, 75, 135, 0.35);
+      }
+
+      50% {
+        box-shadow: 0 0 0 10px rgba(0, 75, 135, 0.15), 0 0 0 22px rgba(0, 75, 135, 0.07), 0 8px 40px rgba(0, 75, 135, 0.45);
+      }
+    }
+
+    .hub-title {
+      font-family: 'Montserrat', sans-serif;
+      font-size: clamp(13px, 2.4vw, 18px);
+      font-weight: 800;
+      color: #fff;
+      line-height: 1.2;
+      letter-spacing: -0.2px;
+    }
+
+    .hub-title em {
+      font-style: normal;
+      color: var(--yellow);
+      display: block;
+      margin-top: 2px;
+    }
+
+    .hub-sub {
+      font-size: clamp(8px, 1vw, 10px);
+      font-weight: 700;
+      color: rgba(255, 255, 255, 0.65);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-top: 6px;
+    }
+
+    /* ── NODE ───────────────────────────────────────────── */
+    .node {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 10px;
+      cursor: pointer;
+      z-index: 5;
+      border: 2.5px solid transparent;
+      background: var(--white);
+      box-shadow: 0 3px 14px rgba(0, 0, 0, 0.10);
+      transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1),
+        box-shadow 0.22s, border-color 0.22s;
+      opacity: 0;
+      animation: nodeIn 0.45s forwards;
+    }
+
+    @keyframes nodeIn {
+      from {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.5);
+      }
+
+      to {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+      }
+    }
+
+    .node.foundation {
+      border-color: var(--foundation);
+      background: var(--foundation-soft);
+    }
+
+    .node.cando {
+      border-color: #c9a000;
+      background: var(--cando-soft);
+    }
+
+    .node.better {
+      border-color: var(--better);
+      background: var(--better-soft);
+    }
+
+    .node:hover {
+      transform: translate(-50%, -50%) scale(1.12) !important;
+      z-index: 20;
+    }
+
+    .node.foundation:hover {
+      box-shadow: 0 6px 24px rgba(50, 205, 50, 0.3);
+    }
+
+    .node.cando:hover {
+      box-shadow: 0 6px 24px rgba(201, 160, 0, 0.3);
+    }
+
+    .node.better:hover {
+      box-shadow: 0 6px 24px rgba(238, 59, 59, 0.3);
+    }
+
+    .node.active {
+      transform: translate(-50%, -50%) scale(1.15) !important;
+      z-index: 20;
+    }
+
+    .node.foundation.active {
+      box-shadow: 0 6px 28px rgba(50, 205, 50, 0.4);
+      border-width: 3px;
+    }
+
+    .node.cando.active {
+      box-shadow: 0 6px 28px rgba(201, 160, 0, 0.4);
+      border-width: 3px;
+    }
+
+    .node.better.active {
+      box-shadow: 0 6px 28px rgba(238, 59, 59, 0.4);
+      border-width: 3px;
+    }
+
+    .node.dimmed {
+      opacity: 0.2 !important;
+      pointer-events: none !important;
+      transform: translate(-50%, -50%) scale(1) !important;
+    }
+
+    .node-label {
+      font-size: clamp(10.5px, 1.7vw, 14.5px);
+      font-weight: 700;
+      line-height: 1.3;
+      color: var(--dark);
+      pointer-events: none;
+    }
+
+    .node.foundation .node-label {
+      color: #1a6e1a;
+    }
+
+    .node.cando .node-label {
+      color: #7a5000;
+    }
+
+    .node.better .node-label {
+      color: #8c1010;
+    }
+
+    /* ── CARD OVERLAY ───────────────────────────────────── */
+    .overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 300;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background: rgba(0, 30, 60, 0.45);
+      backdrop-filter: blur(4px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s;
+    }
+
+    .overlay.show {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .detail-card {
+      background: var(--white);
+      border-radius: 20px;
+      max-width: 520px;
+      width: 100%;
+      max-height: 88vh;
+      overflow-y: auto;
+      padding: 32px 32px 28px;
+      position: relative;
+      box-shadow: 0 24px 64px rgba(0, 30, 60, 0.2), 0 0 0 1px rgba(0, 0, 0, 0.04);
+      transform: scale(0.92) translateY(16px);
+      transition: transform 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
+      scrollbar-width: thin;
+      scrollbar-color: #ccc transparent;
+    }
+
+    .overlay.show .detail-card {
+      transform: scale(1) translateY(0);
+    }
+
+    .detail-card::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    .detail-card::-webkit-scrollbar-thumb {
+      background: #ddd;
+      border-radius: 4px;
+    }
+
+    .card-top-bar {
+      height: 5px;
+      border-radius: 5px;
+      margin-bottom: 22px;
+    }
+
+    .card-top-bar.foundation {
+      background: linear-gradient(90deg, var(--foundation), #7effa0);
+    }
+
+    .card-top-bar.cando {
+      background: linear-gradient(90deg, #c9a000, var(--yellow));
+    }
+
+    .card-top-bar.better {
+      background: linear-gradient(90deg, var(--better), #ff9090);
+    }
+
+    .card-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 12px;
+      border-radius: 20px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+
+    .card-badge.foundation {
+      background: var(--foundation-soft);
+      color: #1a7a1a;
+      border: 1px solid var(--foundation-border);
+    }
+
+    .card-badge.cando {
+      background: var(--cando-soft);
+      color: #7a5000;
+      border: 1px solid var(--cando-border);
+    }
+
+    .card-badge.better {
+      background: var(--better-soft);
+      color: #9a1010;
+      border: 1px solid var(--better-border);
+    }
+
+    .card-title {
+      font-family: 'Montserrat', sans-serif;
+      font-size: clamp(16px, 2.5vw, 20px);
+      font-weight: 800;
+      color: var(--blue);
+      line-height: 1.3;
+      margin-bottom: 12px;
+    }
+
+    .card-meta-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+
+    .meta-chip {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 5px 12px;
+      border-radius: 8px;
+      background: var(--blue-light);
+      border: 1px solid var(--blue-mid);
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--blue);
+    }
+
+    .card-desc {
+      font-size: 13.5px;
+      color: #555;
+      line-height: 1.75;
+      margin-bottom: 20px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #eee;
+    }
+
+    .outcomes-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--blue);
+      margin-bottom: 10px;
+    }
+
+    .outcomes-text {
+      font-size: 13px;
+      color: #444;
+      line-height: 1.85;
+      white-space: pre-line;
+      padding: 14px 16px;
+      border-radius: 10px;
+      border-left: 3px solid;
+    }
+
+    .outcomes-text.foundation {
+      background: var(--foundation-soft);
+      border-color: var(--foundation);
+    }
+
+    .outcomes-text.cando {
+      background: var(--cando-soft);
+      border-color: #c9a000;
+    }
+
+    .outcomes-text.better {
+      background: var(--better-soft);
+      border-color: var(--better);
+    }
+
+    /* ── UPCOMING DATES SECTION ─────────────────────────── */
+    .dates-section {
+      margin-top: 22px;
+      padding-top: 18px;
+      border-top: 1px solid #eee;
+    }
+
+    .dates-heading {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--blue);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .dates-heading span {
+      background: var(--blue);
+      color: #fff;
+      font-size: 10px;
+      font-weight: 800;
+      padding: 2px 8px;
+      border-radius: 10px;
+    }
+
+    .date-row {
+      border: 1px solid #e4e9ef;
+      border-radius: 10px;
+      margin-bottom: 8px;
+      overflow: hidden;
+      background: #fff;
+      transition: border-color 0.15s;
+    }
+
+    .date-row:hover {
+      border-color: var(--blue-mid);
+    }
+
+    .date-row-top {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+    }
+
+    .date-cal-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      background: var(--blue);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      overflow: hidden;
+    }
+
+    .date-cal-month {
+      font-size: 7px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: rgba(255, 255, 255, 0.85);
+      background: rgba(0, 0, 0, 0.2);
+      width: 100%;
+      text-align: center;
+      padding: 1px 0;
+    }
+
+    .date-cal-day {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 15px;
+      font-weight: 800;
+      color: #fff;
+      line-height: 1;
+      margin-top: 1px;
+    }
+
+    .date-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .date-main {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--dark);
+    }
+
+    .date-sub {
+      font-size: 11px;
+      color: var(--grey);
+      margin-top: 1px;
+    }
+
+    .date-actions {
+      display: flex;
+      gap: 6px;
+      padding: 8px 14px;
+      background: #fafbfc;
+      border-top: 1px solid #f0f2f5;
+      flex-wrap: wrap;
+    }
+
+    .btn-register {
+      flex: 1;
+      padding: 7px 12px;
+      border-radius: 7px;
+      background: var(--blue);
+      color: #fff;
+      font-family: 'Century Gothic', 'Didact Gothic', sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      text-decoration: none;
+      text-align: center;
+      border: none;
+      cursor: pointer;
+      transition: background 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+    }
+
+    .btn-register:hover {
+      background: #003a6e;
+    }
+
+    .btn-cal {
+      padding: 7px 10px;
+      border-radius: 7px;
+      background: #fff;
+      border: 1px solid #dde3ea;
+      font-size: 11px;
+      font-weight: 600;
+      color: #555;
+      text-decoration: none;
+      transition: border-color 0.15s, color 0.15s;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      white-space: nowrap;
+    }
+
+    .btn-cal:hover {
+      border-color: var(--blue);
+      color: var(--blue);
+    }
+
+    .no-dates {
+      padding: 16px;
+      text-align: center;
+      background: #fafbfc;
+      border: 1px dashed #dde3ea;
+      border-radius: 10px;
+      font-size: 12px;
+      color: var(--grey);
+    }
+
+    .close-btn {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #f3f4f6;
+      border: 1px solid #e0e4ea;
+      font-size: 14px;
+      cursor: pointer;
+      color: #666;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s, color 0.15s;
+      line-height: 1;
+    }
+
+    .close-btn:hover {
+      background: #e8f0f9;
+      color: var(--blue);
+    }
+
+    /* ── FOOTER BAR ─────────────────────────────────────── */
+    .footer-bar {
+      margin-top: 28px;
+      padding: 16px 28px;
+      background: var(--white);
+      border: 1px solid #e0e6ed;
+      border-radius: 14px;
+      display: flex;
+      gap: 24px;
+      flex-wrap: wrap;
+      justify-content: center;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    }
+
+    .stat {
+      text-align: center;
+    }
+
+    .stat strong {
+      display: block;
+      font-family: 'Montserrat', sans-serif;
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--blue);
+    }
+
+    .stat span {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--grey);
+      margin-top: 1px;
+      display: block;
+    }
+
+    @media(max-width:520px) {
+      .detail-card {
+        padding: 22px 18px 20px;
+      }
+
+      .site-header-top {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .header-pills {
+        margin-left: 0;
+      }
+
+      .header-logo img {
+        height: 44px;
+      }
+    }
+  </style>
 </head>
+
 <body>
 
-<!-- HEADER -->
-<header class="site-header">
-  <div class="site-header-inner">
-    <div class="site-header-top">
-      <div class="header-logo">
-        <img src="header.png" alt="WCED eTPD Logo" />
+  <!-- HEADER -->
+  <header class="site-header">
+    <div class="site-header-inner">
+      <div class="site-header-top">
+        <div class="header-logo">
+          <img src="header.png" alt="WCED eTPD Logo" />
+        </div>
+      </div>
+      <div class="header-bottom-row">
+        <span class="page-title">Dovetail Essentials</span>
+        <span class="page-sub">WCED eTPD Programme &mdash; Digital Skills Pathway</span>
+        <div class="header-pills">
+          <div class="h-pill"><strong>10</strong> Sessions</div>
+          <div class="h-pill"><strong>3</strong> Levels</div>
+          <div class="h-pill"><strong id="totalH">—</strong> hrs total</div>
+        </div>
       </div>
     </div>
-    <div class="header-bottom-row">
-      <span class="page-title">Dovetail Essentials</span>
-      <span class="page-sub">WCED eTPD Programme &mdash; Digital Skills Pathway</span>
-      <div class="header-pills">
-        <div class="h-pill"><strong>10</strong> Sessions</div>
-        <div class="h-pill"><strong>3</strong> Levels</div>
-        <div class="h-pill"><strong id="totalH">—</strong> hrs total</div>
+  </header>
+
+  <!-- PAGE BODY -->
+  <div class="page">
+
+    <p class="subtitle">Select a session to explore its description and outcomes. Use the filters to highlight sessions
+      by developmental level.</p>
+
+    <!-- FILTER TABS -->
+    <div class="filter-tabs">
+      <button class="ftab active" data-filter="all">✦ All Sessions</button>
+      <button class="ftab f-foundation" data-filter="foundation">
+        <span class="ftab-dot" style="background:var(--foundation)"></span> Laying the Foundation
+      </button>
+      <button class="ftab f-cando" data-filter="cando">
+        <span class="ftab-dot" style="background:#c9a000"></span> I Can Do It
+      </button>
+      <button class="ftab f-better" data-filter="better">
+        <span class="ftab-dot" style="background:var(--better)"></span> I Can Do It Better
+      </button>
+    </div>
+
+    <!-- CONSTELLATION -->
+    <div class="constellation-wrap" id="constellation">
+      <svg id="lines" viewBox="0 0 860 860" preserveAspectRatio="xMidYMid meet"></svg>
+
+      <div class="hub">
+        <div class="hub-title">Dovetail<em>Essentials</em></div>
+        <div class="hub-sub">10 Sessions</div>
       </div>
     </div>
-  </div>
-</header>
 
-<!-- PAGE BODY -->
-<div class="page">
-
-  <p class="subtitle">Select a session to explore its description and outcomes. Use the filters to highlight sessions by developmental level.</p>
-
-  <!-- FILTER TABS -->
-  <div class="filter-tabs">
-    <button class="ftab active" data-filter="all">✦ All Sessions</button>
-    <button class="ftab f-foundation" data-filter="foundation">
-      <span class="ftab-dot" style="background:var(--foundation)"></span> Laying the Foundation
-    </button>
-    <button class="ftab f-cando" data-filter="cando">
-      <span class="ftab-dot" style="background:#c9a000"></span> I Can Do It
-    </button>
-    <button class="ftab f-better" data-filter="better">
-      <span class="ftab-dot" style="background:var(--better)"></span> I Can Do It Better
-    </button>
-  </div>
-
-  <!-- CONSTELLATION -->
-  <div class="constellation-wrap" id="constellation">
-    <svg id="lines" viewBox="0 0 860 860" preserveAspectRatio="xMidYMid meet"></svg>
-
-    <div class="hub">
-      <div class="hub-title">Dovetail<em>Essentials</em></div>
-      <div class="hub-sub">10 Sessions</div>
+    <!-- FOOTER STATS -->
+    <div class="footer-bar">
+      <div class="stat"><strong>5</strong><span>Foundation</span></div>
+      <div class="stat"><strong>2</strong><span>I Can Do It</span></div>
+      <div class="stat"><strong>3</strong><span>I Can Do It Better</span></div>
+      <div class="stat"><strong id="totalH2">—</strong><span>Total Hours</span></div>
     </div>
   </div>
 
-  <!-- FOOTER STATS -->
-  <div class="footer-bar">
-    <div class="stat"><strong>5</strong><span>Foundation</span></div>
-    <div class="stat"><strong>2</strong><span>I Can Do It</span></div>
-    <div class="stat"><strong>3</strong><span>I Can Do It Better</span></div>
-    <div class="stat"><strong id="totalH2">—</strong><span>Total Hours</span></div>
+  <!-- DETAIL CARD OVERLAY -->
+  <div class="overlay" id="overlay">
+    <div class="detail-card">
+      <button class="close-btn" id="closeBtn">✕</button>
+      <div class="card-top-bar" id="cardBar"></div>
+      <div class="card-badge" id="cardBadge"></div>
+      <div class="card-title" id="cardTitle"></div>
+      <div class="card-meta-row" id="cardMeta"></div>
+      <div class="card-desc" id="cardDesc"></div>
+      <div class="outcomes-label">Session Outcomes</div>
+      <div class="outcomes-text" id="cardOutcomes"></div>
+      <div class="dates-section" id="datesSection"></div>
+    </div>
   </div>
-</div>
 
-<!-- DETAIL CARD OVERLAY -->
-<div class="overlay" id="overlay">
-  <div class="detail-card">
-    <button class="close-btn" id="closeBtn">✕</button>
-    <div class="card-top-bar" id="cardBar"></div>
-    <div class="card-badge" id="cardBadge"></div>
-    <div class="card-title" id="cardTitle"></div>
-    <div class="card-meta-row" id="cardMeta"></div>
-    <div class="card-desc" id="cardDesc"></div>
-    <div class="outcomes-label">Session Outcomes</div>
-    <div class="outcomes-text" id="cardOutcomes"></div>
-    <div class="dates-section" id="datesSection"></div>
-  </div>
-</div>
-
-<script>
-// ── CSV LOADING ──────────────────────────────────────
-let upcomingData = [];
-Papa.parse('Upcoming Sessions - Scheduled Sessions.csv', {
-  download: true,
-  header: true,
-  skipEmptyLines: true,
-  complete: (result) => { upcomingData = result.data; },
-  error: () => { upcomingData = []; }
-});
-
-function parseSessionDate(dateStr) {
-  if (!dateStr) return null;
-  try {
-    const parts = dateStr.trim().split('/');
-    if (parts.length === 3) {
-      const [d, m, y] = parts;
-      return new Date(+y, +m - 1, +d);
-    }
-  } catch(e) {}
-  return null;
-}
-
-function isUpcoming(dateStr) {
-  const d = parseSessionDate(dateStr);
-  if (!d) return false;
-  const today = new Date(); today.setHours(0,0,0,0);
-  return d >= today;
-}
-
-// Match a course name from the CSV to one of our 10 COURSES
-// Uses same fuzzy approach as my-journey.html
-function matchCourseName(csvName, courseName) {
-  if (!csvName || !courseName) return false;
-  const a = csvName.trim().toLowerCase();
-  const b = courseName.trim().toLowerCase();
-  if (a === b) return true;
-  // Try matching on first significant word-group (before colon)
-  const aKey = a.split(':')[0].trim();
-  const bKey = b.split(':')[0].trim();
-  if (aKey === bKey) return true;
-  // Contains match
-  if (a.includes(bKey) || b.includes(aKey)) return true;
-  return false;
-}
-
-function getUpcomingSessions(courseName) {
-  return upcomingData
-    .filter(row => {
-      const csvName = row['Session Name']?.trim() || '';
-      return matchCourseName(csvName, courseName) && isUpcoming(row['Date']);
-    })
-    .map(row => ({
-      date:         row['Date']?.trim() || '',
-      time:         row['Time']?.trim() || '',
-      district:     row['HOSTING DISTRICT']?.trim() || '',
-      register:     row['Pre-Register']?.trim() || '',
-      googleCal:    row['Add To Calendar (Google)']?.trim() || '',
-      outlookCal:   row['Add to Calendar (Outlook)']?.trim() || ''
-    }))
-    .sort((a,b) => {
-      const da = parseSessionDate(a.date), db = parseSessionDate(b.date);
-      if (!da && !db) return 0;
-      if (!da) return 1;
-      if (!db) return -1;
-      return da - db;
+  <script>
+    // ── CSV LOADING ──────────────────────────────────────
+    let upcomingData = [];
+    Papa.parse('Upcoming Sessions - Scheduled Sessions.csv', {
+      download: true,
+      header: true,
+      skipEmptyLines: true,
+      complete: (result) => { upcomingData = result.data; },
+      error: () => { upcomingData = []; }
     });
-}
 
-function formatCalDate(dateStr) {
-  const d = parseSessionDate(dateStr);
-  if (!d) return { day: '?', month: '??', full: dateStr };
-  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  return {
-    day: String(d.getDate()).padStart(2,'0'),
-    month: months[d.getMonth()],
-    full: d.toLocaleDateString('en-ZA', { weekday:'short', day:'numeric', month:'long', year:'numeric' })
-  };
-}
+    function parseSessionDate(dateStr) {
+      if (!dateStr) return null;
+      try {
+        const parts = dateStr.trim().split('/');
+        if (parts.length === 3) {
+          const [d, m, y] = parts;
+          return new Date(+y, +m - 1, +d);
+        }
+      } catch (e) { }
+      return null;
+    }
 
-function buildDatesHTML(courseName) {
-  const sessions = getUpcomingSessions(courseName);
-  if (sessions.length === 0) {
-    return `<div class="dates-heading">📅 Upcoming Dates</div>
+    function isUpcoming(dateStr) {
+      const d = parseSessionDate(dateStr);
+      if (!d) return false;
+      const today = new Date(); today.setHours(0, 0, 0, 0);
+      return d >= today;
+    }
+
+    // Match a course name from the CSV to one of our 10 COURSES
+    // Uses same fuzzy approach as my-journey.html
+    function matchCourseName(csvName, courseName) {
+      if (!csvName || !courseName) return false;
+      const a = csvName.trim().toLowerCase();
+      const b = courseName.trim().toLowerCase();
+      if (a === b) return true;
+      // Try matching on first significant word-group (before colon)
+      const aKey = a.split(':')[0].trim();
+      const bKey = b.split(':')[0].trim();
+      if (aKey === bKey) return true;
+      // Contains match
+      if (a.includes(bKey) || b.includes(aKey)) return true;
+      return false;
+    }
+
+    function getUpcomingSessions(courseName) {
+      return upcomingData
+        .filter(row => {
+          const csvName = row['Session Name']?.trim() || '';
+          return matchCourseName(csvName, courseName) && isUpcoming(row['Date']);
+        })
+        .map(row => ({
+          date: row['Date']?.trim() || '',
+          time: row['Time']?.trim() || '',
+          district: row['HOSTING DISTRICT']?.trim() || '',
+          register: row['Pre-Register']?.trim() || '',
+          googleCal: row['Add To Calendar (Google)']?.trim() || '',
+          outlookCal: row['Add to Calendar (Outlook)']?.trim() || ''
+        }))
+        .sort((a, b) => {
+          const da = parseSessionDate(a.date), db = parseSessionDate(b.date);
+          if (!da && !db) return 0;
+          if (!da) return 1;
+          if (!db) return -1;
+          return da - db;
+        });
+    }
+
+    function formatCalDate(dateStr) {
+      const d = parseSessionDate(dateStr);
+      if (!d) return { day: '?', month: '??', full: dateStr };
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      return {
+        day: String(d.getDate()).padStart(2, '0'),
+        month: months[d.getMonth()],
+        full: d.toLocaleDateString('en-ZA', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' })
+      };
+    }
+
+    function buildDatesHTML(courseName) {
+      const sessions = getUpcomingSessions(courseName);
+      if (sessions.length === 0) {
+        return `<div class="dates-heading">📅 Upcoming Dates</div>
       <div class="no-dates">No upcoming sessions scheduled at this time.<br>Check back soon — new dates are added regularly.</div>`;
-  }
-  const rows = sessions.map(s => {
-    const cal = formatCalDate(s.date);
-    const districtBit = s.district ? `<span class="date-sub">${s.district}${s.time ? ' · ' + s.time : ''}</span>` : (s.time ? `<span class="date-sub">${s.time}</span>` : '');
-    const regBtn = s.register
-      ? `<a href="${s.register}" target="_blank" rel="noopener noreferrer" class="btn-register">
+      }
+      const rows = sessions.map(s => {
+        const cal = formatCalDate(s.date);
+        const districtBit = s.district ? `<span class="date-sub">${s.district}${s.time ? ' · ' + s.time : ''}</span>` : (s.time ? `<span class="date-sub">${s.time}</span>` : '');
+        const regBtn = s.register
+          ? `<a href="${s.register}" target="_blank" rel="noopener noreferrer" class="btn-register">
            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
            Register
          </a>` : '';
-    const gCalBtn = s.googleCal && s.googleCal !== '#'
-      ? `<a href="${s.googleCal}" target="_blank" rel="noopener noreferrer" class="btn-cal">📅 Google</a>` : '';
-    const oCalBtn = s.outlookCal && s.outlookCal !== '#'
-      ? `<a href="${s.outlookCal}" target="_blank" rel="noopener noreferrer" class="btn-cal">📧 Outlook</a>` : '';
-    const hasActions = regBtn || gCalBtn || oCalBtn;
-    return `<div class="date-row">
+        const gCalBtn = s.googleCal && s.googleCal !== '#'
+          ? `<a href="${s.googleCal}" target="_blank" rel="noopener noreferrer" class="btn-cal">📅 Google</a>` : '';
+        const oCalBtn = s.outlookCal && s.outlookCal !== '#'
+          ? `<a href="${s.outlookCal}" target="_blank" rel="noopener noreferrer" class="btn-cal">📧 Outlook</a>` : '';
+        const hasActions = regBtn || gCalBtn || oCalBtn;
+        return `<div class="date-row">
       <div class="date-row-top">
         <div class="date-cal-icon">
           <div class="date-cal-month">${cal.month}</div>
@@ -639,151 +1006,152 @@ function buildDatesHTML(courseName) {
       </div>
       ${hasActions ? `<div class="date-actions">${regBtn}${gCalBtn}${oCalBtn}</div>` : ''}
     </div>`;
-  }).join('');
+      }).join('');
 
-  return `<div class="dates-heading">📅 Upcoming Dates <span>${sessions.length} scheduled</span></div>${rows}`;
-}
+      return `<div class="dates-heading">📅 Upcoming Dates <span>${sessions.length} scheduled</span></div>${rows}`;
+    }
 
-const COURSES=[
-  {name:"ePedagogy: Building a Digital Lesson",       level:"foundation",ll:"Laying the Foundation",desc:"Enhance your teaching skills with a practical template and essential theoretical knowledge to seamlessly integrate ICT into your lesson plans and engage your students.",outcomes:"• E-Learning as an Add-in, not an Add-on\n• Using the TPACK Model for self-evaluation\n• The SAMR Model to evaluate and enhance teaching practice\n• Using a Digital Lesson Plan template to improve lessons",dur:120},
-  {name:"Integrating Digital Resources from the ePortal",level:"foundation",ll:"Laying the Foundation",desc:"Discover a treasure trove of digital resources on the WCED ePortal. Learn smart ways to integrate them into your teaching, making lesson planning a breeze and student engagement a guarantee!",outcomes:"Navigating the ePortal\n  ○ What is on the ePortal\n  ○ Quick ways to find things\n\nSharing resources\n  ○ Saving resources from the ePortal\n  ○ Dynamic vs static sharing\n\nIntegrating and Curating\n  ○ Creating a Hyperdoc / Published Doc\n  ○ Creating a Wakelet with curated resources",dur:90},
-  {name:"Google Fundamentals 1: Account & Chrome",    level:"foundation",ll:"Laying the Foundation",desc:"Master the essentials of Google Accounts and Chrome, unlocking a world of efficient teaching, seamless collaboration, and limitless learning possibilities.",outcomes:"• Setting up multiple Google Chrome accounts\n• Syncing internet activity across devices\n• Tabbed browsing and privacy/security modes\n• Chrome Tips and Tricks to improve workflow",dur:120},
-  {name:"Office Online Fundamentals",                  level:"foundation",ll:"Laying the Foundation",desc:"Maximize the potential of your WCED Office 365 account (@wcgschools.gov.za) and discover how to enhance teaching, learning, and collaboration with its versatile tools.",outcomes:"• Understanding the M365 platform\n• Accessing your @wcgschools.gov.za account",dur:90},
-  {name:"Ease of Access with QR Codes & Bit.ly",      level:"foundation",ll:"Laying the Foundation",desc:"Explore QR codes and link shorteners to help teachers understand how to improve the ease of access to digital content for learners.",outcomes:"Introduction to Ease of Access\n  ○ Device considerations\n\nDynamic vs Static content\n  ○ Locally-hosted vs cloud-based files\n\nQR Codes and Link Shorteners\n  ○ QR Codes: what, when, recommendations\n  ○ Link shorteners: what, when, recommendations\n\nHyperDocs\n  ○ Understanding HyperDocs\n  ○ Making a HyperDoc",dur:90},
-  {name:"Orientation to Google Forms",                 level:"cando",ll:"I Can Do It",desc:"Learn the fundamentals of Google Forms, master creating engaging quizzes and surveys, and discover the unique features of each — enhancing your teaching and assessment toolkit.",outcomes:"• How to access Google Forms\n• Difference between a quiz and a survey\n• Multiple question types: multiple choice, dropdowns, text\n• Adding images and videos\n• Adding sections and collaborators\n• Sharing a Form and setting permissions\n• How to access and interpret responses",dur:90},
-  {name:"Cyber Wellness in the Classroom",             level:"cando",ll:"I Can Do It",desc:"Equip yourself with practical tools and strategies to integrate cyber wellness into your everyday teaching practices, fostering responsible digital citizenship.",outcomes:"• Digital Citizenship in the Classroom\n• Role of teachers in promoting positive online citizenship\n• Cyber Wellness integration into lessons\n• Interactive tools and resources for learners",dur:120},
-  {name:"Improved Presentation Skills",                level:"better",ll:"I Can Do It Better",desc:"Enhance your digital presentation skills — from fundamentals to advanced techniques — designed for educators of all ICT proficiency levels.",outcomes:"Cognitive Overload\n  Maximising learning impact by avoiding information overload.\n\nAesthetic Value\n  Balancing style and substance in your slides.\n\nMaximising Screen Real Estate\n  Using the full screen in PowerPoint, Word or PDFs.\n\nAdding Annotations\n  Annotating on any Window or Website.",dur:120},
-  {name:"Teaching with Videos",                        level:"better",ll:"I Can Do It Better",desc:"Discover how to effectively incorporate videos into your teaching practice, grounded in solid pedagogy, with practical tips to simplify the process and enhance student engagement.",outcomes:"• Videos as supplement, not replacement\n• Different video lengths for different ages\n\nYouTube\n  ○ Beware the Algorithm!\n  ○ Downloads and playlists\n\nGoogle Slides & YouTube\n  ○ Adding, resizing and trimming videos in Slides\n\nBasic Video Editing with ClipChamp\n  ○ Cropping, splitting, recording and annotations",dur:120},
-  {name:"Wayground for Formative Assessment",          level:"better",ll:"I Can Do It Better",desc:"Discover how Wayground transforms Assessment FOR Learning — making it engaging, interactive, and data-driven to enhance student outcomes.",outcomes:"• Create a Quizizz from scratch\n• 'Teleporting' questions into Quizizz\n• Creating a Class in Quizizz\n• Linking Google Classroom to Quizizz\n• Playing and analysing Quizizz results\n• Homework mode for extended learning\n• Quizizz AI Chrome Extension",dur:90},
-];
+    const COURSES = [
+      { name: "ePedagogy: Building a Digital Lesson", level: "foundation", ll: "Laying the Foundation", desc: "Enhance your teaching skills with a practical template and essential theoretical knowledge to seamlessly integrate ICT into your lesson plans and engage your students.", outcomes: "• E-Learning as an Add-in, not an Add-on\n• Using the TPACK Model for self-evaluation\n• The SAMR Model to evaluate and enhance teaching practice\n• Using a Digital Lesson Plan template to improve lessons", dur: 120 },
+      { name: "Integrating Digital Resources from the ePortal", level: "foundation", ll: "Laying the Foundation", desc: "Discover a treasure trove of digital resources on the WCED ePortal. Learn smart ways to integrate them into your teaching, making lesson planning a breeze and student engagement a guarantee!", outcomes: "Navigating the ePortal\n  ○ What is on the ePortal\n  ○ Quick ways to find things\n\nSharing resources\n  ○ Saving resources from the ePortal\n  ○ Dynamic vs static sharing\n\nIntegrating and Curating\n  ○ Creating a Hyperdoc / Published Doc\n  ○ Creating a Wakelet with curated resources", dur: 90 },
+      { name: "Google Fundamentals 1: Account & Chrome", level: "foundation", ll: "Laying the Foundation", desc: "Master the essentials of Google Accounts and Chrome, unlocking a world of efficient teaching, seamless collaboration, and limitless learning possibilities.", outcomes: "• Setting up multiple Google Chrome accounts\n• Syncing internet activity across devices\n• Tabbed browsing and privacy/security modes\n• Chrome Tips and Tricks to improve workflow", dur: 120 },
+      { name: "Office Online Fundamentals", level: "foundation", ll: "Laying the Foundation", desc: "Maximize the potential of your WCED Office 365 account (@wcgschools.gov.za) and discover how to enhance teaching, learning, and collaboration with its versatile tools.", outcomes: "• Understanding the M365 platform\n• Accessing your @wcgschools.gov.za account", dur: 90 },
+      { name: "Ease of Access with QR Codes & Bit.ly", level: "foundation", ll: "Laying the Foundation", desc: "Explore QR codes and link shorteners to help teachers understand how to improve the ease of access to digital content for learners.", outcomes: "Introduction to Ease of Access\n  ○ Device considerations\n\nDynamic vs Static content\n  ○ Locally-hosted vs cloud-based files\n\nQR Codes and Link Shorteners\n  ○ QR Codes: what, when, recommendations\n  ○ Link shorteners: what, when, recommendations\n\nHyperDocs\n  ○ Understanding HyperDocs\n  ○ Making a HyperDoc", dur: 90 },
+      { name: "Orientation to Google Forms", level: "cando", ll: "I Can Do It", desc: "Learn the fundamentals of Google Forms, master creating engaging quizzes and surveys, and discover the unique features of each — enhancing your teaching and assessment toolkit.", outcomes: "• How to access Google Forms\n• Difference between a quiz and a survey\n• Multiple question types: multiple choice, dropdowns, text\n• Adding images and videos\n• Adding sections and collaborators\n• Sharing a Form and setting permissions\n• How to access and interpret responses", dur: 90 },
+      { name: "Cyber Wellness in the Classroom", level: "cando", ll: "I Can Do It", desc: "Equip yourself with practical tools and strategies to integrate cyber wellness into your everyday teaching practices, fostering responsible digital citizenship.", outcomes: "• Digital Citizenship in the Classroom\n• Role of teachers in promoting positive online citizenship\n• Cyber Wellness integration into lessons\n• Interactive tools and resources for learners", dur: 120 },
+      { name: "Improved Presentation Skills", level: "better", ll: "I Can Do It Better", desc: "Enhance your digital presentation skills — from fundamentals to advanced techniques — designed for educators of all ICT proficiency levels.", outcomes: "Cognitive Overload\n  Maximising learning impact by avoiding information overload.\n\nAesthetic Value\n  Balancing style and substance in your slides.\n\nMaximising Screen Real Estate\n  Using the full screen in PowerPoint, Word or PDFs.\n\nAdding Annotations\n  Annotating on any Window or Website.", dur: 120 },
+      { name: "Teaching with Videos", level: "better", ll: "I Can Do It Better", desc: "Discover how to effectively incorporate videos into your teaching practice, grounded in solid pedagogy, with practical tips to simplify the process and enhance student engagement.", outcomes: "• Videos as supplement, not replacement\n• Different video lengths for different ages\n\nYouTube\n  ○ Beware the Algorithm!\n  ○ Downloads and playlists\n\nGoogle Slides & YouTube\n  ○ Adding, resizing and trimming videos in Slides\n\nBasic Video Editing with ClipChamp\n  ○ Cropping, splitting, recording and annotations", dur: 120 },
+      { name: "Wayground for Formative Assessment", level: "better", ll: "I Can Do It Better", desc: "Discover how Wayground transforms Assessment FOR Learning — making it engaging, interactive, and data-driven to enhance student outcomes.", outcomes: "• Create a Quizizz from scratch\n• 'Teleporting' questions into Quizizz\n• Creating a Class in Quizizz\n• Linking Google Classroom to Quizizz\n• Playing and analysing Quizizz results\n• Homework mode for extended learning\n• Quizizz AI Chrome Extension", dur: 90 },
+    ];
 
-const LINE_COLORS={foundation:'#32CD32',cando:'#c9a000',better:'#EE3B3B'};
-let activeFilter='all';
+    const LINE_COLORS = { foundation: '#32CD32', cando: '#c9a000', better: '#EE3B3B' };
+    let activeFilter = 'all';
 
-/* ── BUILD ─────────────────────────────────────────── */
-function build(){
-  const wrap=document.getElementById('constellation');
-  wrap.querySelectorAll('.node').forEach(n=>n.remove());
-  const svg=document.getElementById('lines');
-  svg.innerHTML='';
+    /* ── BUILD ─────────────────────────────────────────── */
+    function build() {
+      const wrap = document.getElementById('constellation');
+      wrap.querySelectorAll('.node').forEach(n => n.remove());
+      const svg = document.getElementById('lines');
+      svg.innerHTML = '';
 
-  const size=wrap.offsetWidth;
-  const cx=size/2, cy=size/2;
-  const n=COURSES.length;
+      const size = wrap.offsetWidth;
+      const cx = size / 2, cy = size / 2;
+      const n = COURSES.length;
 
-  // nodeD: set so that 10 nodes fit around the orbit with a small gap
-  // Arc between adjacent node centres = 2π*orbitR/10
-  // We want arc > nodeD + gap, so: orbitR > 10*(nodeD+gap)/(2π)
-  // Use orbitR = size*0.38 (leaves ~6% margin each side beyond nodes)
-  // Then nodeD = orbitR * 2*PI/10 * 0.72  (nodes occupy 72% of arc, 28% gap)
-  const orbitR = size * 0.38;
-  const nodeD  = Math.min(orbitR * 2 * Math.PI / n * 0.82, size * 0.215);
+      // nodeD: set so that 10 nodes fit around the orbit with a small gap
+      // Arc between adjacent node centres = 2π*orbitR/10
+      // We want arc > nodeD + gap, so: orbitR > 10*(nodeD+gap)/(2π)
+      // Use orbitR = size*0.38 (leaves ~6% margin each side beyond nodes)
+      // Then nodeD = orbitR * 2*PI/10 * 0.72  (nodes occupy 72% of arc, 28% gap)
+      const orbitR = size * 0.38;
+      const nodeD = Math.min(orbitR * 2 * Math.PI / n * 0.82, size * 0.215);
 
-  const startAngle = -Math.PI/2;
-  const svgW = 860;
+      const startAngle = -Math.PI / 2;
+      const svgW = 860;
 
-  COURSES.forEach((c,i)=>{
-    const angle = startAngle + (2*Math.PI/n)*i;
-    const nx = cx + orbitR * Math.cos(angle);
-    const ny = cy + orbitR * Math.sin(angle);
+      COURSES.forEach((c, i) => {
+        const angle = startAngle + (2 * Math.PI / n) * i;
+        const nx = cx + orbitR * Math.cos(angle);
+        const ny = cy + orbitR * Math.sin(angle);
 
-    // SVG connector
-    const line=document.createElementNS('http://www.w3.org/2000/svg','line');
-    line.setAttribute('x1','430'); line.setAttribute('y1','430');
-    line.setAttribute('x2',(nx/size*svgW).toFixed(2));
-    line.setAttribute('y2',(ny/size*svgW).toFixed(2));
-    line.setAttribute('stroke',LINE_COLORS[c.level]);
-    line.setAttribute('stroke-width','1.5');
-    line.setAttribute('stroke-opacity','0.4');
-    line.dataset.level=c.level;
-    svg.appendChild(line);
+        // SVG connector
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.setAttribute('x1', '430'); line.setAttribute('y1', '430');
+        line.setAttribute('x2', (nx / size * svgW).toFixed(2));
+        line.setAttribute('y2', (ny / size * svgW).toFixed(2));
+        line.setAttribute('stroke', LINE_COLORS[c.level]);
+        line.setAttribute('stroke-width', '1.5');
+        line.setAttribute('stroke-opacity', '0.4');
+        line.dataset.level = c.level;
+        svg.appendChild(line);
 
-    // node element
-    const node=document.createElement('div');
-    node.className=`node ${c.level}`;
-    node.style.left=nx+'px';
-    node.style.top=ny+'px';
-    node.style.width=nodeD+'px';
-    node.style.height=nodeD+'px';
-    node.style.animationDelay=(i*0.06+0.15)+'s';
-    node.dataset.idx=i;
-    node.dataset.level=c.level;
-    node.innerHTML=`<span class="node-label">${c.name}</span>`;
-    node.addEventListener('click',()=>openCard(i,node));
-    wrap.appendChild(node);
-  });
+        // node element
+        const node = document.createElement('div');
+        node.className = `node ${c.level}`;
+        node.style.left = nx + 'px';
+        node.style.top = ny + 'px';
+        node.style.width = nodeD + 'px';
+        node.style.height = nodeD + 'px';
+        node.style.animationDelay = (i * 0.06 + 0.15) + 's';
+        node.dataset.idx = i;
+        node.dataset.level = c.level;
+        node.innerHTML = `<span class="node-label">${c.name}</span>`;
+        node.addEventListener('click', () => openCard(i, node));
+        wrap.appendChild(node);
+      });
 
-  applyFilter(activeFilter, false);
-}
+      applyFilter(activeFilter, false);
+    }
 
-/* ── FILTER ─────────────────────────────────────────── */
-function applyFilter(filter, animate=true){
-  activeFilter=filter;
-  document.querySelectorAll('.node').forEach(n=>{
-    const match = filter==='all'||n.dataset.level===filter;
-    if(animate) n.style.transition='opacity 0.25s';
-    n.classList.toggle('dimmed', !match);
-  });
-  document.querySelectorAll('#lines line').forEach(l=>{
-    const match = filter==='all'||l.dataset.level===filter;
-    l.style.opacity = match?'1':'0.08';
-  });
-  document.querySelectorAll('.ftab').forEach(b=>{
-    b.classList.toggle('active', b.dataset.filter===filter);
-  });
-}
+    /* ── FILTER ─────────────────────────────────────────── */
+    function applyFilter(filter, animate = true) {
+      activeFilter = filter;
+      document.querySelectorAll('.node').forEach(n => {
+        const match = filter === 'all' || n.dataset.level === filter;
+        if (animate) n.style.transition = 'opacity 0.25s';
+        n.classList.toggle('dimmed', !match);
+      });
+      document.querySelectorAll('#lines line').forEach(l => {
+        const match = filter === 'all' || l.dataset.level === filter;
+        l.style.opacity = match ? '1' : '0.08';
+      });
+      document.querySelectorAll('.ftab').forEach(b => {
+        b.classList.toggle('active', b.dataset.filter === filter);
+      });
+    }
 
-document.querySelectorAll('.ftab').forEach(b=>{
-  b.addEventListener('click',()=>applyFilter(b.dataset.filter));
-});
+    document.querySelectorAll('.ftab').forEach(b => {
+      b.addEventListener('click', () => applyFilter(b.dataset.filter));
+    });
 
-/* ── CARD ───────────────────────────────────────────── */
-const overlay=document.getElementById('overlay');
-function fmt(m){const h=Math.floor(m/60),r=m%60;return h&&r?`${h}h ${r}min`:h?`${h} hour${h>1?'s':''}`:`${m} min`;}
+    /* ── CARD ───────────────────────────────────────────── */
+    const overlay = document.getElementById('overlay');
+    function fmt(m) { const h = Math.floor(m / 60), r = m % 60; return h && r ? `${h}h ${r}min` : h ? `${h} hour${h > 1 ? 's' : ''}` : `${m} min`; }
 
-function openCard(i, nodeEl){
-  const c=COURSES[i];
-  document.getElementById('cardBar').className='card-top-bar '+c.level;
-  const badge=document.getElementById('cardBadge');
-  badge.className='card-badge '+c.level;
-  badge.textContent=c.ll;
-  document.getElementById('cardTitle').textContent=c.name;
-  document.getElementById('cardMeta').innerHTML=`
+    function openCard(i, nodeEl) {
+      const c = COURSES[i];
+      document.getElementById('cardBar').className = 'card-top-bar ' + c.level;
+      const badge = document.getElementById('cardBadge');
+      badge.className = 'card-badge ' + c.level;
+      badge.textContent = c.ll;
+      document.getElementById('cardTitle').textContent = c.name;
+      document.getElementById('cardMeta').innerHTML = `
     <span class="meta-chip">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
       ${fmt(c.dur)}
     </span>`;
-  document.getElementById('cardDesc').textContent=c.desc;
-  const ot=document.getElementById('cardOutcomes');
-  ot.className='outcomes-text '+c.level;
-  ot.textContent=c.outcomes;
-  // Populate upcoming dates
-  document.getElementById('datesSection').innerHTML = buildDatesHTML(c.name);
-  document.querySelectorAll('.node').forEach(n=>n.classList.remove('active'));
-  nodeEl.classList.add('active');
-  overlay.classList.add('show');
-  document.body.style.overflow='hidden';
-}
+      document.getElementById('cardDesc').textContent = c.desc;
+      const ot = document.getElementById('cardOutcomes');
+      ot.className = 'outcomes-text ' + c.level;
+      ot.textContent = c.outcomes;
+      // Populate upcoming dates
+      document.getElementById('datesSection').innerHTML = buildDatesHTML(c.name);
+      document.querySelectorAll('.node').forEach(n => n.classList.remove('active'));
+      nodeEl.classList.add('active');
+      overlay.classList.add('show');
+      document.body.style.overflow = 'hidden';
+    }
 
-function closeCard(){
-  overlay.classList.remove('show');
-  document.body.style.overflow='';
-  document.querySelectorAll('.node').forEach(n=>n.classList.remove('active'));
-}
+    function closeCard() {
+      overlay.classList.remove('show');
+      document.body.style.overflow = '';
+      document.querySelectorAll('.node').forEach(n => n.classList.remove('active'));
+    }
 
-document.getElementById('closeBtn').addEventListener('click',closeCard);
-overlay.addEventListener('click',e=>{if(e.target===overlay)closeCard();});
-document.addEventListener('keydown',e=>{if(e.key==='Escape')closeCard();});
+    document.getElementById('closeBtn').addEventListener('click', closeCard);
+    overlay.addEventListener('click', e => { if (e.target === overlay) closeCard(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeCard(); });
 
-/* ── STATS ──────────────────────────────────────────── */
-const totalMins=COURSES.reduce((s,c)=>s+c.dur,0);
-const totalHrs=(totalMins/60).toFixed(1)+'h';
-document.getElementById('totalH').textContent=totalHrs;
-document.getElementById('totalH2').textContent=totalHrs;
+    /* ── STATS ──────────────────────────────────────────── */
+    const totalMins = COURSES.reduce((s, c) => s + c.dur, 0);
+    const totalHrs = (totalMins / 60).toFixed(1) + 'h';
+    document.getElementById('totalH').textContent = totalHrs;
+    document.getElementById('totalH2').textContent = totalHrs;
 
-/* ── INIT + RESIZE ──────────────────────────────────── */
-build();
-let rt;window.addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(build,120);});
-</script>
+    /* ── INIT + RESIZE ──────────────────────────────────── */
+    build();
+    let rt; window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(build, 120); });
+  </script>
 </body>
+
 </html>
