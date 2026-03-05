@@ -156,17 +156,17 @@
         }
 
         .hero p {
-            font-size: 1.1rem;
+            font-size: 0.9rem;
             color: #555;
-            line-height: 1.6;
-            max-width: 700px;
+            line-height: 1.5;
+            max-width: 800px;
             margin: 0 auto;
         }
 
         .pathway-container {
             max-width: 100%;
             margin: 2rem auto;
-            padding: 3rem 2rem;
+            padding: 1rem 2rem;
             position: relative;
             overflow-x: auto;
             overflow-y: visible;
@@ -199,7 +199,7 @@
             justify-content: center;
             gap: 5rem;
             min-width: min-content;
-            padding: 2rem 4rem;
+            padding: 0.75rem 4rem;
             position: relative;
         }
 
@@ -934,7 +934,25 @@
                             Welcome to the Adoption and Transformation Pathway. This interactive journey represents a shift towards decentralised learning, designed to put you at the centre of your professional growth. Why does this matter? Because true digital transformation is built on teacher agency. We want to empower you to take control of your development so that you can take full control of the transformation in your classroom. Explore the tiers below to understand the pathway and see how you can grow your digital wisdom.
                         </p>
                     </div>
-
+                    <div style={{ textAlign: 'center', marginBottom: '1.5rem', position: 'relative', zIndex: 1 }}>
+                        <a href="my-journey.html" style={{
+                            display: 'inline-block',
+                            background: 'linear-gradient(135deg, #001489, #007DBA)',
+                            color: 'white',
+                            textDecoration: 'none',
+                            padding: '0.75rem 2rem',
+                            borderRadius: '50px',
+                            fontWeight: '600',
+                            fontSize: '1rem',
+                            boxShadow: '0 4px 15px rgba(0, 20, 137, 0.3)',
+                            transition: 'all 0.3s ease'
+                        }}
+                            onMouseOver={e => e.currentTarget.style.transform = 'translateY(-2px)'}
+                            onMouseOut={e => e.currentTarget.style.transform = 'translateY(0)'}
+                        >
+                            👤 View My Progress on This Pathway
+                        </a>
+                    </div>
                     <div
                         className="pathway-container"
                         ref={scrollContainerRef}
