@@ -635,6 +635,13 @@
                     'Build foundational digital literacy and confidence',
                     'Earn your first Spark toward becoming a Transformation Agent'
                 ],
+                availability: {
+                    type: 'registration',
+                    registerUrl: 'http://bit.ly/4sgSf9g?r=lp&m=Mma39rNpG6w',
+                    expiryDate: '2026-03-22',
+                    activeMessage: 'Registrations are currently open!',
+                    expiredMessage: 'Registrations for the current cohort have closed. Keep an eye on eTPD communications for the next intake.'
+                },
                 next: 'Begin your transformation journey by exploring the digital landscape and understanding how technology can enhance teaching and learning.'
             },
             {
@@ -686,6 +693,10 @@
                     'Foster pedagogical understanding of technology integration',
                     'Earn your third Spark and become a School-Level Transformation Agent'
                 ],
+                availability: {
+                    type: 'info',
+                    message: 'These courses are hosted each term in the district. Contact your district eAdvisory team to ask about upcoming courses, or keep an eye out when they are advertised.'
+                },
                 next: 'Experience transformation by seeing technology through your learners\' eyes and develop the wisdom to make informed pedagogical decisions.'
             },
             {
@@ -706,6 +717,10 @@
                     'Promote reflective digital responsibility and ethical technology use',
                     'Earn your fourth Spark and become a Cluster-Level Transformation Agent'
                 ],
+                availability: {
+                    type: 'upcoming',
+                    message: 'This course will run in the third term. Registrations will open in Term 2 \u2014 watch this space!'
+                },
                 next: 'Become a champion for ethical, human-centered technology integration and support your school community in building a positive digital culture.'
             }
         ];
@@ -768,6 +783,73 @@
                                 </div>
                             )}
 
+
+                            {/* Availability / Registration info */}
+                            {milestone.availability && (() => {
+                                const avail = milestone.availability;
+                                const now = new Date();
+                                now.setHours(0, 0, 0, 0);
+
+                                if (avail.type === 'registration') {
+                                    const expiry = new Date(avail.expiryDate + 'T23:59:59');
+                                    const isOpen = now <= expiry;
+                                    return (
+                                        <div className="modal-section">
+                                            <h3>{isOpen ? '🟢 Registration Open' : '🔴 Registration Closed'}</h3>
+                                            <p>{isOpen ? avail.activeMessage : avail.expiredMessage}</p>
+                                            {isOpen && (
+                                                <div style={{ marginTop: '1rem' }}>
+                                                    <p style={{ fontSize: '0.85rem', color: '#888', marginBottom: '0.75rem' }}>
+                                                        📅 Closes: {new Date(avail.expiryDate).toLocaleDateString('en-ZA', { day: 'numeric', month: 'long', year: 'numeric' })}
+                                                    </p>
+                                                    <a
+                                                        href={avail.registerUrl}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        style={{
+                                                            display: 'inline-flex',
+                                                            alignItems: 'center',
+                                                            gap: '0.5rem',
+                                                            padding: '0.75rem 1.5rem',
+                                                            background: '#16a34a',
+                                                            color: 'white',
+                                                            borderRadius: '10px',
+                                                            fontWeight: 'bold',
+                                                            fontSize: '0.95rem',
+                                                            textDecoration: 'none',
+                                                            transition: 'all 0.2s',
+                                                            boxShadow: '0 2px 8px rgba(22,163,74,0.3)'
+                                                        }}
+                                                    >
+                                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" /></svg>
+                                                        Register Now
+                                                    </a>
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                }
+
+                                if (avail.type === 'info') {
+                                    return (
+                                        <div className="modal-section">
+                                            <h3>ℹ️ How to Join</h3>
+                                            <p>{avail.message}</p>
+                                        </div>
+                                    );
+                                }
+
+                                if (avail.type === 'upcoming') {
+                                    return (
+                                        <div className="modal-section">
+                                            <h3>📣 Coming Soon</h3>
+                                            <p>{avail.message}</p>
+                                        </div>
+                                    );
+                                }
+
+                                return null;
+                            })()}
 
                             <div className="modal-section">
                                 <h3>Next Steps</h3>

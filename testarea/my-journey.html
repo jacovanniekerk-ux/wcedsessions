@@ -173,7 +173,21 @@
                 lightColor: '#E0F7F7',
                 sparkSession: 'Adoption Strategy',
                 duration: '24-hour self-paced course',
-                description: 'A foundational online course providing a broad perspective on the digital landscape and the "Transformation Agenda."'
+                description: 'A foundational online course providing a broad perspective on the visibility of the digital landscape and the "Transformation Agenda." This journey moves you from digital literacy (the what) toward understanding the possibilities of technology in education.',
+                keyPoints: [
+                    'Comprehensive 12-week self-paced online course',
+                    'Explore the landscape of ICT integration in education',
+                    'Understand the vision of the Transformation Agenda',
+                    'Build foundational digital literacy and confidence',
+                    'Earn your first Spark toward becoming a Transformation Agent'
+                ],
+                availability: {
+                    type: 'registration',
+                    registerUrl: 'http://bit.ly/4sgSf9g?r=lp&m=Mma39rNpG6w',
+                    expiryDate: '2026-03-22',
+                    activeMessage: 'Registrations are currently open!',
+                    expiredMessage: 'Registrations for the current cohort have closed. Keep an eye on eTPD communications for the next intake.'
+                }
             },
             {
                 id: 'dovetail',
@@ -197,7 +211,19 @@
                 lightColor: '#E0F1FA',
                 sparkSession: 'Digital Skills Course',
                 duration: '4-week hybrid immersion',
-                description: 'An experiential hybrid course shifting focus from "how to use" to "how to learn."'
+                description: 'An experiential hybrid course that shifts your focus from "how to use" to "how to learn." View technology from the learner\'s perspective and develop digital wisdom (the when and why) through hands-on practice, reflection, and collaboration.',
+                keyPoints: [
+                    'Immersive 4-week hybrid learning experience',
+                    'Shift from teacher-centered to learner-centered perspective',
+                    'Synthesize the "what" and "how" into "when" and "why"',
+                    'Develop digital wisdom through experiential learning',
+                    'Foster pedagogical understanding of technology integration',
+                    'Earn your third Spark and become a School-Level Transformation Agent'
+                ],
+                availability: {
+                    type: 'info',
+                    message: 'These courses are hosted each term in the district. Contact your district eAdvisory team to ask about upcoming courses, or keep an eye out when they are advertised.'
+                }
             },
             {
                 id: 'cybereffect',
@@ -209,7 +235,19 @@
                 lightColor: '#FAE0EE',
                 sparkSession: 'Cyber Effect Ambassador Initiation Course',
                 duration: 'Self-paced 4-week course',
-                description: 'Deepen your ability to engage with the ethical, emotional, and behavioural dimensions of technology use.'
+                description: 'Deepen your ability to engage with the ethical, emotional, psychological, and behavioural dimensions of technology use. Master the 4P Affective Transformation Model (People, Practices, Pedagogy, Platforms) and lead with reflective digital responsibility.',
+                keyPoints: [
+                    'Focus on digital citizenship and cyber wellness',
+                    'Understand human-centered design principles',
+                    'Master the 4P Model: People, Practices, Pedagogy, Platforms',
+                    'Address emotional readiness and psychological safety',
+                    'Promote reflective digital responsibility and ethical technology use',
+                    'Earn your fourth Spark and become a Cluster-Level Transformation Agent'
+                ],
+                availability: {
+                    type: 'upcoming',
+                    message: 'This course will run in the third term. Registrations will open in Term 2 — watch this space!'
+                }
             }
         ];
 
@@ -966,6 +1004,21 @@
                                     <p className="text-sm text-gray-700">{milestone.duration}</p>
                                 </div>
 
+                                {/* Key focus areas */}
+                                {milestone.keyPoints && milestone.keyPoints.length > 0 && (
+                                    <div>
+                                        <h4 className="font-semibold text-gray-900 mb-2">Key Focus Areas</h4>
+                                        <div className="space-y-1.5">
+                                            {milestone.keyPoints.map((point, idx) => (
+                                                <div key={idx} className="flex items-start gap-2 p-2 rounded-lg border border-gray-200 bg-gray-50">
+                                                    <span className="flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-xs text-white font-bold" style={{ background: milestone.color }}>✓</span>
+                                                    <span className="text-sm text-gray-700">{point}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
                                 {/* Show Dovetail checklist for milestone 2 */}
                                 {milestone.id === 'dovetail' && pathwayStatus && (
                                     <div>
@@ -985,6 +1038,71 @@
                                         </div>
                                     </div>
                                 )}
+
+                                {/* Availability / Registration info */}
+                                {milestone.availability && (() => {
+                                    const avail = milestone.availability;
+                                    const now = new Date();
+                                    now.setHours(0, 0, 0, 0);
+
+                                    if (avail.type === 'registration') {
+                                        const expiry = new Date(avail.expiryDate + 'T23:59:59');
+                                        const isOpen = now <= expiry;
+                                        return (
+                                            <div className="rounded-xl border-2 overflow-hidden" style={{ borderColor: isOpen ? '#16a34a' : '#d1d5db' }}>
+                                                <div className="px-4 py-3" style={{ background: isOpen ? '#f0fdf4' : '#f9fafb' }}>
+                                                    <h4 className="font-semibold mb-1 flex items-center gap-2" style={{ color: isOpen ? '#16a34a' : '#6b7280' }}>
+                                                        {isOpen ? '🟢' : '🔴'} {isOpen ? 'Registration Open' : 'Registration Closed'}
+                                                    </h4>
+                                                    <p className="text-sm text-gray-700 mb-2">
+                                                        {isOpen ? avail.activeMessage : avail.expiredMessage}
+                                                    </p>
+                                                    {isOpen && (
+                                                        <>
+                                                            <p className="text-xs text-gray-500 mb-3">
+                                                                📅 Closes: {new Date(avail.expiryDate).toLocaleDateString('en-ZA', { day: 'numeric', month: 'long', year: 'numeric' })}
+                                                            </p>
+                                                            <a
+                                                                href={avail.registerUrl}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-white font-bold text-sm transition-all hover:shadow-lg"
+                                                                style={{ background: '#16a34a' }}
+                                                            >
+                                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" /></svg>
+                                                                Register Now
+                                                            </a>
+                                                        </>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        );
+                                    }
+
+                                    if (avail.type === 'info') {
+                                        return (
+                                            <div className="rounded-xl border-2 border-blue-200 bg-blue-50 px-4 py-3">
+                                                <h4 className="font-semibold text-blue-800 mb-1 flex items-center gap-2">
+                                                    ℹ️ How to Join
+                                                </h4>
+                                                <p className="text-sm text-blue-900">{avail.message}</p>
+                                            </div>
+                                        );
+                                    }
+
+                                    if (avail.type === 'upcoming') {
+                                        return (
+                                            <div className="rounded-xl border-2 border-purple-200 bg-purple-50 px-4 py-3">
+                                                <h4 className="font-semibold text-purple-800 mb-1 flex items-center gap-2">
+                                                    📣 Coming Soon
+                                                </h4>
+                                                <p className="text-sm text-purple-900">{avail.message}</p>
+                                            </div>
+                                        );
+                                    }
+
+                                    return null;
+                                })()}
                             </div>
                         </div>
                     </div>
