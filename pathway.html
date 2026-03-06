@@ -156,17 +156,17 @@
         }
 
         .hero p {
-            font-size: 1.1rem;
+            font-size: 0.9rem;
             color: #555;
-            line-height: 1.6;
-            max-width: 700px;
+            line-height: 1.5;
+            max-width: 800px;
             margin: 0 auto;
         }
 
         .pathway-container {
             max-width: 100%;
             margin: 2rem auto;
-            padding: 3rem 2rem;
+            padding: 1rem 2rem;
             position: relative;
             overflow-x: auto;
             overflow-y: visible;
@@ -196,9 +196,10 @@
         .pathway-scroll {
             display: flex;
             align-items: center;
-            gap: 4rem;
+            justify-content: center;
+            gap: 5rem;
             min-width: min-content;
-            padding: 2rem 4rem;
+            padding: 0.75rem 4rem;
             position: relative;
         }
 
@@ -635,6 +636,13 @@
                     'Build foundational digital literacy and confidence',
                     'Earn your first Spark toward becoming a Transformation Agent'
                 ],
+                availability: {
+                    type: 'registration',
+                    registerUrl: 'http://bit.ly/4sgSf9g?r=lp&m=Mma39rNpG6w',
+                    expiryDate: '2026-03-22',
+                    activeMessage: 'Registrations are currently open!',
+                    expiredMessage: 'Registrations for the current cohort have closed. Keep an eye on eTPD communications for the next intake.'
+                },
                 next: 'Begin your transformation journey by exploring the digital landscape and understanding how technology can enhance teaching and learning.'
             },
             {
@@ -686,6 +694,10 @@
                     'Foster pedagogical understanding of technology integration',
                     'Earn your third Spark and become a School-Level Transformation Agent'
                 ],
+                availability: {
+                    type: 'info',
+                    message: 'These courses are hosted each term in the district. Contact your district eAdvisory team to ask about upcoming courses, or keep an eye out when they are advertised.'
+                },
                 next: 'Experience transformation by seeing technology through your learners\' eyes and develop the wisdom to make informed pedagogical decisions.'
             },
             {
@@ -706,13 +718,17 @@
                     'Promote reflective digital responsibility and ethical technology use',
                     'Earn your fourth Spark and become a Cluster-Level Transformation Agent'
                 ],
+                availability: {
+                    type: 'upcoming',
+                    message: 'This course will run in the third term. Registrations will open in Term 2 \u2014 watch this space!'
+                },
                 next: 'Become a champion for ethical, human-centered technology integration and support your school community in building a positive digital culture.'
             }
         ];
 
-        const TRANSFORMATION_ARC = {
+        const EDVANCE_ARC = {
             icon: '🎓',
-            title: 'Transformation ARC',
+            title: 'Edvance ARC',
             subtitle: 'By Invitation',
             steps: [
                 { name: 'Facilitator Think Tank', label: 'Step 1', spark: true },
@@ -768,6 +784,73 @@
                                 </div>
                             )}
 
+
+                            {/* Availability / Registration info */}
+                            {milestone.availability && (() => {
+                                const avail = milestone.availability;
+                                const now = new Date();
+                                now.setHours(0, 0, 0, 0);
+
+                                if (avail.type === 'registration') {
+                                    const expiry = new Date(avail.expiryDate + 'T23:59:59');
+                                    const isOpen = now <= expiry;
+                                    return (
+                                        <div className="modal-section">
+                                            <h3>{isOpen ? '🟢 Registration Open' : '🔴 Registration Closed'}</h3>
+                                            <p>{isOpen ? avail.activeMessage : avail.expiredMessage}</p>
+                                            {isOpen && (
+                                                <div style={{ marginTop: '1rem' }}>
+                                                    <p style={{ fontSize: '0.85rem', color: '#888', marginBottom: '0.75rem' }}>
+                                                        📅 Closes: {new Date(avail.expiryDate).toLocaleDateString('en-ZA', { day: 'numeric', month: 'long', year: 'numeric' })}
+                                                    </p>
+                                                    <a
+                                                        href={avail.registerUrl}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        style={{
+                                                            display: 'inline-flex',
+                                                            alignItems: 'center',
+                                                            gap: '0.5rem',
+                                                            padding: '0.75rem 1.5rem',
+                                                            background: '#16a34a',
+                                                            color: 'white',
+                                                            borderRadius: '10px',
+                                                            fontWeight: 'bold',
+                                                            fontSize: '0.95rem',
+                                                            textDecoration: 'none',
+                                                            transition: 'all 0.2s',
+                                                            boxShadow: '0 2px 8px rgba(22,163,74,0.3)'
+                                                        }}
+                                                    >
+                                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" /></svg>
+                                                        Register Now
+                                                    </a>
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                }
+
+                                if (avail.type === 'info') {
+                                    return (
+                                        <div className="modal-section">
+                                            <h3>ℹ️ How to Join</h3>
+                                            <p>{avail.message}</p>
+                                        </div>
+                                    );
+                                }
+
+                                if (avail.type === 'upcoming') {
+                                    return (
+                                        <div className="modal-section">
+                                            <h3>📣 Coming Soon</h3>
+                                            <p>{avail.message}</p>
+                                        </div>
+                                    );
+                                }
+
+                                return null;
+                            })()}
 
                             <div className="modal-section">
                                 <h3>Next Steps</h3>
@@ -847,8 +930,29 @@
 
                     <div className="hero">
                         <h1>Your Pathway to Transformation</h1>
+                        <p>
+                            Welcome to the Adoption and Transformation Pathway. This interactive journey represents a shift towards decentralised learning, designed to put you at the centre of your professional growth. Why does this matter? Because true digital transformation is built on teacher agency. We want to empower you to take control of your development so that you can take full control of the transformation in your classroom. Explore the tiers below to understand the pathway and see how you can grow your digital wisdom.
+                        </p>
                     </div>
-
+                    <div style={{ textAlign: 'center', marginBottom: '1.5rem', position: 'relative', zIndex: 1 }}>
+                        <a href="my-journey.html" style={{
+                            display: 'inline-block',
+                            background: 'linear-gradient(135deg, #001489, #007DBA)',
+                            color: 'white',
+                            textDecoration: 'none',
+                            padding: '0.75rem 2rem',
+                            borderRadius: '50px',
+                            fontWeight: '600',
+                            fontSize: '1rem',
+                            boxShadow: '0 4px 15px rgba(0, 20, 137, 0.3)',
+                            transition: 'all 0.3s ease'
+                        }}
+                            onMouseOver={e => e.currentTarget.style.transform = 'translateY(-2px)'}
+                            onMouseOut={e => e.currentTarget.style.transform = 'translateY(0)'}
+                        >
+                            👤 View My Progress on This Pathway
+                        </a>
+                    </div>
                     <div
                         className="pathway-container"
                         ref={scrollContainerRef}
@@ -904,6 +1008,13 @@
                         </div>
                     </div>
 
+                    {/* Non-linear pathway subtext */}
+                    <div style={{ maxWidth: '860px', margin: '0 auto 2rem', padding: '0 2rem', textAlign: 'center', position: 'relative', zIndex: 1 }}>
+                        <p style={{ fontSize: '0.95rem', color: '#666', lineHeight: 1.6, fontStyle: 'italic' }}>
+                            This is a non-linear pathway and completing steps is not a pre-requisite for a next step. Active participants will be notified and prompted to complete steps they have not yet completed.
+                        </p>
+                    </div>
+
                     {selectedMilestone && (
                         <Modal
                             milestone={selectedMilestone}
@@ -911,7 +1022,7 @@
                         />
                     )}
 
-                    {/* Transformation ARC */}
+                    {/* Edvance ARC */}
                     <div style={{ maxWidth: '860px', margin: '0 auto 3rem', padding: '0 2rem', position: 'relative', zIndex: 1 }}>
                         <div style={{
                             background: 'white',
@@ -926,14 +1037,14 @@
                             <span style={{ fontSize: '2rem', flexShrink: 0 }}>🎓</span>
                             <div style={{ flex: 1 }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '0.5rem' }}>
-                                    <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#672D82', margin: 0 }}>Transformation ARC</h3>
+                                    <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#672D82', margin: 0 }}>Edvance ARC</h3>
                                     <span style={{ fontSize: '0.75rem', background: '#f3ebf7', color: '#672D82', padding: '0.2rem 0.6rem', borderRadius: '20px', fontWeight: '600' }}>By Invitation</span>
                                 </div>
                                 <p style={{ fontSize: '0.9rem', color: '#555', marginBottom: '1rem', lineHeight: 1.6 }}>
                                     A specialised developmental pathway for teachers with strong PD engagement. The <strong>Facilitator Think Tank</strong> is the entry point and earns a Spark. The remaining steps deepen your capacity as a transformation leader.
                                 </p>
                                 <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-                                    {TRANSFORMATION_ARC.steps.map((step, idx) => (
+                                    {EDVANCE_ARC.steps.map((step, idx) => (
                                         <div key={idx} style={{
                                             display: 'flex',
                                             alignItems: 'center',
@@ -964,6 +1075,10 @@
                                 </div>
                             </div>
                         </div>
+                        {/* Edvance ARC subtext */}
+                        <p style={{ fontSize: '0.85rem', color: '#888', lineHeight: 1.6, fontStyle: 'italic', marginTop: '0.75rem', paddingLeft: '0.5rem' }}>
+                            The Edvance ARC is per invitation only for teachers who show an interest in becoming Transformation Agents.
+                        </p>
                     </div>
                 </>
             );
