@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Microsoft Sessions | WCED eLearning</title>
+<link href="favicon.png" rel="icon" type="image/png"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body {
+font-family:'Century Gothic', Arial, sans-serif;
+background: linear-gradient(135deg,#f5f7fa 0%,#e8ecf1 50%,#dde3ea 100%);
+min-height:100vh;
+color:#333;
+}
+body::before {
+content:'';
+position:fixed; inset:0;
+background-image:
+radial-gradient(circle at 20% 30%, rgba(143,173,21,0.08) 0%, transparent 50%),
+radial-gradient(circle at 80% 70%, rgba(0,20,137,0.08) 0%, transparent 50%);
+pointer-events:none;
+}
+.header {
+background:white;
+padding:1rem 2rem;
+box-shadow:0 2px 10px rgba(0,0,0,0.1);
+position:sticky; top:0; z-index:10;
+}
+.header-content {
+max-width:1400px; margin:0 auto;
+display:flex; align-items:center; justify-content:space-between;
+}
+.header img{height:50px}
+.hero {
+max-width:1100px; margin:0 auto;
+padding:3rem 2rem 2rem;
+text-align:center;
+position:relative; z-index:1;
+}
+.hero h1 {
+font-size:2.6rem;
+color:#001489;
+margin-bottom:1rem;
+}
+.hero p {
+color:#555; line-height:1.7; max-width:900px; margin:0 auto;
+}
+.grid {
+max-width:1400px;
+margin:1rem auto 3rem;
+padding:0 2rem;
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(340px,1fr));
+gap:1.5rem;
+position:relative; z-index:1;
+}
+.session-card {
+background:white;
+border-radius:18px;
+padding:1.5rem;
+border-left:6px solid #007DBA;
+box-shadow:0 6px 20px rgba(0,0,0,0.08);
+transition:all .3s ease;
+display:flex;
+flex-direction:column;
+}
+.session-card:hover {
+transform:translateY(-5px);
+box-shadow:0 12px 30px rgba(0,0,0,0.14);
+}
+.level-pill {
+display:inline-block;
+color:white;
+padding:.45rem .9rem;
+border-radius:20px;
+font-size:.82rem;
+font-weight:bold;
+margin-bottom:1rem;
+align-self:flex-start;
+}
+.session-card h3 {
+color:#001489;
+font-size:1.3rem;
+margin-bottom:.75rem;
+}
+.session-meta {
+font-size:.92rem;
+font-weight:600;
+color:#666;
+margin-bottom:1rem;
+}
+.session-card p {
+line-height:1.6;
+color:#555;
+margin-bottom:1rem;
+flex-grow:1;
+}
+.outcomes h4 {
+color:#001489;
+margin-bottom:.5rem;
+font-size:1rem;
+}
+.outcomes ul {
+list-style:none;
+}
+.outcomes li {
+background:#f8fafc;
+border-left:3px solid #007DBA;
+padding:.6rem .8rem;
+margin-bottom:.45rem;
+border-radius:6px;
+font-size:.9rem;
+}
+.actions {
+display:flex;
+flex-wrap:wrap;
+gap:.6rem;
+margin-top:1rem;
+}
+.btn {
+text-decoration:none;
+padding:.75rem 1rem;
+border-radius:10px;
+font-weight:600;
+font-size:.9rem;
+transition:all .25s ease;
+}
+.btn:hover {transform:translateY(-2px)}
+.register {
+background:#001489;
+color:white;
+}
+.calendar {
+background:#007DBA;
+color:white;
+}
+.outlook {
+background:#8FAD15;
+}
+.summary {
+max-width:1100px;
+margin:0 auto 1rem;
+padding:0 2rem;
+position:relative; z-index:1;
+}
+.summary-box {
+background:white;
+padding:1rem 1.5rem;
+border-radius:14px;
+box-shadow:0 4px 14px rgba(0,0,0,0.08);
+color:#555;
+}
+@media(max-width:768px){
+.hero h1{font-size:2rem}
+.grid{grid-template-columns:1fr; padding:0 1rem}
+.hero{padding:2rem 1rem}
+.header{padding:.75rem 1rem}
+.header img{height:42px}
+}
+
+.session-card{cursor:pointer;overflow:hidden;}
+.session-details{display:none;margin-top:1rem;animation:fadeIn .25s ease;}
+.session-card.active .session-details{display:block;}
+.expand-hint{display:flex;justify-content:space-between;align-items:center;margin-top:0.75rem;font-size:0.9rem;font-weight:600;color:#001489;}
+.chevron{transition:transform .25s ease;font-size:1rem;}
+.session-card.active .chevron{transform:rotate(180deg);}
+</style>
+</head>
+<body>
+<header class="header">
+<div class="header-content">
+<img alt="WCED eLearning" src="header.png"/>
+</div>
+</header>
+<section class="hero">
+<h1>Microsoft Professional Development Sessions</h1>
+<p>
+Explore upcoming Microsoft-focused professional development opportunities designed to strengthen digital practice, AI fluency, classroom collaboration, and technology integration. Select a session below to pre-register and add it directly to your calendar.
+</p>
+</section>
+<div class="summary">
+<div class="summary-box">
+<strong>Available Sessions:</strong> 10 sessions across multiple developmental levels. Pre-register early to secure your place.
+</div>
+</div>
+<section class="grid">
+<div class="session-card" style="border-left-color:#8FAD15">
+<div class="level-pill" style="background:#8FAD15">🧱 Laying the Foundation</div>
+<h3>Organising and Utilising MS Tools in Education</h3>
+<div class="session-meta">📅 08 June 2026    ⏰ 14:30 - 16:30</div><div class="expand-hint">Click to view details<span class="chevron">▼</span></div><div class="session-details"><p>This session introduces Word, Excel, PowerPoint, OneDrive and Teams as a connected system for planning, creating and managing classroom resources.</p><div class="outcomes">
+<h4>What you'll explore</h4>
+<ul><li>Design and manage an organized digital repository in OneDrive and Teams to store lesson plans, resources, and student materials.</li><li>Retrieve and share teaching content quickly and securely with both colleagues and learners.</li><li>Enhance instructional materials using AI-driven features like PowerPoint Designer and Word Editor for professional formatting and refinement.</li><li>Streamline daily administrative tasks and content creation using built-in dictation and smart suggestions to maximize efficiency.</li></ul>
+</div><div class="actions">
+<a class="btn register" href="https://docs.google.com/forms/d/e/1FAIpQLScMwanHrYwf9_kOML0icuKE9VfoFXD703of7ETLR5z6ysZoxA/viewform?usp=pp_url&amp;entry.1422040156=Mon,+Jun+8+@+14:30+-+(HEAD+OFFICE)+-+Organising+and+Utilising+MS+Tools+in+Education+%5B2653%5D" target="_blank">📝 Pre-register</a>
+<a class="btn calendar" href="https://www.google.com/calendar/render?action=TEMPLATE&amp;text=%F0%9F%92%BB%20eTPD%20Webinar%3A%20Organising%20and%20Utilising%20MS%20Tools%20in%20Education&amp;dates=20260608T143000/20260608T163000&amp;details=This%20session%20introduces%20Word%2C%20Excel%2C%20PowerPoint%2C%20OneDrive%20and%20Teams%20as%20a%20connected%20system%20for%20planning%2C%20creating%20and%20managing%20classroom%20resources.%0A%0A%F0%9F%94%97%20Join%20Link%3A%20%0Ahttps%3A%2F%2Fteams.microsoft.com%2Fl%2Fmeetup-join%2F19%253ameeting_MGE1ZWFiMDEtZmJiZC00MTc2LWIxZjUtNjY5NTIzMzg5ZGZh%2540thread.v2%2F0%3Fcontext%3D%257b%2522Tid%2522%253a%2522ae74bf7f-cfc3-4760-a1fe-0731afaa5502%2522%252c%2522Oid%2522%253a%252217eeaa19-ae89-412c-913d-a9ec81d70655%2522%257d%0A%0A%E2%84%B9%EF%B8%8F%20For%20more%20info%3A%20https%3A%2F%2Fbit.ly%2Fm%2Fwcedtpd&amp;location=MS%20Teams&amp;ctz=Africa/Johannesburg" target="_blank">📅 Google Calendar</a>
+<a class="btn calendar outlook" href="https://outlook.office.com/calendar/0/action/compose?allday=false&amp;body=Join%20Link%3A%20https%3A%2F%2Fteams.microsoft.com%2Fl%2Fmeetup-join%2F19%253ameeting_MGE1ZWFiMDEtZmJiZC00MTc2LWIxZjUtNjY5NTIzMzg5ZGZh%2540thread.v2%2F0%3Fcontext%3D%257b%2522Tid%2522%253a%2522ae74bf7f-cfc3-4760-a1fe-0731afaa5502%2522%252c%2522Oid%2522%253a%252217eeaa19-ae89-412c-913d-a9ec81d70655%2522%257d&amp;enddt=2026-06-08T16%3A30%3A00&amp;location=Virtual%20Session&amp;path=/calendar/action/compose&amp;rru=addevent&amp;startdt=2026-06-08T14%3A30%3A00&amp;subject=Organising%20and%20Utilising%20MS%20Tools%20in%20Education" target="_blank">📆 Outlook</a>
+</div></div>
+
+
+
+</div>
+<div class="session-card" style="border-left-color:#007DBA">
+<div class="level-pill" style="background:#007DBA">🚀 I can do it</div>
+<h3>Microsoft: AI for Educators</h3>
+<div class="session-meta">📅 09 June 2026    ⏰ 14:30 - 16:30</div><div class="expand-hint">Click to view details<span class="chevron">▼</span></div><div class="session-details"><p>Teachers will learn the basics of artificial intelligence in a simple, practical and classroom-friendly way.</p><div class="outcomes">
+<h4>What you'll explore</h4>
+<ul><li>Navigate and integrate Microsoft Copilot Chat, Edge, Word, PowerPoint, and Image Creator into their daily prep workflow.</li><li>Generate diverse teaching materials by using AI to brainstorm fresh lesson plans, draft creative assessment ideas, and produce engaging classroom resources.</li><li>Adapt and differentiate content for diverse learner needs by utilising AI to summarise complex texts, rewrite materials, simplify language, and generate custom visuals.</li><li>Maximise administrative efficiency by leveraging smart tools to drastically reduce the time spent on content creation and curation.</li></ul>
+</div><div class="actions">
+<a class="btn register" href="https://docs.google.com/forms/d/e/1FAIpQLScMwanHrYwf9_kOML0icuKE9VfoFXD703of7ETLR5z6ysZoxA/viewform?usp=pp_url&amp;entry.1422040156=Tue,+Jun+9+@+14:30+-+(HEAD+OFFICE)+-+Microsoft:+AI+for+Educators+%5B2654%5D" target="_blank">📝 Pre-register</a>
+<a class="btn calendar" href="https://www.google.com/calendar/render?action=TEMPLATE&amp;text=%F0%9F%92%BB%20eTPD%20Webinar%3A%20Microsoft%3A%20AI%20for%20Educators&amp;dates=20260609T143000/20260609T163000&amp;details=Teachers%20will%20learn%20the%20basics%20of%20artificial%20intelligence%20in%20a%20simple%2C%20practical%20and%20classroom-friendly%20way.%20%0A%0A%F0%9F%94%97%20Join%20Link%3A%20%0Ahttps%3A%2F%2Fteams.microsoft.com%2Fl%2Fmeetup-join%2F19%253ameeting_OTkwNTYwODYtYTExYy00OTMyLWFkZTUtZGNlZTU2MzAzZGMy%2540thread.v2%2F0%3Fcontext%3D%257b%2522Tid%2522%253a%2522ae74bf7f-cfc3-4760-a1fe-0731afaa5502%2522%252c%2522Oid%2522%253a%252217eeaa19-ae89-412c-913d-a9ec81d70655%2522%257d%0A%0A%E2%84%B9%EF%B8%8F%20For%20more%20info%3A%20https%3A%2F%2Fbit.ly%2Fm%2Fwcedtpd&amp;location=MS%20Teams&amp;ctz=Africa/Johannesburg" target="_blank">📅 Google Calendar</a>
+<a class="btn calendar outlook" href="https://outlook.office.com/calendar/0/action/compose?allday=false&amp;body=Join%20Link%3A%20https%3A%2F%2Fteams.microsoft.com%2Fl%2Fmeetup-join%2F19%253ameeting_OTkwNTYwODYtYTExYy00OTMyLWFkZTUtZGNlZTU2MzAzZGMy%2540thread.v2%2F0%3Fcontext%3D%257b%2522Tid%2522%253a%2522ae74bf7f-cfc3-4760-a1fe-0731afaa5502%2522%252c%2522Oid%2522%253a%252217eeaa19-ae89-412c-913d-a9ec81d70655%2522%257d&amp;enddt=2026-06-09T16%3A30%3A00&amp;location=Virtual%20Session&amp;path=/calendar/action/compose&amp;rru=addevent&amp;startdt=2026-06-09T14%3A30%3A00&amp;subject=Microsoft%3A%20AI%20for%20Educators" target="_blank">📆 Outlook</a>
+</div></div>
+
+
+
+</div>
+
+<div class="session-card" style="border-left-color:#C8126E">
+<div class="level-pill" style="background:#C8126E">✨ I can do it better</div>
+<h3>Enhance Teaching and Learning with Copilot Chat</h3>
+<div class="session-meta">📅 11 June 2026    ⏰ 14:30 - 16:30</div><div class="expand-hint">Click to view details<span class="chevron">▼</span></div><div class="session-details"><p>The session positions Copilot Chat as a time-saving support tool that helps teachers plan smarter, create faster and reduce the pressure of starting every lesson from scratch.</p><div class="outcomes">
+<h4>What you'll explore</h4>
+<ul><li>Master prompt engineering techniques to get more accurate, relevant, and high-quality outputs from AI tools.</li><li>Generate and customise instructional content including creative lesson ideas, structured student worksheets, and comprehensive grading rubrics.</li><li>Differentiate learning materials by using AI to adapt text complexity, language, and depth for varied student ability levels.</li><li>Critically evaluate and fact-check AI-generated content to ensure accuracy, safety, and relevance before bringing it into the classroom.</li></ul>
+</div><div class="actions">
+<a class="btn register" href="https://docs.google.com/forms/d/e/1FAIpQLScMwanHrYwf9_kOML0icuKE9VfoFXD703of7ETLR5z6ysZoxA/viewform?usp=pp_url&amp;entry.1422040156=Thu,+Jun+11+@+14:30+-+(HEAD+OFFICE)+-+Enhance+Teaching+and+Learning+with+Copilot+Chat+%5B2655%5D" target="_blank">📝 Pre-register</a>
+<a class="btn calendar" href="https://www.google.com/calendar/render?action=TEMPLATE&amp;text=%F0%9F%92%BB%20eTPD%20Webinar%3A%20Enhance%20Teaching%20and%20Learning%20with%20Copilot%20Chat&amp;dates=20260611T143000/20260611T163000&amp;details=The%20session%20positions%20Copilot%20Chat%20as%20a%20time-saving%20support%20tool%20that%20helps%20teachers%20plan%20smarter%2C%20create%20faster%20and%20reduce%20the%20pressure%20of%20starting%20every%20lesson%20from%20scratch.%0A%0A%F0%9F%94%97%20Join%20Link%3A%20%0Ahttps%3A%2F%2Fteams.microsoft.com%2Fl%2Fmeetup-join%2F19%253ameeting_MzRhY2FlNGEtMWE5OS00ZWUwLTkzZGEtY2I4NWNkMDVmYjBk%2540thread.v2%2F0%3Fcontext%3D%257b%2522Tid%2522%253a%2522ae74bf7f-cfc3-4760-a1fe-0731afaa5502%2522%252c%2522Oid%2522%253a%252217eeaa19-ae89-412c-913d-a9ec81d70655%2522%257d%0A%0A%E2%84%B9%EF%B8%8F%20For%20more%20info%3A%20https%3A%2F%2Fbit.ly%2Fm%2Fwcedtpd&amp;location=MS%20Teams&amp;ctz=Africa/Johannesburg" target="_blank">📅 Google Calendar</a>
+<a class="btn calendar outlook" href="https://outlook.office.com/calendar/0/action/compose?allday=false&amp;body=Join%20Link%3A%20https%3A%2F%2Fteams.microsoft.com%2Fl%2Fmeetup-join%2F19%253ameeting_MzRhY2FlNGEtMWE5OS00ZWUwLTkzZGEtY2I4NWNkMDVmYjBk%2540thread.v2%2F0%3Fcontext%3D%257b%2522Tid%2522%253a%2522ae74bf7f-cfc3-4760-a1fe-0731afaa5502%2522%252c%2522Oid%2522%253a%252217eeaa19-ae89-412c-913d-a9ec81d70655%2522%257d&amp;enddt=2026-06-11T16%3A30%3A00&amp;location=Virtual%20Session&amp;path=/calendar/action/compose&amp;rru=addevent&amp;startdt=2026-06-11T14%3A30%3A00&amp;subject=Enhance%20Teaching%20and%20Learning%20with%20Copilot%20Chat" target="_blank">📆 Outlook</a>
+</div></div>
+
+
+
+</div>
+<div class="session-card" style="border-left-color:#C8126E">
+<div class="level-pill" style="background:#C8126E">✨ I can do it better</div>
+<h3>Build Reading Fluency with Microsoft Reading Coach</h3>
+<div class="session-meta">📅 17 June 2026    ⏰ 14:30 - 16:30</div><div class="expand-hint">Click to view details<span class="chevron">▼</span></div><div class="session-details"><p>Experience Microsoft Reading Coach, an AI‑powered tool that gives learners personalised reading practice and fluency support.</p><div class="outcomes">
+<h4>What you'll explore</h4>
+<ul><li>Access and navigate Reading Coach to confidently set up and manage targeted reading activities for students.</li><li>Utilise diverse reading modes within the platform to match individual student learning preferences and goals.</li><li>Support multilingual learners by leveraging specific features designed to assist with language acquisition and pronunciation.</li><li>Monitor and analyse student progress using built-in tracking tools to inform future reading interventions.</li></ul>
+</div><div class="actions">
+<a class="btn register" href="https://docs.google.com/forms/d/e/1FAIpQLScMwanHrYwf9_kOML0icuKE9VfoFXD703of7ETLR5z6ysZoxA/viewform?usp=pp_url&amp;entry.1422040156=Wed,+Jun+17+@+14:30+-+(HEAD+OFFICE)+-+Build+Reading+Fluency+with+Microsoft+Reading+Coach+%5B2656%5D" target="_blank">📝 Pre-register</a>
+<a class="btn calendar" href="https://www.google.com/calendar/render?action=TEMPLATE&amp;text=%F0%9F%92%BB%20eTPD%20Webinar%3A%20Build%20Reading%20Fluency%20with%20Microsoft%20Reading%20Coach&amp;dates=20260617T143000/20260617T163000&amp;details=Experience%20Microsoft%20Reading%20Coach%2C%20an%20AI%E2%80%91powered%20tool%20that%20gives%20learners%20personalised%20reading%20practice%20and%20fluency%20support.%0A%0A%F0%9F%94%97%20Join%20Link%3A%20%0Ahttps%3A%2F%2Fteams.microsoft.com%2Fl%2Fmeetup-join%2F19%253ameeting_MDI1MjcyNjgtZjJkMC00MTM0LTgyMjYtNGYzMGEzMjkwNzgx%2540thread.v2%2F0%3Fcontext%3D%257b%2522Tid%2522%253a%2522ae74bf7f-cfc3-4760-a1fe-0731afaa5502%2522%252c%2522Oid%2522%253a%252217eeaa19-ae89-412c-913d-a9ec81d70655%2522%257d%0A%0A%E2%84%B9%EF%B8%8F%20For%20more%20info%3A%20https%3A%2F%2Fbit.ly%2Fm%2Fwcedtpd&amp;location=MS%20Teams&amp;ctz=Africa/Johannesburg" target="_blank">📅 Google Calendar</a>
+<a class="btn calendar outlook" href="https://outlook.office.com/calendar/0/action/compose?allday=false&amp;body=Join%20Link%3A%20https%3A%2F%2Fteams.microsoft.com%2Fl%2Fmeetup-join%2F19%253ameeting_MDI1MjcyNjgtZjJkMC00MTM0LTgyMjYtNGYzMGEzMjkwNzgx%2540thread.v2%2F0%3Fcontext%3D%257b%2522Tid%2522%253a%2522ae74bf7f-cfc3-4760-a1fe-0731afaa5502%2522%252c%2522Oid%2522%253a%252217eeaa19-ae89-412c-913d-a9ec81d70655%2522%257d&amp;enddt=2026-06-17T16%3A30%3A00&amp;location=Virtual%20Session&amp;path=/calendar/action/compose&amp;rru=addevent&amp;startdt=2026-06-17T14%3A30%3A00&amp;subject=Build%20Reading%20Fluency%20with%20Microsoft%20Reading%20Coach" target="_blank">📆 Outlook</a>
+</div></div>
+
+
+
+</div>
+<div class="session-card" style="border-left-color:#001489">
+<div class="level-pill" style="background:#001489">🏔️ The Summit</div>
+<h3>Microsoft: Create Classroom Communities</h3>
+<div class="session-meta">📅 18 June 2026    ⏰ 14:30 - 16:30</div><div class="expand-hint">Click to view details<span class="chevron">▼</span></div><div class="session-details"><p>Build stronger classroom communities with Microsoft tools that support learner wellbeing and connection.</p><div class="outcomes">
+<h4>What you'll explore</h4>
+<ul><li>Implement Microsoft Reflect to establish simple, daily routines that allow students to express their emotions safely and constructively.</li><li>Leverage Teams and OneNote features to design an open, inclusive digital environment that encourages active and confident student participation.</li><li>Foster stronger teacher-student relationships by using real-time well-being insights to provide timely support and connection.</li><li>Cultivate peer-to-peer community and collaboration through structured, supportive communication habits within the digital workspace.</li></ul>
+</div><div class="actions">
+<a class="btn register" href="https://docs.google.com/forms/d/e/1FAIpQLScMwanHrYwf9_kOML0icuKE9VfoFXD703of7ETLR5z6ysZoxA/viewform?usp=pp_url&amp;entry.1422040156=Thu,+Jun+18+@+14:30+-+(HEAD+OFFICE)+-+Microsoft:+Create+Classroom+Communities+%5B2657%5D" target="_blank">📝 Pre-register</a>
+<a class="btn calendar" href="https://www.google.com/calendar/render?action=TEMPLATE&amp;text=%F0%9F%92%BB%20eTPD%20Webinar%3A%20Microsoft%3A%20Create%20Classroom%20Communities&amp;dates=20260618T143000/20260618T163000&amp;details=Build%20stronger%20classroom%20communities%20with%20Microsoft%20tools%20that%20support%20learner%20wellbeing%20and%20connection.%0A%0A%F0%9F%94%97%20Join%20Link%3A%20%0Ahttps%3A%2F%2Fteams.microsoft.com%2Fl%2Fmeetup-join%2F19%253ameeting_MDdkOGI4NWEtNmQwMi00NTk0LWFmNDMtMTg3ZDlhMzBiOGRl%2540thread.v2%2F0%3Fcontext%3D%257b%2522Tid%2522%253a%2522ae74bf7f-cfc3-4760-a1fe-0731afaa5502%2522%252c%2522Oid%2522%253a%252217eeaa19-ae89-412c-913d-a9ec81d70655%2522%257d%0A%0A%E2%84%B9%EF%B8%8F%20For%20more%20info%3A%20https%3A%2F%2Fbit.ly%2Fm%2Fwcedtpd&amp;location=MS%20Teams&amp;ctz=Africa/Johannesburg" target="_blank">📅 Google Calendar</a>
+<a class="btn calendar outlook" href="https://outlook.office.com/calendar/0/action/compose?allday=false&amp;body=Join%20Link%3A%20https%3A%2F%2Fteams.microsoft.com%2Fl%2Fmeetup-join%2F19%253ameeting_MDdkOGI4NWEtNmQwMi00NTk0LWFmNDMtMTg3ZDlhMzBiOGRl%2540thread.v2%2F0%3Fcontext%3D%257b%2522Tid%2522%253a%2522ae74bf7f-cfc3-4760-a1fe-0731afaa5502%2522%252c%2522Oid%2522%253a%252217eeaa19-ae89-412c-913d-a9ec81d70655%2522%257d&amp;enddt=2026-06-18T16%3A30%3A00&amp;location=Virtual%20Session&amp;path=/calendar/action/compose&amp;rru=addevent&amp;startdt=2026-06-18T14%3A30%3A00&amp;subject=Microsoft%3A%20Create%20Classroom%20Communities" target="_blank">📆 Outlook</a>
+</div></div>
+
+
+
+</div>
+<div class="session-card" style="border-left-color:#007DBA">
+<div class="level-pill" style="background:#007DBA">🚀 I can do it</div>
+<h3>Responsible Use of AI in Education</h3>
+<div class="session-meta">📅 19 June 2026    ⏰ 14:30 - 16:30</div><div class="expand-hint">Click to view details<span class="chevron">▼</span></div><div class="session-details"><p>Learn how to use AI safely, responsibly, and ethically in your classroom! Explore Microsoft’s responsible AI framework.</p><div class="outcomes">
+<h4>What you'll explore</h4>
+<ul><li>Understand and articulate the core pillars of Responsible AI, including fairness, privacy, safety, transparency, inclusiveness, and accountability.</li><li>Equip learners with critical thinking skills to question AI outputs, detect bias, and evaluate information accuracy before accepting it.</li><li>Teach essential digital citizenship by guiding students on how to protect their personal information and data privacy when interacting with AI tools.</li><li>Foster a growth-oriented mindset where students utilise AI as a collaborative learning support and brainstorming partner rather than a shortcut for assignments.</li></ul>
+</div><div class="actions">
+<a class="btn register" href="https://docs.google.com/forms/d/e/1FAIpQLScMwanHrYwf9_kOML0icuKE9VfoFXD703of7ETLR5z6ysZoxA/viewform?usp=pp_url&amp;entry.1422040156=Fri,+Jun+19+@+14:30+-+(HEAD+OFFICE)+-+Responsible+Use+of+AI+in+Education+%5B2658%5D" target="_blank">📝 Pre-register</a>
+<a class="btn calendar" href="https://www.google.com/calendar/render?action=TEMPLATE&amp;text=%F0%9F%92%BB%20eTPD%20Webinar%3A%20Responsible%20Use%20of%20AI%20in%20Education&amp;dates=20260619T143000/20260619T163000&amp;details=Learn%20how%20to%20use%20AI%20safely%2C%20responsibly%2C%20and%20ethically%20in%20your%20classroom%21%20Explore%20Microsoft%E2%80%99s%20responsible%20AI%20framework.%0A%0A%F0%9F%94%97%20Join%20Link%3A%20%0Ahttps%3A%2F%2Fteams.microsoft.com%2Fl%2Fmeetup-join%2F19%253ameeting_ODQ2MGNmNDQtMDJhNi00ZGI5LWEwZTktZGZiZDg3YWQ3YWIw%2540thread.v2%2F0%3Fcontext%3D%257b%2522Tid%2522%253a%2522ae74bf7f-cfc3-4760-a1fe-0731afaa5502%2522%252c%2522Oid%2522%253a%252217eeaa19-ae89-412c-913d-a9ec81d70655%2522%257d%0A%0A%E2%84%B9%EF%B8%8F%20For%20more%20info%3A%20https%3A%2F%2Fbit.ly%2Fm%2Fwcedtpd&amp;location=MS%20Teams&amp;ctz=Africa/Johannesburg" target="_blank">📅 Google Calendar</a>
+<a class="btn calendar outlook" href="https://outlook.office.com/calendar/0/action/compose?allday=false&amp;body=Join%20Link%3A%20https%3A%2F%2Fteams.microsoft.com%2Fl%2Fmeetup-join%2F19%253ameeting_ODQ2MGNmNDQtMDJhNi00ZGI5LWEwZTktZGZiZDg3YWQ3YWIw%2540thread.v2%2F0%3Fcontext%3D%257b%2522Tid%2522%253a%2522ae74bf7f-cfc3-4760-a1fe-0731afaa5502%2522%252c%2522Oid%2522%253a%252217eeaa19-ae89-412c-913d-a9ec81d70655%2522%257d&amp;enddt=2026-06-19T16%3A30%3A00&amp;location=Virtual%20Session&amp;path=/calendar/action/compose&amp;rru=addevent&amp;startdt=2026-06-19T14%3A30%3A00&amp;subject=Responsible%20Use%20of%20AI%20in%20Education" target="_blank">📆 Outlook</a>
+</div></div>
+
+
+
+</div>
+<div class="session-card" style="border-left-color:#8FAD15">
+<div class="level-pill" style="background:#8FAD15">🧱 Laying the Foundation</div>
+<h3>Organising and Utilising MS Tools in Education</h3>
+<div class="session-meta">📅 22 June 2026    ⏰ 14:30 - 16:30</div><div class="expand-hint">Click to view details<span class="chevron">▼</span></div><div class="session-details"><p>This session introduces Word, Excel, PowerPoint, OneDrive and Teams as a connected system for planning, creating and managing classroom resources.</p><div class="outcomes">
+<h4>What you'll explore</h4>
+<ul><li>Design and manage an organized digital repository in OneDrive and Teams to store lesson plans, resources, and student materials.</li><li>Retrieve and share teaching content quickly and securely with both colleagues and learners.</li><li>Enhance instructional materials using AI-driven features like PowerPoint Designer and Word Editor for professional formatting and refinement.</li><li>Streamline daily administrative tasks and content creation using built-in dictation and smart suggestions to maximize efficiency.</li></ul>
+</div><div class="actions">
+<a class="btn register" href="https://docs.google.com/forms/d/e/1FAIpQLScMwanHrYwf9_kOML0icuKE9VfoFXD703of7ETLR5z6ysZoxA/viewform?usp=pp_url&amp;entry.1422040156=Mon,+Jun+22+@+14:30+-+(HEAD+OFFICE)+-+Organising+and+Utilising+MS+Tools+in+Education+%5B2659%5D" target="_blank">📝 Pre-register</a>
+<a class="btn calendar" href="https://www.google.com/calendar/render?action=TEMPLATE&amp;text=%F0%9F%92%BB%20eTPD%20Webinar%3A%20Organising%20and%20Utilising%20MS%20Tools%20in%20Education&amp;dates=20260622T143000/20260622T163000&amp;details=This%20session%20introduces%20Word%2C%20Excel%2C%20PowerPoint%2C%20OneDrive%20and%20Teams%20as%20a%20connected%20system%20for%20planning%2C%20creating%20and%20managing%20classroom%20resources.%0A%0A%F0%9F%94%97%20Join%20Link%3A%20%0Ahttps%3A%2F%2Fteams.microsoft.com%2Fl%2Fmeetup-join%2F19%253ameeting_YTliZjZhZTYtNjY2ZC00N2VjLWJlMDUtMDRkOTgzOTYwMDQ0%2540thread.v2%2F0%3Fcontext%3D%257b%2522Tid%2522%253a%2522ae74bf7f-cfc3-4760-a1fe-0731afaa5502%2522%252c%2522Oid%2522%253a%252217eeaa19-ae89-412c-913d-a9ec81d70655%2522%257d%0A%0A%E2%84%B9%EF%B8%8F%20For%20more%20info%3A%20https%3A%2F%2Fbit.ly%2Fm%2Fwcedtpd&amp;location=MS%20Teams&amp;ctz=Africa/Johannesburg" target="_blank">📅 Google Calendar</a>
+<a class="btn calendar outlook" href="https://outlook.office.com/calendar/0/action/compose?allday=false&amp;body=Join%20Link%3A%20https%3A%2F%2Fteams.microsoft.com%2Fl%2Fmeetup-join%2F19%253ameeting_YTliZjZhZTYtNjY2ZC00N2VjLWJlMDUtMDRkOTgzOTYwMDQ0%2540thread.v2%2F0%3Fcontext%3D%257b%2522Tid%2522%253a%2522ae74bf7f-cfc3-4760-a1fe-0731afaa5502%2522%252c%2522Oid%2522%253a%252217eeaa19-ae89-412c-913d-a9ec81d70655%2522%257d&amp;enddt=2026-06-22T16%3A30%3A00&amp;location=Virtual%20Session&amp;path=/calendar/action/compose&amp;rru=addevent&amp;startdt=2026-06-22T14%3A30%3A00&amp;subject=Organising%20and%20Utilising%20MS%20Tools%20in%20Education" target="_blank">📆 Outlook</a>
+</div></div>
+
+
+
+</div>
+<div class="session-card" style="border-left-color:#007DBA">
+<div class="level-pill" style="background:#007DBA">🚀 I can do it</div>
+<h3>Microsoft: AI for Educators</h3>
+<div class="session-meta">📅 23 June 2026    ⏰ 14:30 - 16:30</div><div class="expand-hint">Click to view details<span class="chevron">▼</span></div><div class="session-details"><p>Teachers will learn the basics of artificial intelligence in a simple, practical and classroom-friendly way.</p><div class="outcomes">
+<h4>What you'll explore</h4>
+<ul><li>Navigate and integrate Microsoft Copilot Chat, Edge, Word, PowerPoint, and Image Creator into their daily prep workflow.</li><li>Generate diverse teaching materials by using AI to brainstorm fresh lesson plans, draft creative assessment ideas, and produce engaging classroom resources.</li><li>Adapt and differentiate content for diverse learner needs by utilising AI to summarise complex texts, rewrite materials, simplify language, and generate custom visuals.</li><li>Maximise administrative efficiency by leveraging smart tools to drastically reduce the time spent on content creation and curation.</li></ul>
+</div><div class="actions">
+<a class="btn register" href="https://docs.google.com/forms/d/e/1FAIpQLScMwanHrYwf9_kOML0icuKE9VfoFXD703of7ETLR5z6ysZoxA/viewform?usp=pp_url&amp;entry.1422040156=Tue,+Jun+23+@+14:30+-+(HEAD+OFFICE)+-+Microsoft:+AI+for+Educators+%5B2660%5D" target="_blank">📝 Pre-register</a>
+<a class="btn calendar" href="https://www.google.com/calendar/render?action=TEMPLATE&amp;text=%F0%9F%92%BB%20eTPD%20Webinar%3A%20Microsoft%3A%20AI%20for%20Educators&amp;dates=20260623T143000/20260623T163000&amp;details=Teachers%20will%20learn%20the%20basics%20of%20artificial%20intelligence%20in%20a%20simple%2C%20practical%20and%20classroom-friendly%20way.%20%0A%0A%F0%9F%94%97%20Join%20Link%3A%20%0Ahttps%3A%2F%2Fteams.microsoft.com%2Fl%2Fmeetup-join%2F19%253ameeting_MjgwNjM1OTgtZTdhYS00YWNmLWI2M2EtMmM5ZTlhODdjMWJk%2540thread.v2%2F0%3Fcontext%3D%257b%2522Tid%2522%253a%2522ae74bf7f-cfc3-4760-a1fe-0731afaa5502%2522%252c%2522Oid%2522%253a%252217eeaa19-ae89-412c-913d-a9ec81d70655%2522%257d%0A%0A%E2%84%B9%EF%B8%8F%20For%20more%20info%3A%20https%3A%2F%2Fbit.ly%2Fm%2Fwcedtpd&amp;location=MS%20Teams&amp;ctz=Africa/Johannesburg" target="_blank">📅 Google Calendar</a>
+<a class="btn calendar outlook" href="https://outlook.office.com/calendar/0/action/compose?allday=false&amp;body=Join%20Link%3A%20https%3A%2F%2Fteams.microsoft.com%2Fl%2Fmeetup-join%2F19%253ameeting_MjgwNjM1OTgtZTdhYS00YWNmLWI2M2EtMmM5ZTlhODdjMWJk%2540thread.v2%2F0%3Fcontext%3D%257b%2522Tid%2522%253a%2522ae74bf7f-cfc3-4760-a1fe-0731afaa5502%2522%252c%2522Oid%2522%253a%252217eeaa19-ae89-412c-913d-a9ec81d70655%2522%257d&amp;enddt=2026-06-23T16%3A30%3A00&amp;location=Virtual%20Session&amp;path=/calendar/action/compose&amp;rru=addevent&amp;startdt=2026-06-23T14%3A30%3A00&amp;subject=Microsoft%3A%20AI%20for%20Educators" target="_blank">📆 Outlook</a>
+</div></div>
+
+
+
+</div>
+<div class="session-card" style="border-left-color:#C8126E">
+<div class="level-pill" style="background:#C8126E">✨ I can do it better</div>
+<h3>Enhance Teaching and Learning with Copilot Chat</h3>
+<div class="session-meta">📅 24 June 2026    ⏰ 14:30 - 16:30</div><div class="expand-hint">Click to view details<span class="chevron">▼</span></div><div class="session-details"><p>The session positions Copilot Chat as a time-saving support tool that helps teachers plan smarter, create faster and reduce the pressure of starting every lesson from scratch.</p><div class="outcomes">
+<h4>What you'll explore</h4>
+<ul><li>Master prompt engineering techniques to get more accurate, relevant, and high-quality outputs from AI tools.</li><li>Generate and customise instructional content including creative lesson ideas, structured student worksheets, and comprehensive grading rubrics.</li><li>Differentiate learning materials by using AI to adapt text complexity, language, and depth for varied student ability levels.</li><li>Critically evaluate and fact-check AI-generated content to ensure accuracy, safety, and relevance before bringing it into the classroom.</li></ul>
+</div><div class="actions">
+<a class="btn register" href="https://docs.google.com/forms/d/e/1FAIpQLScMwanHrYwf9_kOML0icuKE9VfoFXD703of7ETLR5z6ysZoxA/viewform?usp=pp_url&amp;entry.1422040156=Wed,+Jun+24+@+14:30+-+(HEAD+OFFICE)+-+Enhance+Teaching+and+Learning+with+Copilot+Chat+%5B2661%5D" target="_blank">📝 Pre-register</a>
+<a class="btn calendar" href="https://www.google.com/calendar/render?action=TEMPLATE&amp;text=%F0%9F%92%BB%20eTPD%20Webinar%3A%20Enhance%20Teaching%20and%20Learning%20with%20Copilot%20Chat&amp;dates=20260624T143000/20260624T163000&amp;details=The%20session%20positions%20Copilot%20Chat%20as%20a%20time-saving%20support%20tool%20that%20helps%20teachers%20plan%20smarter%2C%20create%20faster%20and%20reduce%20the%20pressure%20of%20starting%20every%20lesson%20from%20scratch.%0A%0A%F0%9F%94%97%20Join%20Link%3A%20%0Ahttps%3A%2F%2Fteams.microsoft.com%2Fl%2Fmeetup-join%2F19%253ameeting_YTE1NDAwMTctMDcxZS00Njg1LTgzMTMtNzVhNmRlOGNhYzRk%2540thread.v2%2F0%3Fcontext%3D%257b%2522Tid%2522%253a%2522ae74bf7f-cfc3-4760-a1fe-0731afaa5502%2522%252c%2522Oid%2522%253a%252217eeaa19-ae89-412c-913d-a9ec81d70655%2522%257d%0A%0A%E2%84%B9%EF%B8%8F%20For%20more%20info%3A%20https%3A%2F%2Fbit.ly%2Fm%2Fwcedtpd&amp;location=MS%20Teams&amp;ctz=Africa/Johannesburg" target="_blank">📅 Google Calendar</a>
+<a class="btn calendar outlook" href="https://outlook.office.com/calendar/0/action/compose?allday=false&amp;body=Join%20Link%3A%20https%3A%2F%2Fteams.microsoft.com%2Fl%2Fmeetup-join%2F19%253ameeting_YTE1NDAwMTctMDcxZS00Njg1LTgzMTMtNzVhNmRlOGNhYzRk%2540thread.v2%2F0%3Fcontext%3D%257b%2522Tid%2522%253a%2522ae74bf7f-cfc3-4760-a1fe-0731afaa5502%2522%252c%2522Oid%2522%253a%252217eeaa19-ae89-412c-913d-a9ec81d70655%2522%257d&amp;enddt=2026-06-24T16%3A30%3A00&amp;location=Virtual%20Session&amp;path=/calendar/action/compose&amp;rru=addevent&amp;startdt=2026-06-24T14%3A30%3A00&amp;subject=Enhance%20Teaching%20and%20Learning%20with%20Copilot%20Chat" target="_blank">📆 Outlook</a>
+</div></div>
+
+
+
+</div>
+</section>
+<script>
+document.querySelectorAll('.session-card').forEach(card=>{
+ card.addEventListener('click', ()=>{
+   card.classList.toggle('active');
+ });
+});
+</script></body>
+</html>
