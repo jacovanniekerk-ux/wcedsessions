@@ -173,21 +173,7 @@
                 lightColor: '#E0F7F7',
                 sparkSession: 'Adoption Strategy',
                 duration: '24-hour self-paced course',
-                description: 'A foundational online course providing a broad perspective on the visibility of the digital landscape and the "Transformation Agenda." This journey moves you from digital literacy (the what) toward understanding the possibilities of technology in education.',
-                keyPoints: [
-                    'Comprehensive 12-week self-paced online course',
-                    'Explore the landscape of ICT integration in education',
-                    'Understand the vision of the Transformation Agenda',
-                    'Build foundational digital literacy and confidence',
-                    'Earn your first Spark toward becoming a Transformation Agent'
-                ],
-                availability: {
-                    type: 'registration',
-                    registerUrl: 'http://bit.ly/4sgSf9g?r=lp&m=Mma39rNpG6w',
-                    expiryDate: '2026-03-22',
-                    activeMessage: 'Registrations are currently open!',
-                    expiredMessage: 'Registrations for the current cohort have closed. Keep an eye on eTPD communications for the next intake.'
-                }
+                description: 'A foundational online course providing a broad perspective on the digital landscape and the "Transformation Agenda."'
             },
             {
                 id: 'dovetail',
@@ -211,19 +197,7 @@
                 lightColor: '#E0F1FA',
                 sparkSession: 'Digital Skills Course',
                 duration: '4-week hybrid immersion',
-                description: 'An experiential hybrid course that shifts your focus from "how to use" to "how to learn." View technology from the learner\'s perspective and develop digital wisdom (the when and why) through hands-on practice, reflection, and collaboration.',
-                keyPoints: [
-                    'Immersive 4-week hybrid learning experience',
-                    'Shift from teacher-centered to learner-centered perspective',
-                    'Synthesize the "what" and "how" into "when" and "why"',
-                    'Develop digital wisdom through experiential learning',
-                    'Foster pedagogical understanding of technology integration',
-                    'Earn your third Spark and become a School-Level Transformation Agent'
-                ],
-                availability: {
-                    type: 'info',
-                    message: 'These courses are hosted each term in the district. Contact your district eAdvisory team to ask about upcoming courses, or keep an eye out when they are advertised.'
-                }
+                description: 'An experiential hybrid course shifting focus from "how to use" to "how to learn."'
             },
             {
                 id: 'cybereffect',
@@ -235,19 +209,7 @@
                 lightColor: '#FAE0EE',
                 sparkSession: 'Cyber Effect Ambassador Initiation Course',
                 duration: 'Self-paced 4-week course',
-                description: 'Deepen your ability to engage with the ethical, emotional, psychological, and behavioural dimensions of technology use. Master the 4P Affective Transformation Model (People, Practices, Pedagogy, Platforms) and lead with reflective digital responsibility.',
-                keyPoints: [
-                    'Focus on digital citizenship and cyber wellness',
-                    'Understand human-centered design principles',
-                    'Master the 4P Model: People, Practices, Pedagogy, Platforms',
-                    'Address emotional readiness and psychological safety',
-                    'Promote reflective digital responsibility and ethical technology use',
-                    'Earn your fourth Spark and become a Cluster-Level Transformation Agent'
-                ],
-                availability: {
-                    type: 'upcoming',
-                    message: 'This course will run in the third term. Registrations will open in Term 2 — watch this space!'
-                }
+                description: 'Deepen your ability to engage with the ethical, emotional, and behavioural dimensions of technology use.'
             }
         ];
 
@@ -546,18 +508,18 @@
             );
         }
 
-        // === EDVANCE ARC SESSIONS ===
-        const EDVANCE_ARC_SESSIONS = [
+        // === TRANSFORMATION ARC SESSIONS ===
+        const TRANSFORMATION_ARC_SESSIONS = [
             'Facilitator Think Tank',
             'Elevate',
             'Shift and Spark'
         ];
 
         // === DATA LAST UPDATED (manually update this when refreshing data) ===
-        const DATA_LAST_UPDATED = '2 March 2026';
+        const DATA_LAST_UPDATED = '05 June 2026';
 
-        // === EDVANCE ARC CARD ===
-        function EdvanceARCCard({ hasThinkTank, arcSessions, totalSessions }) {
+        // === TRANSFORMATION ARC CARD ===
+        function TransformationARCCard({ hasThinkTank, arcSessions, totalSessions }) {
             const arcCount = arcSessions.length;
             const hasElevate = arcSessions.includes('Elevate');
             const hasShiftAndSpark = arcSessions.includes('Shift and Spark');
@@ -568,7 +530,7 @@
                         <span className="text-2xl">🎓</span>
                         <div className="flex-1">
                             <div className="flex items-center gap-2 mb-1">
-                                <h4 className="font-bold text-gray-700">Edvance ARC</h4>
+                                <h4 className="font-bold text-gray-700">Transformation ARC</h4>
                                 {hasThinkTank ? (
                                     <span className="text-xs bg-purple-200 text-purple-800 px-2 py-0.5 rounded-full font-semibold">{arcCount} Step{arcCount > 1 ? 's' : ''} Complete</span>
                                 ) : (
@@ -577,8 +539,8 @@
                             </div>
                             <p className="text-sm text-gray-600 mb-2">
                                 {hasThinkTank
-                                    ? 'You\'ve entered the Edvance ARC — a specialised developmental pathway. The Facilitator Think Tank is the first step and earns a Spark.'
-                                    : 'The Facilitator Think Tank is the entry point to the Edvance ARC — a specialised developmental pathway by invitation. Teachers with strong PD engagement are often considered.'
+                                    ? 'You\'ve entered the Transformation ARC — a specialised developmental pathway. The Facilitator Think Tank is the first step and earns a Spark.'
+                                    : 'The Facilitator Think Tank is the entry point to the Transformation ARC — a specialised developmental pathway by invitation. Teachers with strong PD engagement are often considered.'
                                 }
                             </p>
                             {hasThinkTank && (
@@ -617,7 +579,7 @@
             const [attendanceData, setAttendanceData] = useState([]);
             const [upcomingData, setUpcomingData] = useState([]);
             const [loading, setLoading] = useState(true);
-            const [searchType, setSearchType] = useState('id');
+            const [searchType, setSearchType] = useState('persal');
             const [searchValue, setSearchValue] = useState('');
             const [acknowledged, setAcknowledged] = useState(false);
             const [results, setResults] = useState(null);
@@ -772,8 +734,8 @@
                 const hasCyberEffect = sessionNames.includes('Cyber Effect Ambassador Initiation Course');
                 const hasThinkTank = sessionNames.includes('Facilitator Think Tank');
 
-                // Track all Edvance ARC sessions completed
-                const arcSessions = EDVANCE_ARC_SESSIONS.filter(s => sessionNames.includes(s));
+                // Track all Transformation ARC sessions completed
+                const arcSessions = TRANSFORMATION_ARC_SESSIONS.filter(s => sessionNames.includes(s));
 
                 // Dovetail progress
                 const completedDovetails = DOVETAIL_SESSIONS.filter(d => sessionNames.includes(d));
@@ -866,12 +828,25 @@
 
                 // Priority 2: Dovetails — suggest remaining + show upcoming sessions
                 if (dovetailCount < 10) {
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
                     const upcomingDovetailSessions = upcomingData
                         .filter(row => {
                             const name = row['Session Name']?.trim();
-                            return remainingDovetails.some(d =>
+                            const nameMatch = remainingDovetails.some(d =>
                                 name && name.toLowerCase().includes(d.toLowerCase().split(':')[0].toLowerCase())
                             );
+                            if (!nameMatch) return false;
+                            // Parse the session date — exclude past, cancelled (no date), or TBA sessions
+                            const rawDate = row['Date']?.trim();
+                            if (!rawDate || rawDate === 'TBA') return false;
+                            // Support dd/mm/yyyy or d/m/yyyy
+                            const parts = rawDate.split('/');
+                            if (parts.length === 3) {
+                                const sessionDate = new Date(parts[2], parts[1] - 1, parts[0]);
+                                return sessionDate >= today;
+                            }
+                            return false;
                         })
                         .map(row => ({
                             date: row['Date']?.trim() || 'TBA',
@@ -949,8 +924,8 @@
                 if (!pathwayStatus.hasThinkTank && totalSessions >= 15) {
                     items.push({
                         icon: '💡',
-                        title: 'Edvance ARC: Facilitator Think Tank',
-                        description: `Your strong PD engagement (${totalSessions} sessions) puts you on the path to being considered for the Facilitator Think Tank — the entry point to the Edvance ARC. This is by invitation and targets teachers with high engagement.`,
+                        title: 'Transformation ARC: Facilitator Think Tank',
+                        description: `Your strong PD engagement (${totalSessions} sessions) puts you on the path to being considered for the Facilitator Think Tank — the entry point to the Transformation ARC. This is by invitation and targets teachers with high engagement.`,
                         type: 'info'
                     });
                 }
@@ -1004,21 +979,6 @@
                                     <p className="text-sm text-gray-700">{milestone.duration}</p>
                                 </div>
 
-                                {/* Key focus areas */}
-                                {milestone.keyPoints && milestone.keyPoints.length > 0 && (
-                                    <div>
-                                        <h4 className="font-semibold text-gray-900 mb-2">Key Focus Areas</h4>
-                                        <div className="space-y-1.5">
-                                            {milestone.keyPoints.map((point, idx) => (
-                                                <div key={idx} className="flex items-start gap-2 p-2 rounded-lg border border-gray-200 bg-gray-50">
-                                                    <span className="flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-xs text-white font-bold" style={{ background: milestone.color }}>✓</span>
-                                                    <span className="text-sm text-gray-700">{point}</span>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-
                                 {/* Show Dovetail checklist for milestone 2 */}
                                 {milestone.id === 'dovetail' && pathwayStatus && (
                                     <div>
@@ -1038,71 +998,6 @@
                                         </div>
                                     </div>
                                 )}
-
-                                {/* Availability / Registration info */}
-                                {milestone.availability && (() => {
-                                    const avail = milestone.availability;
-                                    const now = new Date();
-                                    now.setHours(0, 0, 0, 0);
-
-                                    if (avail.type === 'registration') {
-                                        const expiry = new Date(avail.expiryDate + 'T23:59:59');
-                                        const isOpen = now <= expiry;
-                                        return (
-                                            <div className="rounded-xl border-2 overflow-hidden" style={{ borderColor: isOpen ? '#16a34a' : '#d1d5db' }}>
-                                                <div className="px-4 py-3" style={{ background: isOpen ? '#f0fdf4' : '#f9fafb' }}>
-                                                    <h4 className="font-semibold mb-1 flex items-center gap-2" style={{ color: isOpen ? '#16a34a' : '#6b7280' }}>
-                                                        {isOpen ? '🟢' : '🔴'} {isOpen ? 'Registration Open' : 'Registration Closed'}
-                                                    </h4>
-                                                    <p className="text-sm text-gray-700 mb-2">
-                                                        {isOpen ? avail.activeMessage : avail.expiredMessage}
-                                                    </p>
-                                                    {isOpen && (
-                                                        <>
-                                                            <p className="text-xs text-gray-500 mb-3">
-                                                                📅 Closes: {new Date(avail.expiryDate).toLocaleDateString('en-ZA', { day: 'numeric', month: 'long', year: 'numeric' })}
-                                                            </p>
-                                                            <a
-                                                                href={avail.registerUrl}
-                                                                target="_blank"
-                                                                rel="noopener noreferrer"
-                                                                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-white font-bold text-sm transition-all hover:shadow-lg"
-                                                                style={{ background: '#16a34a' }}
-                                                            >
-                                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" /></svg>
-                                                                Register Now
-                                                            </a>
-                                                        </>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        );
-                                    }
-
-                                    if (avail.type === 'info') {
-                                        return (
-                                            <div className="rounded-xl border-2 border-blue-200 bg-blue-50 px-4 py-3">
-                                                <h4 className="font-semibold text-blue-800 mb-1 flex items-center gap-2">
-                                                    ℹ️ How to Join
-                                                </h4>
-                                                <p className="text-sm text-blue-900">{avail.message}</p>
-                                            </div>
-                                        );
-                                    }
-
-                                    if (avail.type === 'upcoming') {
-                                        return (
-                                            <div className="rounded-xl border-2 border-purple-200 bg-purple-50 px-4 py-3">
-                                                <h4 className="font-semibold text-purple-800 mb-1 flex items-center gap-2">
-                                                    📣 Coming Soon
-                                                </h4>
-                                                <p className="text-sm text-purple-900">{avail.message}</p>
-                                            </div>
-                                        );
-                                    }
-
-                                    return null;
-                                })()}
                             </div>
                         </div>
                     </div>
@@ -1174,15 +1069,6 @@
                                         <label className="block text-sm font-medium text-gray-700 mb-2">Search by:</label>
                                         <div className="flex gap-4">
                                             <button
-                                                onClick={() => { setSearchType('id'); setSearchValue(''); }}
-                                                className={`flex-1 py-3 px-4 rounded-lg border-2 font-semibold transition-colors ${searchType === 'id'
-                                                    ? 'border-wcg-blue bg-wcg-blue text-white'
-                                                    : 'border-gray-300 bg-white text-gray-700 hover:border-wcg-blue'
-                                                    }`}
-                                            >
-                                                ID Number
-                                            </button>
-                                            <button
                                                 onClick={() => { setSearchType('persal'); setSearchValue(''); }}
                                                 className={`flex-1 py-3 px-4 rounded-lg border-2 font-semibold transition-colors ${searchType === 'persal'
                                                     ? 'border-wcg-blue bg-wcg-blue text-white'
@@ -1190,6 +1076,15 @@
                                                     }`}
                                             >
                                                 PERSAL Number
+                                            </button>
+                                            <button
+                                                onClick={() => { setSearchType('id'); setSearchValue(''); }}
+                                                className={`flex-1 py-3 px-4 rounded-lg border-2 font-semibold transition-colors ${searchType === 'id'
+                                                    ? 'border-wcg-blue bg-wcg-blue text-white'
+                                                    : 'border-gray-300 bg-white text-gray-700 hover:border-wcg-blue'
+                                                    }`}
+                                            >
+                                                ID Number
                                             </button>
                                         </div>
                                     </div>
@@ -1341,9 +1236,9 @@
                                         </div>
                                     </div>
 
-                                    {/* Edvance ARC */}
+                                    {/* Transformation ARC */}
                                     <div className="mt-6 pt-4 border-t border-dashed border-gray-200">
-                                        <EdvanceARCCard
+                                        <TransformationARCCard
                                             hasThinkTank={pathwayStatus.hasThinkTank}
                                             arcSessions={pathwayStatus.arcSessions}
                                             totalSessions={pathwayStatus.totalSessions}
