@@ -1161,8 +1161,8 @@
                                     {printTableData.map((row, idx) => {
                                         // Highlight Dovetail (yellow) and Spark (pink) based on instructions
                                         let rowColor = "";
-                                        if (row.isDovetail) rowColor = "bg-yellow-100";
-                                        else if (row.isSpark) rowColor = "bg-pink-100";
+                                        if (row.isDovetail) rowColor = "bg-pink-100";
+                                        else if (row.isSpark) rowColor = "bg-yellow-100";
 
                                         return (
                                             <tr key={idx} className={rowColor}>
@@ -1176,6 +1176,25 @@
                                     })}
                                 </tbody>
                             </table>
+                            {/* Table Legend / Key */}
+                            <div className="mt-3 text-xs text-gray-700 space-y-2">
+                                <div className="flex items-center gap-2">
+                                    <span className="inline-block w-4 h-4 bg-pink-100 border border-gray-400 rounded"></span>
+                                    <span>
+                                        Highlighted sessions are <strong>Dovetail Essentials</strong> sessions.{" "}
+                                            <a href="https://jacovanniekerk-ux.github.io/wcedsessions/dovetail-essentials.html" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline hover:text-blue-800">
+                                            Find out More</a>
+                                        </span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <span className="inline-block w-4 h-4 bg-yellow-100 border border-gray-400 rounded"></span>
+                                    <span>
+                                        Highlighted sessions are sessions that award a <strong>Spark</strong>.{" "}
+                                        <a href="https://jacovanniekerk-ux.github.io/wcedsessions/pathway.html" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline hover:text-blue-800">
+                                        Find out More</a>
+                                    </span>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
