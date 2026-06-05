@@ -41,10 +41,18 @@
 
             body {
                 background: white !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
             }
 
             .print-full-width {
                 max-width: 100% !important;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+
+            @page {
+                margin: 1cm;
             }
         }
     </style>
@@ -289,6 +297,30 @@
                 return filtered;
             }, [schoolData, filters]);
 
+            // Scorecard Metrics
+            const scorecardMetrics = useMemo(() => {
+                const uniqueTeachersCount = new Set(filteredData.map(r => `${r['First Name']} ${r['Surname']}`)).size;
+                const totalWorkshopsAttended = filteredData.length;
+                return { uniqueTeachersCount, totalWorkshopsAttended };
+            }, [filteredData]);
+
+            // Prepare Data for the Print Table
+            const printTableData = useMemo(() => {
+                return [...filteredData].sort((a, b) => {
+                    const nameA = a['First Name']?.trim().toLowerCase() || '';
+                    const nameB = b['First Name']?.trim().toLowerCase() || '';
+                    if (nameA < nameB) return -1;
+                    if (nameA > nameB) return 1;
+
+                    const surnameA = a['Surname']?.trim().toLowerCase() || '';
+                    const surnameB = b['Surname']?.trim().toLowerCase() || '';
+                    if (surnameA < surnameB) return -1;
+                    if (surnameA > surnameB) return 1;
+
+                    return a.parsedDate - b.parsedDate;
+                });
+            }, [filteredData]);
+
             // Get filter options
             const filterOptions = useMemo(() => {
                 const levels = [...new Set(schoolData.map(r => r['Development Level']?.trim()).filter(Boolean))];
@@ -499,7 +531,7 @@
                     },
                     options: {
                         responsive: true,
-                        maintainAspectRatio: true,
+                        maintainAspectRatio: false,
                         scales: {
                             y: {
                                 beginAtZero: true,
@@ -552,7 +584,7 @@
                     },
                     options: {
                         responsive: true,
-                        maintainAspectRatio: true,
+                        maintainAspectRatio: false,
                         plugins: {
                             legend: {
                                 display: true,
@@ -712,8 +744,9 @@
                     </header>
 
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 print-full-width">
-                        {/* School Header */}
-                        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+                        
+                        {/* SCREEN HEADER */}
+                        <div className="bg-white rounded-lg shadow-md p-6 mb-6 no-print">
                             <div className="flex justify-between items-center">
                                 <div>
                                     <h1 className="text-3xl font-bold text-wcg-dark mb-2">{schoolName}</h1>
@@ -721,8 +754,8 @@
                                     <p className="text-sm text-gray-500 mt-2">
                                         Report Generated: {new Date().toLocaleDateString('en-GB')}
                                     </p>
-                                    <p className="text-xs text-gray-400 mt-1">
-                                        ⚠️ Based on static data last updated: {new Date(DATA_LAST_UPDATED).toLocaleDateString('en-GB')}
+                                    <p className="text-xs text-gray-600 mt-2 max-w-3xl italic">
+                                        <strong>Disclaimer:</strong> The information in this report is based on self-captured data which could lead to inaccurate data. We endeavour to ensure the data is as clean and accurate as we can. (Data last updated: {new Date(DATA_LAST_UPDATED).toLocaleDateString('en-GB')})
                                     </p>
                                 </div>
                                 <button
@@ -734,101 +767,116 @@
                             </div>
                         </div>
 
-                        {/* Filters */}
-                        <div className="bg-white rounded-lg shadow-md p-6 mb-6 no-print">
-                            <h3 className="text-lg font-semibold text-wcg-dark mb-4">Filters</h3>
+                        {/* FILTERS & SCORECARDS */}
+                        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6 no-print">
+                            {/* Filters Section */}
+                            <div className="lg:col-span-3 bg-white rounded-lg shadow-md p-6">
+                                <h3 className="text-lg font-semibold text-wcg-dark mb-4">Filters</h3>
 
-                            {/* Master Toggles */}
-                            <div className="mb-4 flex gap-4 pb-4 border-b border-gray-200">
-                                <label className="flex items-center gap-2 cursor-pointer px-4 py-2 rounded-lg border-2 transition-colors hover:bg-gray-50"
-                                    style={{
-                                        borderColor: filters.showSparks ? '#FDB913' : '#e5e7eb',
-                                        backgroundColor: filters.showSparks ? 'rgba(253, 185, 19, 0.1)' : 'white'
-                                    }}>
-                                    <input
-                                        type="checkbox"
-                                        checked={filters.showSparks}
-                                        onChange={(e) => setFilters({ ...filters, showSparks: e.target.checked })}
-                                        className="h-4 w-4 text-wcg-yellow border-gray-300 rounded focus:ring-wcg-yellow"
-                                    />
-                                    <span className="text-sm font-medium text-gray-700">⭐ Sparks Only</span>
-                                </label>
-                                <label className="flex items-center gap-2 cursor-pointer px-4 py-2 rounded-lg border-2 transition-colors hover:bg-gray-50"
-                                    style={{
-                                        borderColor: filters.showDovetails ? '#C8126E' : '#e5e7eb',
-                                        backgroundColor: filters.showDovetails ? 'rgba(200, 18, 110, 0.1)' : 'white'
-                                    }}>
-                                    <input
-                                        type="checkbox"
-                                        checked={filters.showDovetails}
-                                        onChange={(e) => setFilters({ ...filters, showDovetails: e.target.checked })}
-                                        className="h-4 w-4 text-wcg-pink border-gray-300 rounded focus:ring-wcg-pink"
-                                    />
-                                    <span className="text-sm font-medium text-gray-700">💎 Dovetail Essentials Only</span>
-                                </label>
-                            </div>
+                                {/* Master Toggles */}
+                                <div className="mb-4 flex gap-4 pb-4 border-b border-gray-200">
+                                    <label className="flex items-center gap-2 cursor-pointer px-4 py-2 rounded-lg border-2 transition-colors hover:bg-gray-50"
+                                        style={{
+                                            borderColor: filters.showSparks ? '#FDB913' : '#e5e7eb',
+                                            backgroundColor: filters.showSparks ? 'rgba(253, 185, 19, 0.1)' : 'white'
+                                        }}>
+                                        <input
+                                            type="checkbox"
+                                            checked={filters.showSparks}
+                                            onChange={(e) => setFilters({ ...filters, showSparks: e.target.checked })}
+                                            className="h-4 w-4 text-wcg-yellow border-gray-300 rounded focus:ring-wcg-yellow"
+                                        />
+                                        <span className="text-sm font-medium text-gray-700">⭐ Sparks Only</span>
+                                    </label>
+                                    <label className="flex items-center gap-2 cursor-pointer px-4 py-2 rounded-lg border-2 transition-colors hover:bg-gray-50"
+                                        style={{
+                                            borderColor: filters.showDovetails ? '#C8126E' : '#e5e7eb',
+                                            backgroundColor: filters.showDovetails ? 'rgba(200, 18, 110, 0.1)' : 'white'
+                                        }}>
+                                        <input
+                                            type="checkbox"
+                                            checked={filters.showDovetails}
+                                            onChange={(e) => setFilters({ ...filters, showDovetails: e.target.checked })}
+                                            className="h-4 w-4 text-wcg-pink border-gray-300 rounded focus:ring-wcg-pink"
+                                        />
+                                        <span className="text-sm font-medium text-gray-700">💎 Dovetail Essentials Only</span>
+                                    </label>
+                                </div>
 
-                            {/* Year Selection */}
-                            <div className="mb-4">
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Years</label>
-                                <div className="flex flex-wrap gap-3">
-                                    {availableYears.map(year => (
-                                        <label key={year} className="flex items-center gap-2 cursor-pointer">
-                                            <input
-                                                type="checkbox"
-                                                checked={filters.years.includes(year)}
-                                                onChange={() => toggleYear(year)}
-                                                className="h-4 w-4 text-wcg-blue border-gray-300 rounded focus:ring-wcg-blue"
-                                            />
-                                            <span className="text-sm text-gray-700">{year}</span>
+                                {/* Year Selection */}
+                                <div className="mb-4">
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">Years</label>
+                                    <div className="flex flex-wrap gap-3">
+                                        {availableYears.map(year => (
+                                            <label key={year} className="flex items-center gap-2 cursor-pointer">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={filters.years.includes(year)}
+                                                    onChange={() => toggleYear(year)}
+                                                    className="h-4 w-4 text-wcg-blue border-gray-300 rounded focus:ring-wcg-blue"
+                                                />
+                                                <span className="text-sm text-gray-700">{year}</span>
+                                            </label>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {/* Development Level Filter */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Development Level (All Data)
                                         </label>
-                                    ))}
+                                        <select
+                                            value={filters.level}
+                                            onChange={(e) => setFilters({ ...filters, level: e.target.value })}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wcg-blue text-sm"
+                                        >
+                                            <option value="">All Levels</option>
+                                            {filterOptions.levels.map(level => (
+                                                <option key={level} value={level}>{level}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    {/* Delivery Mode Filter */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Delivery Mode
+                                        </label>
+                                        <select
+                                            value={filters.mode}
+                                            onChange={(e) => setFilters({ ...filters, mode: e.target.value })}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wcg-blue text-sm"
+                                        >
+                                            <option value="">All Modes</option>
+                                            {filterOptions.modes.map(mode => (
+                                                <option key={mode} value={mode}>{mode}</option>
+                                            ))}
+                                        </select>
+                                    </div>
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {/* Development Level Filter */}
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Development Level (All Data)
-                                    </label>
-                                    <select
-                                        value={filters.level}
-                                        onChange={(e) => setFilters({ ...filters, level: e.target.value })}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wcg-blue text-sm"
-                                    >
-                                        <option value="">All Levels</option>
-                                        {filterOptions.levels.map(level => (
-                                            <option key={level} value={level}>{level}</option>
-                                        ))}
-                                    </select>
+                            {/* Scorecards Section */}
+                            <div className="bg-white rounded-lg shadow-md p-6 flex flex-col justify-center gap-4">
+                                <div className="text-center p-4 bg-gray-50 rounded-lg border border-gray-200 shadow-sm">
+                                    <div className="text-4xl font-bold text-wcg-blue mb-1">{scorecardMetrics.uniqueTeachersCount}</div>
+                                    <div className="text-sm text-gray-700 font-medium">Unique Teachers</div>
                                 </div>
-
-                                {/* Delivery Mode Filter */}
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Delivery Mode
-                                    </label>
-                                    <select
-                                        value={filters.mode}
-                                        onChange={(e) => setFilters({ ...filters, mode: e.target.value })}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wcg-blue text-sm"
-                                    >
-                                        <option value="">All Modes</option>
-                                        {filterOptions.modes.map(mode => (
-                                            <option key={mode} value={mode}>{mode}</option>
-                                        ))}
-                                    </select>
+                                <div className="text-center p-4 bg-gray-50 rounded-lg border border-gray-200 shadow-sm">
+                                    <div className="text-4xl font-bold text-wcg-green mb-1">{scorecardMetrics.totalWorkshopsAttended}</div>
+                                    <div className="text-sm text-gray-700 font-medium">Workshops Attended</div>
                                 </div>
                             </div>
                         </div>
 
                         {/* Charts */}
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6 no-print">
                             {/* Quarterly Trends */}
                             <div className="bg-white rounded-lg shadow-md p-6">
                                 <h3 className="text-lg font-semibold text-wcg-dark mb-4">Quarterly Trends</h3>
-                                <div className="h-64">
+                                <div className="h-64 relative">
                                     <canvas ref={quarterChartRef}></canvas>
                                 </div>
                             </div>
@@ -836,14 +884,14 @@
                             {/* Development Level Distribution */}
                             <div className="bg-white rounded-lg shadow-md p-6">
                                 <h3 className="text-lg font-semibold text-wcg-dark mb-4">Development Level Distribution</h3>
-                                <div className="h-64">
+                                <div className="h-64 relative">
                                     <canvas ref={pieChartRef}></canvas>
                                 </div>
                             </div>
                         </div>
 
                         {/* View Toggle */}
-                        <div className="bg-white rounded-lg shadow-md p-4 mb-6">
+                        <div className="bg-white rounded-lg shadow-md p-4 mb-6 no-print">
                             <div className="flex items-center justify-between">
                                 <div className="flex gap-2">
                                     <button
@@ -904,7 +952,7 @@
 
                         {/* Teacher Attendance */}
                         {viewMode === 'teachers' && (
-                            <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+                            <div className="bg-white rounded-lg shadow-md p-6 mb-6 no-print">
                                 <h3 className="text-lg font-semibold text-wcg-dark mb-4">Teacher Attendance</h3>
                                 <div className="space-y-2">
                                     {teacherData.map(teacher => (
@@ -981,7 +1029,7 @@
 
                         {/* Session Attendance */}
                         {viewMode === 'sessions' && (
-                            <div className="bg-white rounded-lg shadow-md p-6">
+                            <div className="bg-white rounded-lg shadow-md p-6 no-print">
                                 <h3 className="text-lg font-semibold text-wcg-dark mb-4">Session Attendance</h3>
                                 <div className="space-y-2">
                                     {sessionData.map(session => (
@@ -1047,6 +1095,107 @@
                                 </div>
                             </div>
                         )}
+
+                        {/* ------------------------------------------------------------- */}
+                        {/* PRINT ONLY VIEW */}
+                        {/* ------------------------------------------------------------- */}
+                        <div className="hidden print:block w-full">
+                            {/* 1. Header & Disclaimer */}
+                            <div className="text-center mb-8">
+                                <img src="header.png" alt="WCED Header" className="h-16 mx-auto mb-4" />
+                                <h1 className="text-2xl font-bold text-wcg-dark mb-1">{schoolName}</h1>
+                                <p className="text-sm text-gray-600 mb-2">Report Generated: {new Date().toLocaleDateString('en-GB')}</p>
+                                <p className="text-xs text-gray-600 max-w-3xl mx-auto italic">
+                                    Disclaimer: The information in this report is based on self-captured data which could lead to inaccurate data. We endeavour to ensure the data is as clean and accurate as we can. (Data last updated: {new Date(DATA_LAST_UPDATED).toLocaleDateString('en-GB')})
+                                </p>
+                            </div>
+
+                            {/* 2. Quarterly Trends Table & Scorecards */}
+                            <div className="flex gap-6 mb-8 w-full">
+                                <div className="flex-1">
+                                    <h3 className="text-base font-bold text-wcg-dark mb-2">Quarterly Trends</h3>
+                                    <table className="w-full text-sm border-collapse border border-gray-300">
+                                        <thead>
+                                            <tr className="bg-gray-100">
+                                                <th className="border border-gray-300 px-3 py-1.5 text-left">Quarter</th>
+                                                <th className="border border-gray-300 px-3 py-1.5 text-center">Unique Teachers</th>
+                                                <th className="border border-gray-300 px-3 py-1.5 text-center">Total Attendances</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {quarterlyData.map(d => (
+                                                <tr key={d.label}>
+                                                    <td className="border border-gray-300 px-3 py-1.5">{d.label}</td>
+                                                    <td className="border border-gray-300 px-3 py-1.5 text-center">{d.uniqueTeachers}</td>
+                                                    <td className="border border-gray-300 px-3 py-1.5 text-center">{d.totalAttendances}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div className="w-48 flex flex-col gap-4 justify-center">
+                                    <div className="text-center p-3 border border-gray-300 bg-gray-50 rounded">
+                                        <div className="text-2xl font-bold text-wcg-dark">{scorecardMetrics.uniqueTeachersCount}</div>
+                                        <div className="text-xs font-semibold uppercase text-gray-600">Unique Teachers</div>
+                                    </div>
+                                    <div className="text-center p-3 border border-gray-300 bg-gray-50 rounded">
+                                        <div className="text-2xl font-bold text-wcg-dark">{scorecardMetrics.totalWorkshopsAttended}</div>
+                                        <div className="text-xs font-semibold uppercase text-gray-600">Workshops Attended</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* 3. Simplified Attendance List Table */}
+                            <h3 className="text-base font-bold text-wcg-dark mb-2">Detailed Attendance Record</h3>
+                            <table className="w-full text-sm border-collapse border border-gray-400">
+                                <thead>
+                                    <tr className="bg-gray-200">
+                                        <th className="border border-gray-400 px-2 py-1.5 text-left font-semibold">Name</th>
+                                        <th className="border border-gray-400 px-2 py-1.5 text-left font-semibold">Surname</th>
+                                        <th className="border border-gray-400 px-2 py-1.5 text-left font-semibold w-24">Date</th>
+                                        <th className="border border-gray-400 px-2 py-1.5 text-left font-semibold">Session Name</th>
+                                        <th className="border border-gray-400 px-2 py-1.5 text-left font-semibold w-32">Mode</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {printTableData.map((row, idx) => {
+                                        // Highlight Dovetail (yellow) and Spark (pink) based on instructions
+                                        let rowColor = "";
+                                        if (row.isDovetail) rowColor = "bg-pink-100";
+                                        else if (row.isSpark) rowColor = "bg-yellow-100";
+
+                                        return (
+                                            <tr key={idx} className={rowColor}>
+                                                <td className="border border-gray-400 px-2 py-1">{row['First Name']}</td>
+                                                <td className="border border-gray-400 px-2 py-1">{row['Surname']}</td>
+                                                <td className="border border-gray-400 px-2 py-1">{formatDate(row.parsedDate)}</td>
+                                                <td className="border border-gray-400 px-2 py-1">{row['Session Name']}</td>
+                                                <td className="border border-gray-400 px-2 py-1">{row['Delivery Mode']}</td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                            {/* Table Legend / Key */}
+                            <div className="mt-3 text-xs text-gray-700 space-y-2">
+                                <div className="flex items-center gap-2">
+                                    <span className="inline-block w-4 h-4 bg-pink-100 border border-gray-400 rounded"></span>
+                                    <span>
+                                        Highlighted sessions are <strong>Dovetail Essentials</strong> sessions.{" "}
+                                            <a href="https://jacovanniekerk-ux.github.io/wcedsessions/dovetail-essentials.html" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline hover:text-blue-800">
+                                            Find out More</a>
+                                        </span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <span className="inline-block w-4 h-4 bg-yellow-100 border border-gray-400 rounded"></span>
+                                    <span>
+                                        Highlighted sessions are sessions that award a <strong>Spark</strong>.{" "}
+                                        <a href="https://jacovanniekerk-ux.github.io/wcedsessions/pathway.html" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline hover:text-blue-800">
+                                        Find out More</a>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             );
