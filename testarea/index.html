@@ -108,7 +108,7 @@
 
     <div id="root"></div>
 
-    <script type="text/babel">
+    <script type="text/babel" data-presets="react">
         const { useState, useMemo, useEffect, useRef } = React;
 
         const Icons = {
@@ -154,7 +154,6 @@
             const startStr = padTime(timeParts[0]);
             const endStr = padTime(timeParts[1]);
 
-            // Assuming local system is +0200 or parsing as exact +02:00 helps global usage
             const startTimestamp = new Date(`${year}-${month}-${day}T${startStr}:00+02:00`).getTime();
             const endTimestamp = new Date(`${year}-${month}-${day}T${endStr}:00+02:00`).getTime();
 
@@ -395,7 +394,7 @@
             }, []);
 
             useEffect(() => {
-                const TARGET_FILE = 'Upcoming Sessions - Scheduled Sessions.csv';
+                const TARGET_FILE = 'upcoming-sessions.csv';
                 Papa.parse(TARGET_FILE, {
                     download: true,
                     header: true,
@@ -573,7 +572,7 @@
                                     <span className="text-wcg-red mt-1"><Icons.AlertTriangle /></span>
                                     <div>
                                         <h3 className="font-bold text-wcg-red text-lg">Data Source Not Found</h3>
-                                        <p className="text-gray-700 mt-1 text-sm">Please upload the <code>Upcoming Sessions.csv</code> file.</p>
+                                        <p className="text-gray-700 mt-1 text-sm">Please upload the <code>upcoming-sessions.csv</code> file.</p>
                                         <div className="mt-4 pt-4 border-t border-red-100">
                                             <label className="cursor-pointer bg-white border border-gray-300 hover:border-wcg-blue text-gray-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm flex items-center gap-2 w-fit">
                                                 <Icons.Upload />
