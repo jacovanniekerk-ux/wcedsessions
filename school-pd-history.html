@@ -8,10 +8,9 @@
     <link rel="icon" type="image/png" href="favicon.png">
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -61,8 +60,9 @@
 <body class="bg-gray-50">
     <div id="root"></div>
 
-    <script type="text/babel">
+    <script>
         const { useState, useEffect, useMemo, useRef } = React;
+        const e = React.createElement;
 
         // *** UPDATE THIS DATE WHEN YOU UPDATE THE CSV FILE ***
         const DATA_LAST_UPDATED = '2026-06-05'; // Format: YYYY-MM-DD
@@ -636,46 +636,38 @@
             };
 
             if (loading || !idMapLoaded) {
-                return (
-                    <div className="min-h-screen flex items-center justify-center">
-                        <div className="text-center">
-                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-wcg-blue mx-auto mb-4"></div>
-                            <p className="text-gray-600">Loading attendance records...</p>
-                        </div>
-                    </div>
+                return e('div', { className: 'min-h-screen flex items-center justify-center' },
+                    e('div', { className: 'text-center' },
+                        e('div', { className: 'animate-spin rounded-full h-12 w-12 border-b-2 border-wcg-blue mx-auto mb-4' }),
+                        e('p', { className: 'text-gray-600' }, 'Loading attendance records...')
+                    )
                 );
             }
 
             // Show invalid DataID error
             if (lookupError === 'invalid') {
-                return (
-                    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-                        <div className="max-w-md mx-auto px-4">
-                            <div className="bg-white rounded-lg shadow-md p-8 text-center">
-                                <div className="text-red-500 mb-4">
-                                    <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                                    </svg>
-                                </div>
-                                <h3 className="text-xl font-semibold text-gray-900 mb-2">Invalid School ID</h3>
-                                <p className="text-gray-600 mb-4">
-                                    The school ID provided is not recognised. Please check the link you were given and try again.
-                                </p>
-                                <button
-                                    onClick={() => { setLookupError(''); window.history.replaceState({}, '', window.location.pathname); }}
-                                    className="px-6 py-2 bg-wcg-blue text-white rounded-lg hover:opacity-90 transition-colors font-medium"
-                                >
-                                    Enter School ID Manually
-                                </button>
-                            </div>
-                        </div>
-                    </div>
+                return e('div', { className: 'min-h-screen flex items-center justify-center bg-gray-50' },
+                    e('div', { className: 'max-w-md mx-auto px-4' },
+                        e('div', { className: 'bg-white rounded-lg shadow-md p-8 text-center' },
+                            e('div', { className: 'text-red-500 mb-4' },
+                                e('svg', { className: 'w-16 h-16 mx-auto', fill: 'none', stroke: 'currentColor', viewBox: '0 0 24 24' },
+                                    e('path', { strokeLinecap: 'round', strokeLinejoin: 'round', strokeWidth: 2, d: 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z' })
+                                )
+                            ),
+                            e('h3', { className: 'text-xl font-semibold text-gray-900 mb-2' }, 'Invalid School ID'),
+                            e('p', { className: 'text-gray-600 mb-4' }, 'The school ID provided is not recognised. Please check the link you were given and try again.'),
+                            e('button', {
+                                onClick: () => { setLookupError(''); window.history.replaceState({}, '', window.location.pathname); },
+                                className: 'px-6 py-2 bg-wcg-blue text-white rounded-lg hover:opacity-90 transition-colors font-medium'
+                            }, 'Enter School ID Manually')
+                        )
+                    )
                 );
             }
 
             if (!schoolName) {
-                const handleDataIdSubmit = (e) => {
-                    e.preventDefault();
+                const handleDataIdSubmit = (eEvent) => {
+                    eEvent.preventDefault();
                     const trimmed = dataIdInput.trim();
                     if (!trimmed) return;
                     if (schoolIdMap && schoolIdMap.has(trimmed)) {
@@ -685,523 +677,427 @@
                     }
                 };
 
-                return (
-                    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-                        <div className="max-w-md mx-auto px-4">
-                            <div className="bg-white rounded-lg shadow-md p-8 text-center">
-                                <img src="header.png" alt="WCED Header" className="h-14 mx-auto mb-6" />
-                                <h3 className="text-xl font-semibold text-gray-900 mb-2">School PD History</h3>
-                                <p className="text-gray-600 mb-6">
-                                    Please enter your unique School ID to view your school's Professional Development report.
-                                </p>
-                                <form onSubmit={handleDataIdSubmit}>
-                                    <input
-                                        type="text"
-                                        value={dataIdInput}
-                                        onChange={(e) => setDataIdInput(e.target.value.toUpperCase())}
-                                        placeholder="e.g. 91WCTMFSHY"
-                                        maxLength={10}
-                                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg text-center text-lg font-mono tracking-widest focus:border-wcg-blue focus:ring-2 focus:ring-wcg-blue focus:outline-none mb-4"
-                                        autoFocus
-                                    />
-                                    <button
-                                        type="submit"
-                                        className="w-full px-6 py-3 bg-wcg-blue text-white rounded-lg hover:opacity-90 transition-colors font-medium text-lg"
-                                    >
-                                        View Report
-                                    </button>
-                                </form>
-                                <p className="text-xs text-gray-400 mt-4">
-                                    Your unique School ID is a 10-character code provided by WCED.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
+                return e('div', { className: 'min-h-screen flex items-center justify-center bg-gray-50' },
+                    e('div', { className: 'max-w-md mx-auto px-4' },
+                        e('div', { className: 'bg-white rounded-lg shadow-md p-8 text-center' },
+                            e('img', { src: 'header.png', alt: 'WCED Header', className: 'h-14 mx-auto mb-6' }),
+                            e('h3', { className: 'text-xl font-semibold text-gray-900 mb-2' }, 'School PD History'),
+                            e('p', { className: 'text-gray-600 mb-6' }, 'Please enter your unique School ID to view your school\'s Professional Development report.'),
+                            e('form', { onSubmit: handleDataIdSubmit },
+                                e('input', {
+                                    type: 'text',
+                                    value: dataIdInput,
+                                    onChange: (event) => setDataIdInput(event.target.value.toUpperCase()),
+                                    placeholder: 'e.g. 91WCTMFSHY',
+                                    maxLength: 10,
+                                    className: 'w-full px-4 py-3 border-2 border-gray-300 rounded-lg text-center text-lg font-mono tracking-widest focus:border-wcg-blue focus:ring-2 focus:ring-wcg-blue focus:outline-none mb-4',
+                                    autoFocus: true
+                                }),
+                                e('button', {
+                                    type: 'submit',
+                                    className: 'w-full px-6 py-3 bg-wcg-blue text-white rounded-lg hover:opacity-90 transition-colors font-medium text-lg'
+                                }, 'View Report')
+                            ),
+                            e('p', { className: 'text-xs text-gray-400 mt-4' }, 'Your unique School ID is a 10-character code provided by WCED.')
+                        )
+                    )
                 );
             }
 
             if (schoolData.length === 0) {
-                return (
-                    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-                        <div className="max-w-2xl mx-auto px-4">
-                            <div className="bg-white rounded-lg shadow-md p-8 text-center">
-                                <h3 className="text-xl font-semibold text-gray-900 mb-2">No Data Found</h3>
-                                <p className="text-gray-600">
-                                    No attendance records found for <strong>{schoolName}</strong>.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
+                return e('div', { className: 'min-h-screen flex items-center justify-center bg-gray-50' },
+                    e('div', { className: 'max-w-2xl mx-auto px-4' },
+                        e('div', { className: 'bg-white rounded-lg shadow-md p-8 text-center' },
+                            e('h3', { className: 'text-xl font-semibold text-gray-900 mb-2' }, 'No Data Found'),
+                            e('p', { className: 'text-gray-600' }, 'No attendance records found for ', e('strong', null, schoolName), '.')
+                        )
+                    )
                 );
             }
 
-            return (
-                <div className="min-h-screen bg-gray-50">
-                    <header className="bg-white shadow-sm no-print">
-                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-                            <img src="header.png" alt="WCED Header" className="h-16 mx-auto" />
-                        </div>
-                    </header>
+            return e('div', { className: 'min-h-screen bg-gray-50' },
+                e('header', { className: 'bg-white shadow-sm no-print' },
+                    e('div', { className: 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4' },
+                        e('img', { src: 'header.png', alt: 'WCED Header', className: 'h-16 mx-auto' })
+                    )
+                ),
+                e('div', { className: 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 print-full-width' },
+                    
+                    /* SCREEN HEADER */
+                    e('div', { className: 'bg-white rounded-lg shadow-md p-6 mb-6 no-print' },
+                        e('div', { className: 'flex justify-between items-center' },
+                            e('div', null,
+                                e('h1', { className: 'text-3xl font-bold text-wcg-dark mb-2' }, schoolName),
+                                e('p', { className: 'text-gray-600' }, 'Professional Development Report'),
+                                e('p', { className: 'text-sm text-gray-500 mt-2' }, `Report Generated: ${new Date().toLocaleDateString('en-GB')}`),
+                                e('p', { className: 'text-xs text-gray-600 mt-2 max-w-3xl italic' },
+                                    e('strong', null, 'Disclaimer: '),
+                                    `The information in this report is based on self-captured data which could lead to inaccurate data. We endeavour to ensure the data is as clean and accurate as we can. (Data last updated: ${new Date(DATA_LAST_UPDATED).toLocaleDateString('en-GB')})`
+                                )
+                            ),
+                            e('button', {
+                                onClick: () => window.print(),
+                                className: 'no-print px-4 py-2 bg-wcg-purple text-white rounded-lg hover:bg-purple-700 transition-colors'
+                            }, 'Print / PDF')
+                        )
+                    ),
 
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 print-full-width">
-                        
-                        {/* SCREEN HEADER */}
-                        <div className="bg-white rounded-lg shadow-md p-6 mb-6 no-print">
-                            <div className="flex justify-between items-center">
-                                <div>
-                                    <h1 className="text-3xl font-bold text-wcg-dark mb-2">{schoolName}</h1>
-                                    <p className="text-gray-600">Professional Development Report</p>
-                                    <p className="text-sm text-gray-500 mt-2">
-                                        Report Generated: {new Date().toLocaleDateString('en-GB')}
-                                    </p>
-                                    <p className="text-xs text-gray-600 mt-2 max-w-3xl italic">
-                                        <strong>Disclaimer:</strong> The information in this report is based on self-captured data which could lead to inaccurate data. We endeavour to ensure the data is as clean and accurate as we can. (Data last updated: {new Date(DATA_LAST_UPDATED).toLocaleDateString('en-GB')})
-                                    </p>
-                                </div>
-                                <button
-                                    onClick={() => window.print()}
-                                    className="no-print px-4 py-2 bg-wcg-purple text-white rounded-lg hover:bg-purple-700 transition-colors"
-                                >
-                                    Print / PDF
-                                </button>
-                            </div>
-                        </div>
+                    /* FILTERS & SCORECARDS */
+                    e('div', { className: 'grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6 no-print' },
+                        e('div', { className: 'lg:col-span-3 bg-white rounded-lg shadow-md p-6' },
+                            e('h3', { className: 'text-lg font-semibold text-wcg-dark mb-4' }, 'Filters'),
+                            
+                            /* Master Toggles */
+                            e('div', { className: 'mb-4 flex gap-4 pb-4 border-b border-gray-200' },
+                                e('label', {
+                                    className: 'flex items-center gap-2 cursor-pointer px-4 py-2 rounded-lg border-2 transition-colors hover:bg-gray-50',
+                                    style: {
+                                        borderColor: filters.showSparks ? '#FDB913' : '#e5e7eb',
+                                        backgroundColor: filters.showSparks ? 'rgba(253, 185, 19, 0.1)' : 'white'
+                                    }
+                                },
+                                    e('input', {
+                                        type: 'checkbox',
+                                        checked: filters.showSparks,
+                                        onChange: (event) => setFilters({ ...filters, showSparks: event.target.checked }),
+                                        className: 'h-4 w-4 text-wcg-yellow border-gray-300 rounded focus:ring-wcg-yellow'
+                                    }),
+                                    e('span', { className: 'text-sm font-medium text-gray-700' }, '⭐ Sparks Only')
+                                ),
+                                e('label', {
+                                    className: 'flex items-center gap-2 cursor-pointer px-4 py-2 rounded-lg border-2 transition-colors hover:bg-gray-50',
+                                    style: {
+                                        borderColor: filters.showDovetails ? '#C8126E' : '#e5e7eb',
+                                        backgroundColor: filters.showDovetails ? 'rgba(200, 18, 110, 0.1)' : 'white'
+                                    }
+                                },
+                                    e('input', {
+                                        type: 'checkbox',
+                                        checked: filters.showDovetails,
+                                        onChange: (event) => setFilters({ ...filters, showDovetails: event.target.checked }),
+                                        className: 'h-4 w-4 text-wcg-pink border-gray-300 rounded focus:ring-wcg-pink'
+                                    }),
+                                    e('span', { className: 'text-sm font-medium text-gray-700' }, '💎 Dovetail Essentials Only')
+                                )
+                            ),
 
-                        {/* FILTERS & SCORECARDS */}
-                        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6 no-print">
-                            {/* Filters Section */}
-                            <div className="lg:col-span-3 bg-white rounded-lg shadow-md p-6">
-                                <h3 className="text-lg font-semibold text-wcg-dark mb-4">Filters</h3>
+                            /* Year Selection */
+                            e('div', { className: 'mb-4' },
+                                e('label', { className: 'block text-sm font-medium text-gray-700 mb-2' }, 'Years'),
+                                e('div', { className: 'flex flex-wrap gap-3' },
+                                    availableYears.map(year => 
+                                        e('label', { key: year, className: 'flex items-center gap-2 cursor-pointer' },
+                                            e('input', {
+                                                type: 'checkbox',
+                                                checked: filters.years.includes(year),
+                                                onChange: () => toggleYear(year),
+                                                className: 'h-4 w-4 text-wcg-blue border-gray-300 rounded focus:ring-wcg-blue'
+                                            }),
+                                            e('span', { className: 'text-sm text-gray-700' }, year)
+                                        )
+                                    )
+                                )
+                            ),
 
-                                {/* Master Toggles */}
-                                <div className="mb-4 flex gap-4 pb-4 border-b border-gray-200">
-                                    <label className="flex items-center gap-2 cursor-pointer px-4 py-2 rounded-lg border-2 transition-colors hover:bg-gray-50"
-                                        style={{
-                                            borderColor: filters.showSparks ? '#FDB913' : '#e5e7eb',
-                                            backgroundColor: filters.showSparks ? 'rgba(253, 185, 19, 0.1)' : 'white'
-                                        }}>
-                                        <input
-                                            type="checkbox"
-                                            checked={filters.showSparks}
-                                            onChange={(e) => setFilters({ ...filters, showSparks: e.target.checked })}
-                                            className="h-4 w-4 text-wcg-yellow border-gray-300 rounded focus:ring-wcg-yellow"
-                                        />
-                                        <span className="text-sm font-medium text-gray-700">⭐ Sparks Only</span>
-                                    </label>
-                                    <label className="flex items-center gap-2 cursor-pointer px-4 py-2 rounded-lg border-2 transition-colors hover:bg-gray-50"
-                                        style={{
-                                            borderColor: filters.showDovetails ? '#C8126E' : '#e5e7eb',
-                                            backgroundColor: filters.showDovetails ? 'rgba(200, 18, 110, 0.1)' : 'white'
-                                        }}>
-                                        <input
-                                            type="checkbox"
-                                            checked={filters.showDovetails}
-                                            onChange={(e) => setFilters({ ...filters, showDovetails: e.target.checked })}
-                                            className="h-4 w-4 text-wcg-pink border-gray-300 rounded focus:ring-wcg-pink"
-                                        />
-                                        <span className="text-sm font-medium text-gray-700">💎 Dovetail Essentials Only</span>
-                                    </label>
-                                </div>
+                            e('div', { className: 'grid grid-cols-1 md:grid-cols-2 gap-4' },
+                                e('div', null,
+                                    e('label', { className: 'block text-sm font-medium text-gray-700 mb-2' }, 'Development Level (All Data)'),
+                                    e('select', {
+                                        value: filters.level,
+                                        onChange: (event) => setFilters({ ...filters, level: event.target.value }),
+                                        className: 'w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wcg-blue text-sm'
+                                    },
+                                        e('option', { value: '' }, 'All Levels'),
+                                        filterOptions.levels.map(level => e('option', { key: level, value: level }, level))
+                                    )
+                                ),
+                                e('div', null,
+                                    e('label', { className: 'block text-sm font-medium text-gray-700 mb-2' }, 'Delivery Mode'),
+                                    e('select', {
+                                        value: filters.mode,
+                                        onChange: (event) => setFilters({ ...filters, mode: event.target.value }),
+                                        className: 'w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wcg-blue text-sm'
+                                    },
+                                        e('option', { value: '' }, 'All Modes'),
+                                        filterOptions.modes.map(mode => e('option', { key: mode, value: mode }, mode))
+                                    )
+                                )
+                            )
+                        ),
 
-                                {/* Year Selection */}
-                                <div className="mb-4">
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">Years</label>
-                                    <div className="flex flex-wrap gap-3">
-                                        {availableYears.map(year => (
-                                            <label key={year} className="flex items-center gap-2 cursor-pointer">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={filters.years.includes(year)}
-                                                    onChange={() => toggleYear(year)}
-                                                    className="h-4 w-4 text-wcg-blue border-gray-300 rounded focus:ring-wcg-blue"
-                                                />
-                                                <span className="text-sm text-gray-700">{year}</span>
-                                            </label>
-                                        ))}
-                                    </div>
-                                </div>
+                        /* Scorecards Section */
+                        e('div', { className: 'bg-white rounded-lg shadow-md p-6 flex flex-col justify-center gap-4' },
+                            e('div', { className: 'text-center p-4 bg-gray-50 rounded-lg border border-gray-200 shadow-sm' },
+                                e('div', { className: 'text-4xl font-bold text-wcg-blue mb-1' }, scorecardMetrics.uniqueTeachersCount),
+                                e('div', { className: 'text-sm text-gray-700 font-medium' }, 'Unique Teachers')
+                            ),
+                            e('div', { className: 'text-center p-4 bg-gray-50 rounded-lg border border-gray-200 shadow-sm' },
+                                e('div', { className: 'text-4xl font-bold text-wcg-green mb-1' }, scorecardMetrics.totalWorkshopsAttended),
+                                e('div', { className: 'text-sm text-gray-700 font-medium' }, 'Workshops Attended')
+                            )
+                        )
+                    ),
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    {/* Development Level Filter */}
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                                            Development Level (All Data)
-                                        </label>
-                                        <select
-                                            value={filters.level}
-                                            onChange={(e) => setFilters({ ...filters, level: e.target.value })}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wcg-blue text-sm"
-                                        >
-                                            <option value="">All Levels</option>
-                                            {filterOptions.levels.map(level => (
-                                                <option key={level} value={level}>{level}</option>
-                                            ))}
-                                        </select>
-                                    </div>
+                    /* Charts */
+                    e('div', { className: 'grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6 no-print' },
+                        e('div', { className: 'bg-white rounded-lg shadow-md p-6' },
+                            e('h3', { className: 'text-lg font-semibold text-wcg-dark mb-4' }, 'Quarterly Trends'),
+                            e('div', { className: 'h-64 relative' }, e('canvas', { ref: quarterChartRef }))
+                        ),
+                        e('div', { className: 'bg-white rounded-lg shadow-md p-6' },
+                            e('h3', { className: 'text-lg font-semibold text-wcg-dark mb-4' }, 'Development Level Distribution'),
+                            e('div', { className: 'h-64 relative' }, e('canvas', { ref: pieChartRef }))
+                        )
+                    ),
 
-                                    {/* Delivery Mode Filter */}
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                                            Delivery Mode
-                                        </label>
-                                        <select
-                                            value={filters.mode}
-                                            onChange={(e) => setFilters({ ...filters, mode: e.target.value })}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wcg-blue text-sm"
-                                        >
-                                            <option value="">All Modes</option>
-                                            {filterOptions.modes.map(mode => (
-                                                <option key={mode} value={mode}>{mode}</option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
+                    /* View Toggle */
+                    e('div', { className: 'bg-white rounded-lg shadow-md p-4 mb-6 no-print' },
+                        e('div', { className: 'flex items-center justify-between' },
+                            e('div', { className: 'flex gap-2' },
+                                e('button', {
+                                    onClick: () => setViewMode('teachers'),
+                                    className: `px-6 py-2 rounded-lg font-medium transition-colors ${viewMode === 'teachers' ? 'bg-wcg-blue text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`
+                                }, `👥 Teachers (${teacherData.length})`),
+                                e('button', {
+                                    onClick: () => setViewMode('sessions'),
+                                    className: `px-6 py-2 rounded-lg font-medium transition-colors ${viewMode === 'sessions' ? 'bg-wcg-blue text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`
+                                }, `📚 Sessions (${sessionData.length})`)
+                            ),
 
-                            {/* Scorecards Section */}
-                            <div className="bg-white rounded-lg shadow-md p-6 flex flex-col justify-center gap-4">
-                                <div className="text-center p-4 bg-gray-50 rounded-lg border border-gray-200 shadow-sm">
-                                    <div className="text-4xl font-bold text-wcg-blue mb-1">{scorecardMetrics.uniqueTeachersCount}</div>
-                                    <div className="text-sm text-gray-700 font-medium">Unique Teachers</div>
-                                </div>
-                                <div className="text-center p-4 bg-gray-50 rounded-lg border border-gray-200 shadow-sm">
-                                    <div className="text-4xl font-bold text-wcg-green mb-1">{scorecardMetrics.totalWorkshopsAttended}</div>
-                                    <div className="text-sm text-gray-700 font-medium">Workshops Attended</div>
-                                </div>
-                            </div>
-                        </div>
+                            viewMode === 'teachers' && e('div', { className: 'no-print' },
+                                e('label', { className: 'text-sm font-medium text-gray-700 mr-2' }, 'Sort by:'),
+                                e('select', {
+                                    value: teacherSort,
+                                    onChange: (event) => setTeacherSort(event.target.value),
+                                    className: 'px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wcg-blue text-sm'
+                                },
+                                    e('option', { value: 'name' }, 'Name (A-Z)'),
+                                    e('option', { value: 'attendance' }, 'Attendance (High-Low)'),
+                                    e('option', { value: 'sparks' }, 'Sparks (High-Low)'),
+                                    e('option', { value: 'dovetails' }, 'Dovetail (High-Low)')
+                                )
+                            ),
 
-                        {/* Charts */}
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6 no-print">
-                            {/* Quarterly Trends */}
-                            <div className="bg-white rounded-lg shadow-md p-6">
-                                <h3 className="text-lg font-semibold text-wcg-dark mb-4">Quarterly Trends</h3>
-                                <div className="h-64 relative">
-                                    <canvas ref={quarterChartRef}></canvas>
-                                </div>
-                            </div>
+                            viewMode === 'sessions' && e('div', { className: 'no-print' },
+                                e('label', { className: 'text-sm font-medium text-gray-700 mr-2' }, 'Session Level:'),
+                                e('select', {
+                                    value: filters.sessionLevel,
+                                    onChange: (event) => setFilters({ ...filters, sessionLevel: event.target.value }),
+                                    className: 'px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wcg-blue text-sm'
+                                },
+                                    e('option', { value: '' }, 'All Levels'),
+                                    filterOptions.levels.map(level => e('option', { key: level, value: level }, level))
+                                )
+                            )
+                        )
+                    ),
 
-                            {/* Development Level Distribution */}
-                            <div className="bg-white rounded-lg shadow-md p-6">
-                                <h3 className="text-lg font-semibold text-wcg-dark mb-4">Development Level Distribution</h3>
-                                <div className="h-64 relative">
-                                    <canvas ref={pieChartRef}></canvas>
-                                </div>
-                            </div>
-                        </div>
+                    /* Teacher Attendance View */
+                    viewMode === 'teachers' && e('div', { className: 'bg-white rounded-lg shadow-md p-6 mb-6 no-print' },
+                        e('h3', { className: 'text-lg font-semibold text-wcg-dark mb-4' }, 'Teacher Attendance'),
+                        e('div', { className: 'space-y-2' },
+                            teacherData.map(teacher => 
+                                e('div', { key: teacher.name, className: 'border border-gray-200 rounded-lg' },
+                                    e('div', {
+                                        onClick: () => toggleTeacher(teacher.name),
+                                        className: 'flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50'
+                                    },
+                                        e('div', { className: 'flex items-center gap-3' },
+                                            e('span', { className: 'text-wcg-blue' }, expandedTeachers.has(teacher.name) ? '▼' : '▶'),
+                                            e('div', null,
+                                                e('div', { className: 'font-semibold text-wcg-dark' }, teacher.name),
+                                                e('div', { className: 'text-sm text-gray-600' },
+                                                    `${teacher.totalSessions} sessions`,
+                                                    teacher.sparkCount > 0 && e('span', { className: 'ml-3 text-wcg-yellow' }, `⭐ ${teacher.sparkCount} Sparks`),
+                                                    teacher.dovetailCount > 0 && e('span', { className: 'ml-3 text-wcg-pink' }, `💎 ${teacher.dovetailCount} Dovetail`)
+                                                )
+                                            )
+                                        ),
+                                        e('div', { className: 'flex gap-2' },
+                                            e('span', { className: `px-2 py-1 rounded text-xs ${teacher.levelCounts['Laying the Foundation'] > 0 ? 'bg-wcg-green text-white' : 'bg-gray-200 text-gray-500'}` }, teacher.levelCounts['Laying the Foundation']),
+                                            e('span', { className: `px-2 py-1 rounded text-xs ${teacher.levelCounts['I can do it'] > 0 ? 'bg-wcg-yellow text-black' : 'bg-gray-200 text-gray-500'}` }, teacher.levelCounts['I can do it']),
+                                            e('span', { className: `px-2 py-1 rounded text-xs ${teacher.levelCounts['I can do it better'] > 0 ? 'bg-wcg-red text-white' : 'bg-gray-200 text-gray-500'}` }, teacher.levelCounts['I can do it better']),
+                                            e('span', { className: `px-2 py-1 rounded text-xs ${teacher.levelCounts['The Summit'] > 0 ? 'bg-wcg-blue text-white' : 'bg-gray-200 text-gray-500'}` }, teacher.levelCounts['The Summit'])
+                                        )
+                                    ),
+                                    expandedTeachers.has(teacher.name) && e('div', { className: 'px-4 pb-4 pt-2 bg-gray-50 border-t' },
+                                        e('div', { className: 'space-y-2' },
+                                            teacher.sessions
+                                                .sort((a, b) => b.parsedDate - a.parsedDate)
+                                                .map((session, idx) => 
+                                                    e('div', {
+                                                        key: idx,
+                                                        className: `flex justify-between items-center text-sm py-2 px-3 rounded border-b last:border-0 ${session.isSpark ? 'border-l-4 border-l-wcg-yellow bg-wcg-yellow bg-opacity-5' : session.isDovetail ? 'border-l-4 border-l-wcg-pink bg-wcg-pink bg-opacity-5' : 'border-gray-200'}`
+                                                    },
+                                                        e('div', { className: 'flex-1' },
+                                                            e('div', { className: 'font-medium text-gray-900' },
+                                                                session.isSpark && e('span', { className: 'mr-2' }, '⭐'),
+                                                                session.isDovetail && e('span', { className: 'mr-2' }, '💎'),
+                                                                session['Session Name']
+                                                            ),
+                                                            e('div', { className: 'text-gray-500 text-xs mt-1' }, `${formatDate(session.parsedDate)} • ${session['Delivery Mode']}`)
+                                                        ),
+                                                        e('span', { className: `px-2 py-1 rounded text-xs font-semibold ${getLevelColor(session['Development Level'])}` }, session['Development Level'])
+                                                    )
+                                                )
+                                        )
+                                    )
+                                )
+                            )
+                        )
+                    ),
 
-                        {/* View Toggle */}
-                        <div className="bg-white rounded-lg shadow-md p-4 mb-6 no-print">
-                            <div className="flex items-center justify-between">
-                                <div className="flex gap-2">
-                                    <button
-                                        onClick={() => setViewMode('teachers')}
-                                        className={`px-6 py-2 rounded-lg font-medium transition-colors ${viewMode === 'teachers'
-                                            ? 'bg-wcg-blue text-white'
-                                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                            }`}
-                                    >
-                                        👥 Teachers ({teacherData.length})
-                                    </button>
-                                    <button
-                                        onClick={() => setViewMode('sessions')}
-                                        className={`px-6 py-2 rounded-lg font-medium transition-colors ${viewMode === 'sessions'
-                                            ? 'bg-wcg-blue text-white'
-                                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                            }`}
-                                    >
-                                        📚 Sessions ({sessionData.length})
-                                    </button>
-                                </div>
+                    /* Session Attendance View */
+                    viewMode === 'sessions' && e('div', { className: 'bg-white rounded-lg shadow-md p-6 no-print' },
+                        e('h3', { className: 'text-lg font-semibold text-wcg-dark mb-4' }, 'Session Attendance'),
+                        e('div', { className: 'space-y-2' },
+                            sessionData.map(session => 
+                                e('div', {
+                                    key: session.name,
+                                    className: `border rounded-lg ${session.isSpark ? 'border-wcg-yellow border-2' : session.isDovetail ? 'border-wcg-pink border-2' : 'border-gray-200'}`
+                                },
+                                    e('div', {
+                                        onClick: () => toggleSession(session.name),
+                                        className: 'flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50'
+                                    },
+                                        e('div', { className: 'flex items-center gap-3 flex-1' },
+                                            e('span', { className: 'text-wcg-blue' }, expandedSessions.has(session.name) ? '▼' : '▶'),
+                                            e('div', { className: 'flex-1' },
+                                                e('div', { className: 'font-semibold text-wcg-dark' },
+                                                    session.isSpark && e('span', { className: 'mr-2' }, '⭐'),
+                                                    session.isDovetail && e('span', { className: 'mr-2' }, '💎'),
+                                                    session.name
+                                                ),
+                                                e('div', { className: 'text-sm text-gray-600' }, `${session.totalAttendances} attendances • ${session.uniqueTeachers} unique teachers`)
+                                            )
+                                        ),
+                                        e('div', { className: 'flex gap-2 items-center' },
+                                            e('span', { className: `px-2 py-1 rounded text-xs font-semibold ${getLevelColor(session.level)}` }, session.level),
+                                            e('span', { className: 'text-xs text-gray-500' }, `${getModeIcon(session.mode)} ${session.mode}`)
+                                        )
+                                    ),
+                                    expandedSessions.has(session.name) && e('div', { className: 'px-4 pb-4 pt-2 bg-gray-50 border-t' },
+                                        e('div', { className: 'space-y-2' },
+                                            e('div', { className: 'text-sm font-medium text-gray-700 mb-2' }, 'Attendance Records:'),
+                                            session.attendanceList.map((teacherRecord, idx) => 
+                                                e('div', { key: idx, className: 'bg-white rounded border border-gray-200 overflow-hidden' },
+                                                    e('div', { className: 'px-3 py-2 bg-gray-100 font-medium text-gray-900 text-sm' }, teacherRecord.teacher),
+                                                    teacherRecord.attendances.map((attendance, attIdx) => 
+                                                        e('div', { key: attIdx, className: 'flex justify-between items-center text-sm py-2 px-3 border-t border-gray-100' },
+                                                            e('div', { className: 'flex gap-4 items-center text-xs text-gray-600' },
+                                                                e('span', null, `📅 ${formatDate(attendance.date)}`),
+                                                                e('span', null, `📍 ${attendance.hostingDistrict || 'N/A'}`),
+                                                                e('span', null, `${getModeIcon(attendance.mode)} ${attendance.mode || 'N/A'}`)
+                                                            )
+                                                        )
+                                                    )
+                                                )
+                                            )
+                                        )
+                                    )
+                                )
+                            )
+                        )
+                    ),
 
-                                {/* Sort dropdown for teachers view */}
-                                {viewMode === 'teachers' && (
-                                    <div className="no-print">
-                                        <label className="text-sm font-medium text-gray-700 mr-2">Sort by:</label>
-                                        <select
-                                            value={teacherSort}
-                                            onChange={(e) => setTeacherSort(e.target.value)}
-                                            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wcg-blue text-sm"
-                                        >
-                                            <option value="name">Name (A-Z)</option>
-                                            <option value="attendance">Attendance (High-Low)</option>
-                                            <option value="sparks">Sparks (High-Low)</option>
-                                            <option value="dovetails">Dovetail (High-Low)</option>
-                                        </select>
-                                    </div>
-                                )}
+                    /* PRINT ONLY VIEW */
+                    e('div', { className: 'hidden print:block w-full' },
+                        e('div', { className: 'text-center mb-8' },
+                            e('img', { src: 'header.png', alt: 'WCED Header', className: 'h-16 mx-auto mb-4' }),
+                            e('h1', { className: 'text-2xl font-bold text-wcg-dark mb-1' }, schoolName),
+                            e('p', { className: 'text-sm text-gray-600 mb-2' }, `Report Generated: ${new Date().toLocaleDateString('en-GB')}`),
+                            e('p', { className: 'text-xs text-gray-600 max-w-3xl mx-auto italic' },
+                                'Disclaimer: The information in this report is based on self-captured data which could lead to inaccurate data. We endeavour to ensure the data is as clean and accurate as we can. (Data last updated: ',
+                                new Date(DATA_LAST_UPDATED).toLocaleDateString('en-GB'),
+                                ')'
+                            )
+                        ),
 
-                                {/* Session level filter for sessions view */}
-                                {viewMode === 'sessions' && (
-                                    <div className="no-print">
-                                        <label className="text-sm font-medium text-gray-700 mr-2">Session Level:</label>
-                                        <select
-                                            value={filters.sessionLevel}
-                                            onChange={(e) => setFilters({ ...filters, sessionLevel: e.target.value })}
-                                            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wcg-blue text-sm"
-                                        >
-                                            <option value="">All Levels</option>
-                                            {filterOptions.levels.map(level => (
-                                                <option key={level} value={level}>{level}</option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
+                        e('div', { className: 'flex gap-6 mb-8 w-full' },
+                            e('div', { className: 'flex-1' },
+                                e('h3', { className: 'text-base font-bold text-wcg-dark mb-2' }, 'Quarterly Trends'),
+                                e('table', { className: 'w-full text-sm border-collapse border border-gray-300' },
+                                    e('thead', null,
+                                        e('tr', { className: 'bg-gray-100' },
+                                            e('th', { className: 'border border-gray-300 px-3 py-1.5 text-left' }, 'Quarter'),
+                                            e('th', { className: 'border border-gray-300 px-3 py-1.5 text-center' }, 'Unique Teachers'),
+                                            e('th', { className: 'border border-gray-300 px-3 py-1.5 text-center' }, 'Total Attendances')
+                                        )
+                                    ),
+                                    e('tbody', null,
+                                        quarterlyData.map(d => 
+                                            e('tr', { key: d.label },
+                                                e('td', { className: 'border border-gray-300 px-3 py-1.5' }, d.label),
+                                                e('td', { className: 'border border-gray-300 px-3 py-1.5 text-center' }, d.uniqueTeachers),
+                                                e('td', { className: 'border border-gray-300 px-3 py-1.5 text-center' }, d.totalAttendances)
+                                            )
+                                        )
+                                    )
+                                )
+                            ),
+                            e('div', { className: 'w-48 flex flex-col gap-4 justify-center' },
+                                e('div', { className: 'text-center p-3 border border-gray-300 bg-gray-50 rounded' },
+                                    e('div', { className: 'text-2xl font-bold text-wcg-dark' }, scorecardMetrics.uniqueTeachersCount),
+                                    e('div', { className: 'text-xs font-semibold uppercase text-gray-600' }, 'Unique Teachers')
+                                ),
+                                e('div', { className: 'text-center p-3 border border-gray-300 bg-gray-50 rounded' },
+                                    e('div', { className: 'text-2xl font-bold text-wcg-dark' }, scorecardMetrics.totalWorkshopsAttended),
+                                    e('div', { className: 'text-xs font-semibold uppercase text-gray-600' }, 'Workshops Attended')
+                                )
+                            )
+                        ),
 
-                        {/* Teacher Attendance */}
-                        {viewMode === 'teachers' && (
-                            <div className="bg-white rounded-lg shadow-md p-6 mb-6 no-print">
-                                <h3 className="text-lg font-semibold text-wcg-dark mb-4">Teacher Attendance</h3>
-                                <div className="space-y-2">
-                                    {teacherData.map(teacher => (
-                                        <div key={teacher.name} className="border border-gray-200 rounded-lg">
-                                            <div
-                                                onClick={() => toggleTeacher(teacher.name)}
-                                                className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50"
-                                            >
-                                                <div className="flex items-center gap-3">
-                                                    <span className="text-wcg-blue">
-                                                        {expandedTeachers.has(teacher.name) ? '▼' : '▶'}
-                                                    </span>
-                                                    <div>
-                                                        <div className="font-semibold text-wcg-dark">{teacher.name}</div>
-                                                        <div className="text-sm text-gray-600">
-                                                            {teacher.totalSessions} sessions
-                                                            {teacher.sparkCount > 0 && <span className="ml-3 text-wcg-yellow">⭐ {teacher.sparkCount} Sparks</span>}
-                                                            {teacher.dovetailCount > 0 && <span className="ml-3 text-wcg-pink">💎 {teacher.dovetailCount} Dovetail</span>}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <div className="flex gap-2">
-                                                    <span className={`px-2 py-1 rounded text-xs ${teacher.levelCounts['Laying the Foundation'] > 0 ? 'bg-wcg-green text-white' : 'bg-gray-200 text-gray-500'}`}>
-                                                        {teacher.levelCounts['Laying the Foundation']}
-                                                    </span>
-                                                    <span className={`px-2 py-1 rounded text-xs ${teacher.levelCounts['I can do it'] > 0 ? 'bg-wcg-yellow text-black' : 'bg-gray-200 text-gray-500'}`}>
-                                                        {teacher.levelCounts['I can do it']}
-                                                    </span>
-                                                    <span className={`px-2 py-1 rounded text-xs ${teacher.levelCounts['I can do it better'] > 0 ? 'bg-wcg-red text-white' : 'bg-gray-200 text-gray-500'}`}>
-                                                        {teacher.levelCounts['I can do it better']}
-                                                    </span>
-                                                    <span className={`px-2 py-1 rounded text-xs ${teacher.levelCounts['The Summit'] > 0 ? 'bg-wcg-blue text-white' : 'bg-gray-200 text-gray-500'}`}>
-                                                        {teacher.levelCounts['The Summit']}
-                                                    </span>
-                                                </div>
-                                            </div>
+                        e('h3', { className: 'text-base font-bold text-wcg-dark mb-2' }, 'Detailed Attendance Record'),
+                        e('table', { className: 'w-full text-sm border-collapse border border-gray-400' },
+                            e('thead', null,
+                                e('tr', { className: 'bg-gray-200' },
+                                    e('th', { className: 'border border-gray-400 px-2 py-1.5 text-left font-semibold' }, 'Name'),
+                                    e('th', { className: 'border border-gray-400 px-2 py-1.5 text-left font-semibold' }, 'Surname'),
+                                    e('th', { className: 'border border-gray-400 px-2 py-1.5 text-left font-semibold w-24' }, 'Date'),
+                                    e('th', { className: 'border border-gray-400 px-2 py-1.5 text-left font-semibold' }, 'Session Name'),
+                                    e('th', { className: 'border border-gray-400 px-2 py-1.5 text-left font-semibold w-32' }, 'Mode')
+                                )
+                            ),
+                            e('tbody', null,
+                                printTableData.map((row, idx) => {
+                                    let rowColor = "";
+                                    if (row.isDovetail) rowColor = "bg-pink-100";
+                                    else if (row.isSpark) rowColor = "bg-yellow-100";
 
-                                            {expandedTeachers.has(teacher.name) && (
-                                                <div className="px-4 pb-4 pt-2 bg-gray-50 border-t">
-                                                    <div className="space-y-2">
-                                                        {teacher.sessions
-                                                            .sort((a, b) => b.parsedDate - a.parsedDate)
-                                                            .map((session, idx) => (
-                                                                <div
-                                                                    key={idx}
-                                                                    className={`flex justify-between items-center text-sm py-2 px-3 rounded border-b last:border-0 ${session.isSpark ? 'border-l-4 border-l-wcg-yellow bg-wcg-yellow bg-opacity-5' :
-                                                                        session.isDovetail ? 'border-l-4 border-l-wcg-pink bg-wcg-pink bg-opacity-5' :
-                                                                            'border-gray-200'
-                                                                        }`}
-                                                                >
-                                                                    <div className="flex-1">
-                                                                        <div className="font-medium text-gray-900">
-                                                                            {session.isSpark && <span className="mr-2">⭐</span>}
-                                                                            {session.isDovetail && <span className="mr-2">💎</span>}
-                                                                            {session['Session Name']}
-                                                                        </div>
-                                                                        <div className="text-gray-500 text-xs mt-1">
-                                                                            {formatDate(session.parsedDate)} • {session['Delivery Mode']}
-                                                                        </div>
-                                                                    </div>
-                                                                    <span className={`px-2 py-1 rounded text-xs font-semibold ${getLevelColor(session['Development Level'])}`}>
-                                                                        {session['Development Level']}
-                                                                    </span>
-                                                                </div>
-                                                            ))}
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Session Attendance */}
-                        {viewMode === 'sessions' && (
-                            <div className="bg-white rounded-lg shadow-md p-6 no-print">
-                                <h3 className="text-lg font-semibold text-wcg-dark mb-4">Session Attendance</h3>
-                                <div className="space-y-2">
-                                    {sessionData.map(session => (
-                                        <div
-                                            key={session.name}
-                                            className={`border rounded-lg ${session.isSpark ? 'border-wcg-yellow border-2' :
-                                                session.isDovetail ? 'border-wcg-pink border-2' :
-                                                    'border-gray-200'
-                                                }`}
-                                        >
-                                            <div
-                                                onClick={() => toggleSession(session.name)}
-                                                className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50"
-                                            >
-                                                <div className="flex items-center gap-3 flex-1">
-                                                    <span className="text-wcg-blue">
-                                                        {expandedSessions.has(session.name) ? '▼' : '▶'}
-                                                    </span>
-                                                    <div className="flex-1">
-                                                        <div className="font-semibold text-wcg-dark">
-                                                            {session.isSpark && <span className="mr-2">⭐</span>}
-                                                            {session.isDovetail && <span className="mr-2">💎</span>}
-                                                            {session.name}
-                                                        </div>
-                                                        <div className="text-sm text-gray-600">
-                                                            {session.totalAttendances} attendances • {session.uniqueTeachers} unique teachers
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <div className="flex gap-2 items-center">
-                                                    <span className={`px-2 py-1 rounded text-xs font-semibold ${getLevelColor(session.level)}`}>
-                                                        {session.level}
-                                                    </span>
-                                                    <span className="text-xs text-gray-500">{getModeIcon(session.mode)} {session.mode}</span>
-                                                </div>
-                                            </div>
-
-                                            {expandedSessions.has(session.name) && (
-                                                <div className="px-4 pb-4 pt-2 bg-gray-50 border-t">
-                                                    <div className="space-y-2">
-                                                        <div className="text-sm font-medium text-gray-700 mb-2">Attendance Records:</div>
-                                                        {session.attendanceList.map((teacherRecord, idx) => (
-                                                            <div key={idx} className="bg-white rounded border border-gray-200 overflow-hidden">
-                                                                <div className="px-3 py-2 bg-gray-100 font-medium text-gray-900 text-sm">
-                                                                    {teacherRecord.teacher}
-                                                                </div>
-                                                                {teacherRecord.attendances.map((attendance, attIdx) => (
-                                                                    <div key={attIdx} className="flex justify-between items-center text-sm py-2 px-3 border-t border-gray-100">
-                                                                        <div className="flex gap-4 items-center text-xs text-gray-600">
-                                                                            <span>📅 {formatDate(attendance.date)}</span>
-                                                                            <span>📍 {attendance.hostingDistrict || 'N/A'}</span>
-                                                                            <span>{getModeIcon(attendance.mode)} {attendance.mode || 'N/A'}</span>
-                                                                        </div>
-                                                                    </div>
-                                                                ))}
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-
-                        {/* ------------------------------------------------------------- */}
-                        {/* PRINT ONLY VIEW */}
-                        {/* ------------------------------------------------------------- */}
-                        <div className="hidden print:block w-full">
-                            {/* 1. Header & Disclaimer */}
-                            <div className="text-center mb-8">
-                                <img src="header.png" alt="WCED Header" className="h-16 mx-auto mb-4" />
-                                <h1 className="text-2xl font-bold text-wcg-dark mb-1">{schoolName}</h1>
-                                <p className="text-sm text-gray-600 mb-2">Report Generated: {new Date().toLocaleDateString('en-GB')}</p>
-                                <p className="text-xs text-gray-600 max-w-3xl mx-auto italic">
-                                    Disclaimer: The information in this report is based on self-captured data which could lead to inaccurate data. We endeavour to ensure the data is as clean and accurate as we can. (Data last updated: {new Date(DATA_LAST_UPDATED).toLocaleDateString('en-GB')})
-                                </p>
-                            </div>
-
-                            {/* 2. Quarterly Trends Table & Scorecards */}
-                            <div className="flex gap-6 mb-8 w-full">
-                                <div className="flex-1">
-                                    <h3 className="text-base font-bold text-wcg-dark mb-2">Quarterly Trends</h3>
-                                    <table className="w-full text-sm border-collapse border border-gray-300">
-                                        <thead>
-                                            <tr className="bg-gray-100">
-                                                <th className="border border-gray-300 px-3 py-1.5 text-left">Quarter</th>
-                                                <th className="border border-gray-300 px-3 py-1.5 text-center">Unique Teachers</th>
-                                                <th className="border border-gray-300 px-3 py-1.5 text-center">Total Attendances</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {quarterlyData.map(d => (
-                                                <tr key={d.label}>
-                                                    <td className="border border-gray-300 px-3 py-1.5">{d.label}</td>
-                                                    <td className="border border-gray-300 px-3 py-1.5 text-center">{d.uniqueTeachers}</td>
-                                                    <td className="border border-gray-300 px-3 py-1.5 text-center">{d.totalAttendances}</td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                                <div className="w-48 flex flex-col gap-4 justify-center">
-                                    <div className="text-center p-3 border border-gray-300 bg-gray-50 rounded">
-                                        <div className="text-2xl font-bold text-wcg-dark">{scorecardMetrics.uniqueTeachersCount}</div>
-                                        <div className="text-xs font-semibold uppercase text-gray-600">Unique Teachers</div>
-                                    </div>
-                                    <div className="text-center p-3 border border-gray-300 bg-gray-50 rounded">
-                                        <div className="text-2xl font-bold text-wcg-dark">{scorecardMetrics.totalWorkshopsAttended}</div>
-                                        <div className="text-xs font-semibold uppercase text-gray-600">Workshops Attended</div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* 3. Simplified Attendance List Table */}
-                            <h3 className="text-base font-bold text-wcg-dark mb-2">Detailed Attendance Record</h3>
-                            <table className="w-full text-sm border-collapse border border-gray-400">
-                                <thead>
-                                    <tr className="bg-gray-200">
-                                        <th className="border border-gray-400 px-2 py-1.5 text-left font-semibold">Name</th>
-                                        <th className="border border-gray-400 px-2 py-1.5 text-left font-semibold">Surname</th>
-                                        <th className="border border-gray-400 px-2 py-1.5 text-left font-semibold w-24">Date</th>
-                                        <th className="border border-gray-400 px-2 py-1.5 text-left font-semibold">Session Name</th>
-                                        <th className="border border-gray-400 px-2 py-1.5 text-left font-semibold w-32">Mode</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {printTableData.map((row, idx) => {
-                                        // Highlight Dovetail (yellow) and Spark (pink) based on instructions
-                                        let rowColor = "";
-                                        if (row.isDovetail) rowColor = "bg-pink-100";
-                                        else if (row.isSpark) rowColor = "bg-yellow-100";
-
-                                        return (
-                                            <tr key={idx} className={rowColor}>
-                                                <td className="border border-gray-400 px-2 py-1">{row['First Name']}</td>
-                                                <td className="border border-gray-400 px-2 py-1">{row['Surname']}</td>
-                                                <td className="border border-gray-400 px-2 py-1">{formatDate(row.parsedDate)}</td>
-                                                <td className="border border-gray-400 px-2 py-1">{row['Session Name']}</td>
-                                                <td className="border border-gray-400 px-2 py-1">{row['Delivery Mode']}</td>
-                                            </tr>
-                                        );
-                                    })}
-                                </tbody>
-                            </table>
-                            {/* Table Legend / Key */}
-                            <div className="mt-3 text-xs text-gray-700 space-y-2">
-                                <div className="flex items-center gap-2">
-                                    <span className="inline-block w-4 h-4 bg-pink-100 border border-gray-400 rounded"></span>
-                                    <span>
-                                        Highlighted sessions are <strong>Dovetail Essentials</strong> sessions.{" "}
-                                            <a href="https://jacovanniekerk-ux.github.io/wcedsessions/dovetail-essentials.html" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline hover:text-blue-800">
-                                            Find out More</a>
-                                        </span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <span className="inline-block w-4 h-4 bg-yellow-100 border border-gray-400 rounded"></span>
-                                    <span>
-                                        Highlighted sessions are sessions that award a <strong>Spark</strong>.{" "}
-                                        <a href="https://jacovanniekerk-ux.github.io/wcedsessions/pathway.html" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline hover:text-blue-800">
-                                        Find out More</a>
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                                    return e('tr', { key: idx, className: rowColor },
+                                        e('td', { className: 'border border-gray-400 px-2 py-1' }, row['First Name']),
+                                        e('td', { className: 'border border-gray-400 px-2 py-1' }, row['Surname']),
+                                        e('td', { className: 'border border-gray-400 px-2 py-1' }, formatDate(row.parsedDate)),
+                                        e('td', { className: 'border border-gray-400 px-2 py-1' }, row['Session Name']),
+                                        e('td', { className: 'border border-gray-400 px-2 py-1' }, row['Delivery Mode'])
+                                    );
+                                })
+                            )
+                        ),
+                        e('div', { className: 'mt-3 text-xs text-gray-700 space-y-2' },
+                            e('div', { className: 'flex items-center gap-2' },
+                                e('span', { className: 'inline-block w-4 h-4 bg-pink-100 border border-gray-400 rounded' }),
+                                e('span', null,
+                                    'Highlighted sessions are ', e('strong', null, 'Dovetail Essentials'), ' sessions. ',
+                                    e('a', { href: 'https://jacovanniekerk-ux.github.io/wcedsessions/dovetail-essentials.html', target: '_blank', rel: 'noopener noreferrer', className: 'text-blue-600 underline hover:text-blue-800' }, 'Find out More')
+                                )
+                            ),
+                            e('div', { className: 'flex items-center gap-2' },
+                                e('span', { className: 'inline-block w-4 h-4 bg-yellow-100 border border-gray-400 rounded' }),
+                                e('span', null,
+                                    'Highlighted sessions are sessions that award a ', e('strong', null, 'Spark'), '. ',
+                                    e('a', { href: 'https://jacovanniekerk-ux.github.io/wcedsessions/pathway.html', target: '_blank', rel: 'noopener noreferrer', className: 'text-blue-600 underline hover:text-blue-800' }, 'Find out More')
+                                )
+                            )
+                        )
+                    )
+                )
             );
         }
 
-        ReactDOM.render(<App />, document.getElementById('root'));
+        const container = document.getElementById('root');
+        const root = ReactDOM.createRoot(container);
+        root.render(e(App));
     </script>
 </body>
 
