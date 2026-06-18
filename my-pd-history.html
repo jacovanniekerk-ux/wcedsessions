@@ -8,7 +8,6 @@
     <link rel="icon" type="image/png" href="favicon.png">
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -72,8 +71,9 @@
 <body class="bg-gray-50">
     <div id="root"></div>
 
-    <script type="text/babel">
+    <script>
         const { useState, useEffect, useMemo } = React;
+        const e = React.createElement;
 
         // Sparks sessions
         const SPARK_SESSIONS = [
@@ -139,7 +139,7 @@
             return DOVETAIL_SESSIONS.includes(sessionName?.trim());
         }
 
-        // === DATA LAST UPDATED (manually update this when refreshing data) ===
+        // === DATA LAST UPDATED ===
         const DATA_LAST_UPDATED = '05 June 2026';
 
         // Checklist Modal Component
@@ -156,71 +156,60 @@
 
             const sessionsList = type === 'spark' ? SPARK_SESSIONS : DOVETAIL_SESSIONS;
 
-            return (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop no-print" onClick={onClose}>
-                    <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] overflow-hidden" onClick={e => e.stopPropagation()}>
-                        <div className="p-6 border-b border-gray-200">
-                            <div className="flex justify-between items-center">
-                                <h3 className="text-2xl font-bold text-wcg-dark">{title}</h3>
-                                <button
-                                    onClick={onClose}
-                                    className="text-gray-400 hover:text-gray-600 text-2xl leading-none"
-                                >
-                                    ×
-                                </button>
-                            </div>
-                        </div>
-                        <div className="p-6 overflow-y-auto max-h-[60vh]">
-                            <div className="space-y-3">
-                                {sessionsList.map((session, idx) => {
-                                    const isCompleted = completedSessions.includes(session);
-                                    return (
-                                        <div
-                                            key={idx}
-                                            className={`flex items-start gap-3 p-3 rounded-lg border-2 ${isCompleted
-                                                ? 'border-green-500 bg-green-50'
-                                                : 'border-gray-300 bg-gray-50'
-                                                }`}
-                                        >
-                                            <div className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center ${isCompleted ? 'bg-green-500' : 'bg-gray-300'
-                                                }`}>
-                                                {isCompleted && (
-                                                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                                                    </svg>
-                                                )}
-                                            </div>
-                                            <span className={`flex-1 ${isCompleted ? 'text-green-900 font-medium' : 'text-gray-500'}`}>
-                                                {session}
-                                            </span>
-                                        </div>
-                                    );
-                                })}
+            return e('div', {
+                className: "fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop no-print",
+                onClick: onClose
+            },
+                e('div', {
+                    className: "bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] overflow-hidden",
+                    onClick: e => e.stopPropagation()
+                },
+                    e('div', { className: "p-6 border-b border-gray-200" },
+                        e('div', { className: "flex justify-between items-center" },
+                            e('h3', { className: "text-2xl font-bold text-wcg-dark" }, title),
+                            e('button', {
+                                onClick: onClose,
+                                className: "text-gray-400 hover:text-gray-600 text-2xl leading-none"
+                            }, "×")
+                        )
+                    ),
+                    e('div', { className: "p-6 overflow-y-auto max-h-[60vh]" },
+                        e('div', { className: "space-y-3" },
+                            sessionsList.map((session, idx) => {
+                                const isCompleted = completedSessions.includes(session);
+                                return e('div', {
+                                    key: idx,
+                                    className: `flex items-start gap-3 p-3 rounded-lg border-2 ${isCompleted ? 'border-green-500 bg-green-50' : 'border-gray-300 bg-gray-50'}`
+                                },
+                                    e('div', {
+                                        className: `flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center ${isCompleted ? 'bg-green-500' : 'bg-gray-300'}`
+                                    },
+                                        isCompleted && e('svg', { className: "w-4 h-4 text-white", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
+                                            e('path', { strokeLinecap: "round", strokeLinejoin="round", strokeWidth: 3, d: "M5 13l4 4L19 7" })
+                                        )
+                                    ),
+                                    e('span', { className: `flex-1 ${isCompleted ? 'text-green-900 font-medium' : 'text-gray-500'}` }, session)
+                                );
+                            }),
 
-                                {type === 'spark' && (
-                                    <div
-                                        className={`flex items-start gap-3 p-3 rounded-lg border-2 mt-4 ${bonus5Dovetail
-                                            ? 'border-green-500 bg-green-50'
-                                            : 'border-gray-300 bg-gray-50'
-                                            }`}
-                                    >
-                                        <div className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center ${bonus5Dovetail ? 'bg-green-500' : 'bg-gray-300'
-                                            }`}>
-                                            {bonus5Dovetail && (
-                                                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                                                </svg>
-                                            )}
-                                        </div>
-                                        <span className={`flex-1 ${bonus5Dovetail ? 'text-green-900 font-medium' : 'text-gray-500'}`}>
-                                            <strong>Bonus Spark:</strong> Complete 5+ Dovetail Essentials ({uniqueDovetails.length}/5)
-                                        </span>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                            type === 'spark' && e('div', {
+                                className: `flex items-start gap-3 p-3 rounded-lg border-2 mt-4 ${bonus5Dovetail ? 'border-green-500 bg-green-50' : 'border-gray-300 bg-gray-50'}`
+                            },
+                                e('div', {
+                                    className: `flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center ${bonus5Dovetail ? 'bg-green-500' : 'bg-gray-300'}`
+                                },
+                                    bonus5Dovetail && e('svg', { className: "w-4 h-4 text-white", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
+                                        e('path', { strokeLinecap: "round", strokeLinejoin="round", strokeWidth: 3, d: "M5 13l4 4L19 7" })
+                                    )
+                                ),
+                                e('span', { className: `flex-1 ${bonus5Dovetail ? 'text-green-900 font-medium' : 'text-gray-500'}` },
+                                    e('strong', null, "Bonus Spark:"),
+                                    ` Complete 5+ Dovetail Essentials (${uniqueDovetails.length}/5)`
+                                )
+                            )
+                        )
+                    )
+                )
             );
         }
 
@@ -232,12 +221,7 @@
             const [acknowledged, setAcknowledged] = useState(false);
             const [results, setResults] = useState(null);
             const [viewMode, setViewMode] = useState('cards');
-            const [filters, setFilters] = useState({
-                level: '',
-                district: '',
-                mode: '',
-                category: ''
-            });
+            const [filters, setFilters] = useState({ level: '', district: '', mode: '', category: '' });
             const [modalOpen, setModalOpen] = useState({ isOpen: false, type: null });
             const [menuOpen, setMenuOpen] = useState(false);
 
@@ -258,7 +242,7 @@
                 });
             }, []);
 
-            // Auto-login from localStorage (shared with My PD Journey)
+            // Auto-login from localStorage
             useEffect(() => {
                 if (!loading && data.length > 0 && !results) {
                     try {
@@ -273,9 +257,7 @@
                                 if (id) { if (!idIndex[id]) idIndex[id] = []; idIndex[id].push(record); }
                                 if (persal) { if (!persalIndex[persal]) persalIndex[persal] = []; persalIndex[persal].push(record); }
                             });
-                            const records = saved.searchType === 'id'
-                                ? (idIndex[searchKey] || [])
-                                : (persalIndex[searchKey] || []);
+                            const records = saved.searchType === 'id' ? (idIndex[searchKey] || []) : (persalIndex[searchKey] || []);
                             if (records.length > 0) {
                                 const sortedRecords = [...records].sort((a, b) => parseTimestamp(b.Timestamp) - parseTimestamp(a.Timestamp));
                                 const mostRecent = sortedRecords[0];
@@ -315,11 +297,9 @@
             const indexes = useMemo(() => {
                 const idIndex = {};
                 const persalIndex = {};
-
                 data.forEach(record => {
                     const id = record['ID/Passport Number']?.trim();
                     const persal = record['PERSAL Number']?.trim();
-
                     if (id) {
                         if (!idIndex[id]) idIndex[id] = [];
                         idIndex[id].push(record);
@@ -329,7 +309,6 @@
                         persalIndex[persal].push(record);
                     }
                 });
-
                 return { idIndex, persalIndex };
             }, [data]);
 
@@ -351,14 +330,7 @@
                     return;
                 }
 
-                // Sort by timestamp (newest first)
-                const sortedRecords = [...records].sort((a, b) => {
-                    const dateA = parseTimestamp(a.Timestamp);
-                    const dateB = parseTimestamp(b.Timestamp);
-                    return dateB - dateA;
-                });
-
-                // Get profile from most recent record
+                const sortedRecords = [...records].sort((a, b) => parseTimestamp(b.Timestamp) - parseTimestamp(a.Timestamp));
                 const mostRecent = sortedRecords[0];
                 const profile = {
                     name: `${mostRecent['First Name']} ${mostRecent['Surname']}`.trim(),
@@ -366,7 +338,6 @@
                     district: mostRecent['District'] || 'N/A'
                 };
 
-                // Deduplicate sessions by Session Name + Timestamp
                 const seenSessions = new Set();
                 const uniqueSessions = sortedRecords
                     .filter(record => {
@@ -386,42 +357,29 @@
                 setResults({ profile, sessions: uniqueSessions, allSessions: uniqueSessions });
                 setFilters({ level: '', district: '', mode: '', category: '' });
 
-                // Save credentials to localStorage for cross-page login
                 localStorage.setItem('wced_pd_credentials', JSON.stringify({ searchType, searchValue: searchKey }));
             };
 
             // Apply filters
             const filteredSessions = useMemo(() => {
                 if (!results) return [];
-
                 let filtered = results.allSessions;
 
                 if (filters.level) {
-                    filtered = filtered.filter(s =>
-                        s['Development Level']?.toLowerCase().trim() === filters.level.toLowerCase().trim()
-                    );
+                    filtered = filtered.filter(s => s['Development Level']?.toLowerCase().trim() === filters.level.toLowerCase().trim());
                 }
-
                 if (filters.district) {
-                    filtered = filtered.filter(s =>
-                        s['Hosting District']?.trim() === filters.district
-                    );
+                    filtered = filtered.filter(s => s['Hosting District']?.trim() === filters.district);
                 }
-
                 if (filters.mode) {
-                    filtered = filtered.filter(s =>
-                        s['Delivery Mode']?.trim() === filters.mode
-                    );
+                    filtered = filtered.filter(s => s['Delivery Mode']?.trim() === filters.mode);
                 }
-
                 if (filters.category === 'spark') {
                     filtered = filtered.filter(s => s.isSpark);
                 }
-
                 if (filters.category === 'dovetail') {
                     filtered = filtered.filter(s => s.isDovetail);
                 }
-
                 return filtered;
             }, [results, filters]);
 
@@ -433,19 +391,14 @@
                     if (!grouped[year]) grouped[year] = [];
                     grouped[year].push(session);
                 });
-
                 return Object.keys(grouped)
                     .sort((a, b) => b - a)
-                    .map(year => ({
-                        year,
-                        sessions: grouped[year]
-                    }));
+                    .map(year => ({ year, sessions: grouped[year] }));
             }, [filteredSessions]);
 
             // Calculate metrics
             const metrics = useMemo(() => {
                 if (!results) return null;
-
                 const total = filteredSessions.length;
                 const byLevel = {
                     'Laying the Foundation': 0,
@@ -464,21 +417,8 @@
                     }
                 });
 
-                // Get unique Spark sessions attended
-                const uniqueSparkSessions = [...new Set(
-                    results.allSessions
-                        .filter(s => s.isSpark)
-                        .map(s => s['Session Name']?.trim())
-                )];
-
-                // Get unique Dovetail sessions attended
-                const uniqueDovetailSessions = [...new Set(
-                    results.allSessions
-                        .filter(s => s.isDovetail)
-                        .map(s => s['Session Name']?.trim())
-                )];
-
-                // Calculate total Sparks (including bonus)
+                const uniqueSparkSessions = [...new Set(results.allSessions.filter(s => s.isSpark).map(s => s['Session Name']?.trim()))];
+                const uniqueDovetailSessions = [...new Set(results.allSessions.filter(s => s.isDovetail).map(s => s['Session Name']?.trim()))];
                 const bonusSpark = uniqueDovetailSessions.length >= 5 ? 1 : 0;
                 const totalSparks = uniqueSparkSessions.length + bonusSpark;
 
@@ -496,11 +436,9 @@
             // Get unique filter values
             const filterOptions = useMemo(() => {
                 if (!results) return { levels: [], districts: [], modes: [] };
-
                 const levels = [...new Set(results.allSessions.map(s => s['Development Level']?.trim()).filter(Boolean))];
                 const districts = [...new Set(results.allSessions.map(s => s['Hosting District']?.trim()).filter(Boolean))].sort();
                 const modes = [...new Set(results.allSessions.map(s => s['Delivery Mode']?.trim()).filter(Boolean))].sort();
-
                 return { levels, districts, modes };
             }, [results]);
 
@@ -516,7 +454,6 @@
                     'Is Spark': session.isSpark ? 'Yes' : 'No',
                     'Is Dovetail': session.isDovetail ? 'Yes' : 'No'
                 }));
-
                 const csv = Papa.unparse(csvData);
                 const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
                 const link = document.createElement('a');
@@ -525,628 +462,291 @@
                 link.click();
             };
 
-            // Input validation
             const isValidInput = () => {
                 if (!searchValue.trim()) return false;
-                if (searchType === 'id') {
-                    return /^\d{13}$/.test(searchValue.trim());
-                }
-                if (searchType === 'persal') {
-                    return /^\d{8}$/.test(searchValue.trim());
-                }
+                if (searchType === 'id') return /^\d{13}$/.test(searchValue.trim());
+                if (searchType === 'persal') return /^\d{8}$/.test(searchValue.trim());
                 return false;
             };
 
             const canSearch = acknowledged && isValidInput();
 
             if (loading) {
-                return (
-                    <div className="min-h-screen flex items-center justify-center">
-                        <div className="text-center">
-                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-wcg-blue mx-auto mb-4"></div>
-                            <p className="text-gray-600">Loading attendance records...</p>
-                        </div>
-                    </div>
+                return e('div', { className: "min-h-screen flex items-center justify-center" },
+                    e('div', { className: "text-center" },
+                        e('div', { className: "animate-spin rounded-full h-12 w-12 border-b-2 border-wcg-blue mx-auto mb-4" }),
+                        e('p', { className: "text-gray-600" }, "Loading attendance records...")
+                    )
                 );
             }
 
-            return (
-                <div className="min-h-screen bg-gray-50">
-                    <header className="bg-white shadow-sm no-print relative">
-                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-                            <img src="header.png" alt="WCED Header" className="h-12 sm:h-16" />
-                            <div className="relative">
-                                <button
-                                    onClick={() => setMenuOpen(!menuOpen)}
-                                    className="flex items-center justify-center w-10 h-10 rounded-lg border-2 border-gray-300 hover:border-wcg-blue hover:bg-gray-50 transition-colors"
-                                    aria-label="Menu"
-                                >
-                                    {menuOpen ? (
-                                        <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                                    ) : (
-                                        <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
-                                    )}
-                                </button>
-                                {menuOpen && (
-                                    <div className="absolute right-0 top-12 bg-white rounded-xl shadow-lg border border-gray-200 py-2 w-52 z-50">
-                                        <a href="my-journey.html" className="block px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:text-wcg-blue transition-colors">
-                                            My PD Journey
-                                        </a>
-                                        <a href="pathway.html" className="block px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:text-wcg-blue transition-colors">
-                                            Pathway Overview
-                                        </a>
-                                        <a href="index.html" className="block px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:text-wcg-blue transition-colors">
-                                            Upcoming Sessions
-                                        </a>
-                                        <a href="calendar.html" className="block px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:text-wcg-blue transition-colors">
-                                            Calendar
-                                        </a>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    </header>
-
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 print-full-width">
-                        {!results ? (
-                            <div className="max-w-2xl mx-auto no-print">
-                                <div className="bg-white rounded-lg shadow-md p-8">
-                                    <h1 className="text-3xl font-bold text-wcg-dark mb-6 text-center">
-                                        My PD History
-                                    </h1>
-                                    <p className="text-gray-600 mb-8 text-center">
-                                        View your complete professional development attendance record
-                                    </p>
-
-                                    <div className="mb-6">
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                                            Search by:
-                                        </label>
-                                        <div className="flex gap-4">
-                                            <button
-                                                onClick={() => { setSearchType('id'); setSearchValue(''); }}
-                                                className={`flex-1 py-3 px-4 rounded-lg border-2 transition-colors ${searchType === 'id'
-                                                    ? 'border-wcg-blue bg-wcg-blue text-white'
-                                                    : 'border-gray-300 bg-white text-gray-700 hover:border-wcg-blue'
-                                                    }`}
-                                            >
-                                                ID Number
-                                            </button>
-                                            <button
-                                                onClick={() => { setSearchType('persal'); setSearchValue(''); }}
-                                                className={`flex-1 py-3 px-4 rounded-lg border-2 transition-colors ${searchType === 'persal'
-                                                    ? 'border-wcg-blue bg-wcg-blue text-white'
-                                                    : 'border-gray-300 bg-white text-gray-700 hover:border-wcg-blue'
-                                                    }`}
-                                            >
-                                                PERSAL Number
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    <div className="mb-6">
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                                            {searchType === 'id' ? 'ID Number (13 digits)' : 'PERSAL Number (8 digits)'}
-                                        </label>
-                                        <input
-                                            type="text"
-                                            value={searchValue}
-                                            onChange={(e) => setSearchValue(e.target.value)}
-                                            onKeyPress={(e) => e.key === 'Enter' && canSearch && handleSearch()}
-                                            placeholder={searchType === 'id' ? '1234567890123' : '12345678'}
-                                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wcg-blue focus:border-transparent"
-                                            maxLength={searchType === 'id' ? 13 : 8}
-                                        />
-                                        {searchValue && !isValidInput() && (
-                                            <p className="text-sm text-red-600 mt-1">
-                                                Please enter a valid {searchType === 'id' ? '13-digit ID' : '8-digit PERSAL'} number
-                                            </p>
-                                        )}
-                                    </div>
-
-                                    <div className="mb-6">
-                                        <label className="flex items-start gap-3 cursor-pointer">
-                                            <input
-                                                type="checkbox"
-                                                checked={acknowledged}
-                                                onChange={(e) => setAcknowledged(e.target.checked)}
-                                                className="mt-1 h-5 w-5 text-wcg-blue border-gray-300 rounded focus:ring-wcg-blue"
-                                            />
-                                            <span className="text-sm text-gray-700">
-                                                I confirm I am accessing my own professional development records for personal verification purposes only.
-                                            </span>
-                                        </label>
-                                    </div>
-
-                                    <div className="mb-6 bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-xs text-yellow-800">
-                                        <strong>DISCLAIMER:</strong> This record is generated from self-captured attendance data. Every effort is made to ensure accuracy; discrepancies may occur due to manual entry errors. Please ensure consistency in your submissions to maintain an accurate transformation profile.
-                                        <br /><strong>Data last updated:</strong> {DATA_LAST_UPDATED}
-                                    </div>
-
-                                    <button
-                                        onClick={handleSearch}
-                                        disabled={!canSearch}
-                                        className={`w-full py-3 px-4 rounded-lg font-semibold transition-colors ${canSearch
-                                            ? 'bg-wcg-blue text-white hover:bg-blue-700'
-                                            : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                                            }`}
-                                    >
-                                        View My History
-                                    </button>
-                                </div>
-                            </div>
-                        ) : (
-                            <div>
-                                {results.profile ? (
-                                    <>
-                                        <ChecklistModal
-                                            isOpen={modalOpen.isOpen}
-                                            onClose={() => setModalOpen({ isOpen: false, type: null })}
-                                            type={modalOpen.type}
-                                            completedSessions={modalOpen.type === 'spark' ? metrics.uniqueSparks : metrics.uniqueDovetails}
-                                            allSessions={results.allSessions}
-                                        />
-
-                                        <div className="bg-white rounded-lg shadow-md p-6 mb-6 no-print">
-                                            <div className="flex justify-between items-start">
-                                                <div>
-                                                    <h2 className="text-2xl font-bold text-wcg-dark mb-2">
-                                                        {results.profile.name}
-                                                    </h2>
-                                                    <p className="text-gray-600">
-                                                        <span className="font-semibold">School:</span> {results.profile.school}
-                                                    </p>
-                                                    <p className="text-gray-600">
-                                                        <span className="font-semibold">District:</span> {results.profile.district}
-                                                    </p>
-                                                    <p className="text-xs text-gray-400 mt-1">Data last updated: {DATA_LAST_UPDATED}</p>
-                                                    <p className="text-sm text-gray-500 mt-1">
-                                                        Generated: {new Date().toLocaleDateString('en-GB')}
-                                                    </p>
-                                                </div>
-                                                <button
-                                                    onClick={() => { localStorage.removeItem('wced_pd_credentials'); setResults(null); }}
-                                                    className="no-print px-4 py-2 text-sm text-red-500 hover:text-red-700 border border-red-300 rounded-lg hover:bg-red-50 transition-colors"
-                                                >
-                                                    Log Out
-                                                </button>
-                                            </div>
-                                        </div>
-
-                                        <div className="bg-white rounded-lg shadow-md p-6 mb-6 no-print">
-                                            <h3 className="text-lg font-semibold text-wcg-dark mb-4">Summary</h3>
-                                            <div className="grid grid-cols-2 md:grid-cols-7 gap-4">
-                                                <div className="text-center p-4 bg-gray-50 rounded-lg">
-                                                    <div className="text-3xl font-bold text-wcg-dark">{metrics.total}</div>
-                                                    <div className="text-sm text-gray-600 mt-1">Total Sessions</div>
-                                                </div>
-                                                <div className="text-center p-4 bg-wcg-green/10 rounded-lg">
-                                                    <div className="text-3xl font-bold text-wcg-green">{metrics.byLevel['Laying the Foundation']}</div>
-                                                    <div className="text-sm text-gray-600 mt-1">Foundation</div>
-                                                </div>
-                                                <div className="text-center p-4 bg-wcg-yellow/10 rounded-lg">
-                                                    <div className="text-3xl font-bold text-wcg-yellow">{metrics.byLevel['I can do it']}</div>
-                                                    <div className="text-sm text-gray-600 mt-1">I Can Do It</div>
-                                                </div>
-                                                <div className="text-center p-4 bg-wcg-red/10 rounded-lg">
-                                                    <div className="text-3xl font-bold text-wcg-red">{metrics.byLevel['I can do it better']}</div>
-                                                    <div className="text-sm text-gray-600 mt-1">Better</div>
-                                                </div>
-                                                <div className="text-center p-4 bg-wcg-blue/10 rounded-lg">
-                                                    <div className="text-3xl font-bold text-wcg-blue">{metrics.byLevel['The Summit']}</div>
-                                                    <div className="text-sm text-gray-600 mt-1">Summit</div>
-                                                </div>
-                                                <div
-                                                    className="text-center p-4 bg-wcg-yellow/10 rounded-lg cursor-pointer hover:bg-wcg-yellow/20 transition-colors no-print"
-                                                    onClick={() => setModalOpen({ isOpen: true, type: 'spark' })}
-                                                    title="Click to view checklist"
-                                                >
-                                                    <div className="text-3xl font-bold text-wcg-yellow">⭐ {metrics.totalSparks}</div>
-                                                    <div className="text-sm text-gray-600 mt-1">Sparks</div>
-                                                </div>
-                                                <div
-                                                    className="text-center p-4 bg-wcg-pink/10 rounded-lg cursor-pointer hover:bg-wcg-pink/20 transition-colors no-print"
-                                                    onClick={() => setModalOpen({ isOpen: true, type: 'dovetail' })}
-                                                    title="Click to view checklist"
-                                                >
-                                                    <div className="text-3xl font-bold text-wcg-pink">💎 {metrics.totalDovetails}</div>
-                                                    <div className="text-sm text-gray-600 mt-1">Dovetail</div>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div className="bg-white rounded-lg shadow-md p-6 mb-6 no-print">
-                                            <div className="flex flex-wrap gap-4 items-end">
-                                                <div className="flex-1 min-w-[180px]">
-                                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                        Development Level
-                                                    </label>
-                                                    <select
-                                                        value={filters.level}
-                                                        onChange={(e) => setFilters({ ...filters, level: e.target.value })}
-                                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wcg-blue text-sm"
-                                                    >
-                                                        <option value="">All Levels</option>
-                                                        {filterOptions.levels.map(level => (
-                                                            <option key={level} value={level}>{level}</option>
-                                                        ))}
-                                                    </select>
-                                                </div>
-
-                                                <div className="flex-1 min-w-[180px]">
-                                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                        Hosting District
-                                                    </label>
-                                                    <select
-                                                        value={filters.district}
-                                                        onChange={(e) => setFilters({ ...filters, district: e.target.value })}
-                                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wcg-blue text-sm"
-                                                    >
-                                                        <option value="">All Districts</option>
-                                                        {filterOptions.districts.map(district => (
-                                                            <option key={district} value={district}>{district}</option>
-                                                        ))}
-                                                    </select>
-                                                </div>
-
-                                                <div className="flex-1 min-w-[180px]">
-                                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                        Delivery Mode
-                                                    </label>
-                                                    <select
-                                                        value={filters.mode}
-                                                        onChange={(e) => setFilters({ ...filters, mode: e.target.value })}
-                                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wcg-blue text-sm"
-                                                    >
-                                                        <option value="">All Modes</option>
-                                                        {filterOptions.modes.map(mode => (
-                                                            <option key={mode} value={mode}>{mode}</option>
-                                                        ))}
-                                                    </select>
-                                                </div>
-
-                                                <div className="flex-1 min-w-[180px]">
-                                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                        Category
-                                                    </label>
-                                                    <select
-                                                        value={filters.category}
-                                                        onChange={(e) => setFilters({ ...filters, category: e.target.value })}
-                                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wcg-blue text-sm"
-                                                    >
-                                                        <option value="">All Sessions</option>
-                                                        <option value="spark">⭐ Sparks Only</option>
-                                                        <option value="dovetail">💎 Dovetail Only</option>
-                                                    </select>
-                                                </div>
-
-                                                <div className="flex gap-2">
-                                                    <button
-                                                        onClick={() => setViewMode('cards')}
-                                                        className={`px-4 py-2 rounded-lg border-2 transition-colors text-sm ${viewMode === 'cards'
-                                                            ? 'border-wcg-blue bg-wcg-blue text-white'
-                                                            : 'border-gray-300 text-gray-700 hover:border-wcg-blue'
-                                                            }`}
-                                                    >
-                                                        Cards
-                                                    </button>
-                                                    <button
-                                                        onClick={() => setViewMode('table')}
-                                                        className={`px-4 py-2 rounded-lg border-2 transition-colors text-sm ${viewMode === 'table'
-                                                            ? 'border-wcg-blue bg-wcg-blue text-white'
-                                                            : 'border-gray-300 text-gray-700 hover:border-wcg-blue'
-                                                            }`}
-                                                    >
-                                                        Table
-                                                    </button>
-                                                </div>
-
-                                                <div className="flex gap-2">
-                                                    <button
-                                                        onClick={exportToCSV}
-                                                        className="px-4 py-2 bg-wcg-green text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
-                                                    >
-                                                        Download CSV
-                                                    </button>
-                                                    <button
-                                                        onClick={() => window.print()}
-                                                        className="px-4 py-2 bg-wcg-purple text-white rounded-lg hover:bg-purple-700 transition-colors text-sm"
-                                                    >
-                                                        Print / PDF
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {filteredSessions.length === 0 ? (
-                                            <div className="bg-white rounded-lg shadow-md p-8 text-center no-print">
-                                                <p className="text-gray-600">No sessions found matching the selected filters.</p>
-                                            </div>
-                                        ) : viewMode === 'cards' ? (
-                                            <div className="space-y-8 no-print">
-                                                {sessionsByYear.map(({ year, sessions }) => (
-                                                    <div key={year}>
-                                                        <h3 className="text-xl font-bold text-wcg-dark mb-4 pb-2 border-b-2 border-wcg-blue">
-                                                            {year}
-                                                        </h3>
-                                                        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                                                            {sessions.map((session, idx) => (
-                                                                <div
-                                                                    key={idx}
-                                                                    className={`bg-white rounded-lg shadow-md p-5 hover:shadow-lg transition-shadow relative overflow-hidden ${session.isSpark ? 'border-2 border-wcg-yellow spark-overlay' :
-                                                                        session.isDovetail ? 'border-2 border-wcg-pink dovetail-overlay' : ''
-                                                                        }`}
-                                                                >
-                                                                    <div className="flex justify-between items-start mb-3">
-                                                                        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getLevelColor(session['Development Level'])}`}>
-                                                                            {session['Development Level'] || 'N/A'}
-                                                                        </span>
-                                                                        <span className="text-sm text-gray-500">
-                                                                            {formatDate(session.parsedDate)}
-                                                                        </span>
-                                                                    </div>
-                                                                    <h4 className="font-semibold text-wcg-dark mb-3 line-clamp-2">
-                                                                        {session['Session Name'] || 'Untitled Session'}
-                                                                    </h4>
-                                                                    <div className="space-y-1 text-sm text-gray-600 mb-3">
-                                                                        <p><span className="font-medium">Facilitator:</span> {session['Facilitator'] || 'N/A'}</p>
-                                                                        <p><span className="font-medium">District:</span> {session['Hosting District'] || 'N/A'}</p>
-                                                                        <p><span className="font-medium">Mode:</span> {session['Delivery Mode'] || 'N/A'}</p>
-                                                                    </div>
-                                                                    {session.isSpark && (
-                                                                        <div className="mt-3 pt-3 border-t border-gray-200">
-                                                                            <span className="inline-flex items-center gap-1 bg-wcg-yellow text-black px-2 py-1 rounded-full text-xs font-bold">
-                                                                                ⭐ Spark
-                                                                            </span>
-                                                                        </div>
-                                                                    )}
-                                                                    {session.isDovetail && (
-                                                                        <div className="mt-3 pt-3 border-t border-gray-200">
-                                                                            <span className="inline-flex items-center gap-1 bg-wcg-pink text-white px-2 py-1 rounded-full text-xs font-bold">
-                                                                                💎 Dovetail
-                                                                            </span>
-                                                                        </div>
-                                                                    )}
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        ) : (
-                                            <div className="bg-white rounded-lg shadow-md overflow-hidden no-print">
-                                                <div className="overflow-x-auto">
-                                                    <table className="w-full">
-                                                        <thead className="bg-gray-50 border-b">
-                                                            <tr>
-                                                                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Date</th>
-                                                                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Session Name</th>
-                                                                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Level</th>
-                                                                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Facilitator</th>
-                                                                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">District</th>
-                                                                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Mode</th>
-                                                                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Special</th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody className="divide-y divide-gray-200">
-                                                            {filteredSessions.map((session, idx) => (
-                                                                <tr
-                                                                    key={idx}
-                                                                    className={`hover:bg-gray-50 ${session.isSpark ? 'spark-overlay' :
-                                                                        session.isDovetail ? 'dovetail-overlay' : ''
-                                                                        }`}
-                                                                >
-                                                                    <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
-                                                                        {formatDate(session.parsedDate)}
-                                                                    </td>
-                                                                    <td className="px-4 py-3 text-sm text-gray-900">
-                                                                        {session['Session Name'] || 'Untitled Session'}
-                                                                    </td>
-                                                                    <td className="px-4 py-3 text-sm">
-                                                                        <span className={`px-2 py-1 rounded text-xs font-semibold ${getLevelColor(session['Development Level'])}`}>
-                                                                            {session['Development Level'] || 'N/A'}
-                                                                        </span>
-                                                                    </td>
-                                                                    <td className="px-4 py-3 text-sm text-gray-700">
-                                                                        {session['Facilitator'] || 'N/A'}
-                                                                    </td>
-                                                                    <td className="px-4 py-3 text-sm text-gray-700">
-                                                                        {session['Hosting District'] || 'N/A'}
-                                                                    </td>
-                                                                    <td className="px-4 py-3 text-sm text-gray-700">
-                                                                        {session['Delivery Mode'] || 'N/A'}
-                                                                    </td>
-                                                                    <td className="px-4 py-3 text-sm">
-                                                                        {session.isSpark && (
-                                                                            <span className="inline-flex items-center gap-1 bg-wcg-yellow text-black px-2 py-1 rounded text-xs font-bold whitespace-nowrap">
-                                                                                Spark
-                                                                            </span>
-                                                                        )}
-                                                                        {session.isDovetail && (
-                                                                            <span className="inline-flex items-center gap-1 bg-wcg-pink text-white px-2 py-1 rounded text-xs font-bold whitespace-nowrap">
-                                                                                Dovetail
-                                                                            </span>
-                                                                        )}
-                                                                    </td>
-                                                                </tr>
-                                                            ))}
-                                                        </tbody>
-                                                    </table>
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {/* Disclaimer */}
-                                        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-xs text-yellow-800 mb-6 no-print">
-                                            <strong>DISCLAIMER:</strong> This record is generated from self-captured attendance data. Every effort is made to ensure accuracy; discrepancies may occur due to manual entry errors. Please ensure consistency in your submissions to maintain an accurate transformation profile.
-                                        </div>
-
-                                        {/* ------------------------------------------------------------- */}
-                                        {/* PRINT ONLY VIEW */}
-                                        {/* ------------------------------------------------------------- */}
-                                        <div className="hidden print:block w-full">
-                                            {/* 1. Header & Disclaimer */}
-                                            <div className="text-center mb-8">
-                                                <img src="header.png" alt="WCED Header" className="h-16 mx-auto mb-4" />
-                                                <h1 className="text-2xl font-bold text-wcg-dark mb-1">{results.profile.name}</h1>
-                                                <p className="text-sm text-gray-800 mb-1 font-semibold">{results.profile.school} • {results.profile.district}</p>
-                                                <p className="text-sm text-gray-600 mb-2">Report Generated: {new Date().toLocaleDateString('en-GB')}</p>
-                                                <p className="text-xs text-gray-600 max-w-3xl mx-auto italic">
-                                                    Disclaimer: The information in this report is based on self-captured data which could lead to inaccurate data. We endeavour to ensure the data is as clean and accurate as we can. (Data last updated: {DATA_LAST_UPDATED})
-                                                </p>
-                                            </div>
-
-                                            {/* 2. Developmental Level Breakdown */}
-                                            <div className="mb-8">
-                                                <h3 className="text-base font-bold text-wcg-dark mb-2">Developmental Level Breakdown</h3>
-                                                <table className="w-full text-sm border-collapse border border-gray-300">
-                                                    <thead>
-                                                        <tr className="bg-gray-100">
-                                                            <th className="border border-gray-300 px-3 py-1.5 text-center">Total Sessions</th>
-                                                            <th className="border border-gray-300 px-3 py-1.5 text-center">Laying the Foundation</th>
-                                                            <th className="border border-gray-300 px-3 py-1.5 text-center">I can do it</th>
-                                                            <th className="border border-gray-300 px-3 py-1.5 text-center">I can do it better</th>
-                                                            <th className="border border-gray-300 px-3 py-1.5 text-center">The Summit</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        <tr>
-                                                            <td className="border border-gray-300 px-3 py-1.5 text-center font-bold text-lg">{metrics.total}</td>
-                                                            <td className="border border-gray-300 px-3 py-1.5 text-center">{metrics.byLevel['Laying the Foundation']}</td>
-                                                            <td className="border border-gray-300 px-3 py-1.5 text-center">{metrics.byLevel['I can do it']}</td>
-                                                            <td className="border border-gray-300 px-3 py-1.5 text-center">{metrics.byLevel['I can do it better']}</td>
-                                                            <td className="border border-gray-300 px-3 py-1.5 text-center">{metrics.byLevel['The Summit']}</td>
-                                                        </tr>
-                                                    </tbody>
-                                                </table>
-                                            </div>
-
-                                            {/* 3. Checklists */}
-                                            <div className="flex gap-8 mb-8 w-full">
-                                                <div className="flex-1 border border-gray-300 p-4 rounded bg-yellow-50">
-                                                    <h4 className="font-bold text-sm mb-3 flex items-center justify-between">
-                                                        <span>⭐ Spark Sessions</span>
-                                                        <span className="text-gray-600 font-normal">{metrics.uniqueSparks.length} / {SPARK_SESSIONS.length}</span>
-                                                    </h4>
-                                                    <ul className="text-xs space-y-2">
-                                                        {SPARK_SESSIONS.map(s => {
-                                                            const isCompleted = metrics.uniqueSparks.includes(s);
-                                                            return (
-                                                                <li key={s} className={`flex items-start gap-2 ${isCompleted ? 'text-gray-900 font-medium' : 'text-gray-500'}`}>
-                                                                    <span className="w-4 h-4 border border-gray-400 bg-white inline-flex items-center justify-center font-bold flex-shrink-0 mt-0.5">
-                                                                        {isCompleted ? '✓' : ''}
-                                                                    </span>
-                                                                    <span>{s}</span>
-                                                                </li>
-                                                            );
-                                                        })}
-                                                    </ul>
-                                                </div>
-                                                <div className="flex-1 border border-gray-300 p-4 rounded bg-pink-50">
-                                                    <h4 className="font-bold text-sm mb-3 flex items-center justify-between">
-                                                        <span>💎 Dovetail Essentials</span>
-                                                        <span className="text-gray-600 font-normal">{metrics.uniqueDovetails.length} / {DOVETAIL_SESSIONS.length}</span>
-                                                    </h4>
-                                                    <ul className="text-xs space-y-2">
-                                                        {DOVETAIL_SESSIONS.map(s => {
-                                                            const isCompleted = metrics.uniqueDovetails.includes(s);
-                                                            return (
-                                                                <li key={s} className={`flex items-start gap-2 ${isCompleted ? 'text-gray-900 font-medium' : 'text-gray-500'}`}>
-                                                                    <span className="w-4 h-4 border border-gray-400 bg-white inline-flex items-center justify-center font-bold flex-shrink-0 mt-0.5">
-                                                                        {isCompleted ? '✓' : ''}
-                                                                    </span>
-                                                                    <span>{s}</span>
-                                                                </li>
-                                                            );
-                                                        })}
-                                                    </ul>
-                                                </div>
-                                            </div>
-
-                                            {/* 4. Detailed Table */}
-                                            <h3 className="text-base font-bold text-wcg-dark mb-2">Detailed Attendance Record</h3>
-                                            <table className="w-full text-xs border-collapse border border-gray-400">
-                                                <thead>
-                                                    <tr className="bg-gray-200">
-                                                        <th className="border border-gray-400 px-2 py-1.5 text-left font-semibold w-20">Date</th>
-                                                        <th className="border border-gray-400 px-2 py-1.5 text-left font-semibold">Session Name</th>
-                                                        <th className="border border-gray-400 px-2 py-1.5 text-left font-semibold">Development Level</th>
-                                                        <th className="border border-gray-400 px-2 py-1.5 text-left font-semibold">Facilitator</th>
-                                                        <th className="border border-gray-400 px-2 py-1.5 text-left font-semibold w-24">Mode</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    {filteredSessions.map((row, idx) => {
-                                                        let rowColor = "";
-                                                        if (row.isDovetail) rowColor = "bg-pink-100";
-                                                        else if (row.isSpark) rowColor = "bg-yellow-100";
-
-                                                        return (
-                                                            <tr key={idx} className={rowColor}>
-                                                                <td className="border border-gray-400 px-2 py-1">{formatDate(row.parsedDate)}</td>
-                                                                <td className="border border-gray-400 px-2 py-1 font-medium">{row['Session Name'] || 'Untitled'}</td>
-                                                                <td className="border border-gray-400 px-2 py-1">{row['Development Level'] || 'N/A'}</td>
-                                                                <td className="border border-gray-400 px-2 py-1">{row['Facilitator'] || 'N/A'}</td>
-                                                                <td className="border border-gray-400 px-2 py-1">{row['Delivery Mode'] || 'N/A'}</td>
-                                                            </tr>
-                                                        );
-                                                    })}
-                                                </tbody>
-                                            </table>
-
-                                            {/* 5. Legend */}
-                                            <div className="mt-4 text-xs text-gray-700 space-y-2">
-                                                <div className="flex items-center gap-2">
-                                                    <span className="inline-block w-4 h-4 bg-pink-100 border border-gray-400 rounded"></span>
-                                                    <span>
-                                                        Highlighted sessions are <strong>Dovetail Essentials</strong> sessions.{" "}
-                                                        <a href="https://jacovanniekerk-ux.github.io/wcedsessions/dovetail-essentials.html" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline hover:text-blue-800">
-                                                            Find out More
-                                                        </a>
-                                                    </span>
-                                                </div>
-                                                <div className="flex items-center gap-2">
-                                                    <span className="inline-block w-4 h-4 bg-yellow-100 border border-gray-400 rounded"></span>
-                                                    <span>
-                                                        Highlighted sessions are sessions that award a <strong>Spark</strong>.{" "}
-                                                        <a href="https://jacovanniekerk-ux.github.io/wcedsessions/pathway.html" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline hover:text-blue-800">
-                                                            Find out More
-                                                        </a>
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </>
-                                ) : (
-                                    <div className="max-w-2xl mx-auto no-print">
-                                        <div className="bg-white rounded-lg shadow-md p-8 text-center">
-                                            <div className="text-gray-400 mb-4">
-                                                <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                </svg>
-                                            </div>
-                                            <h3 className="text-xl font-semibold text-gray-900 mb-2">No Records Found</h3>
-                                            <p className="text-gray-600 mb-6">
-                                                No professional development records were found for the {searchType === 'id' ? 'ID' : 'PERSAL'} number you entered.
-                                                Please check your details and try again.
-                                            </p>
-                                            <button
-                                                onClick={() => { localStorage.removeItem('wced_pd_credentials'); setResults(null); }}
-                                                className="px-6 py-2 bg-wcg-blue text-white rounded-lg hover:bg-blue-700 transition-colors"
-                                            >
-                                                Try Again
-                                            </button>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        )}
-                    </div>
-                </div>
+            return e('div', { className: "min-h-screen bg-gray-50" },
+                e('header', { className: "bg-white shadow-sm no-print relative" },
+                    e('div', { className: "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center" },
+                        e('img', { src: "header.png", alt: "WCED Header", className: "h-12 sm:h-16" }),
+                        e('div', { className: "relative" },
+                            e('button', {
+                                onClick: () => setMenuOpen(!menuOpen),
+                                className: "flex items-center justify-center w-10 h-10 rounded-lg border-2 border-gray-300 hover:border-wcg-blue hover:bg-gray-50 transition-colors"
+                            },
+                                menuOpen 
+                                    ? e('svg', { className: "w-5 h-5 text-gray-700", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" }, e('path', { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M6 18L18 6M6 6l12 12" }))
+                                    : e('svg', { className: "w-5 h-5 text-gray-700", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" }, e('path', { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M4 6h16M4 12h16M4 18h16" }))
+                            ),
+                            menuOpen && e('div', { className: "absolute right-0 top-12 bg-white rounded-xl shadow-lg border border-gray-200 py-2 w-52 z-50" },
+                                e('a', { href: "my-journey.html", className: "block px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:text-wcg-blue transition-colors" }, "My PD Journey"),
+                                e('a', { href: "pathway.html", className: "block px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:text-wcg-blue transition-colors" }, "Pathway Overview"),
+                                e('a', { href: "index.html", className: "block px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:text-wcg-blue transition-colors" }, "Upcoming Sessions"),
+                                e('a', { href: "calendar.html", className: "block px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:text-wcg-blue transition-colors" }, "Calendar")
+                            )
+                        )
+                    )
+                ),
+                e('div', { className: "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 print-full-width" },
+                    !results ? e('div', { className: "max-w-2xl mx-auto no-print" },
+                        e('div', { className: "bg-white rounded-lg shadow-md p-8" },
+                            e('h1', { className: "text-3xl font-bold text-wcg-dark mb-6 text-center" }, "My PD History"),
+                            e('p', { className: "text-gray-600 mb-8 text-center" }, "View your complete professional development attendance record"),
+                            e('div', { className: "mb-6" },
+                                e('label', { className: "block text-sm font-medium text-gray-700 mb-2" }, "Search by:"),
+                                e('div', { className: "flex gap-4" },
+                                    e('button', {
+                                        onClick: () => { setSearchType('id'); setSearchValue(''); },
+                                        className: `flex-1 py-3 px-4 rounded-lg border-2 transition-colors ${searchType === 'id' ? 'border-wcg-blue bg-wcg-blue text-white' : 'border-gray-300 bg-white text-gray-700 hover:border-wcg-blue'}`
+                                    }, "ID Number"),
+                                    e('button', {
+                                        onClick: () => { setSearchType('persal'); setSearchValue(''); },
+                                        className: `flex-1 py-3 px-4 rounded-lg border-2 transition-colors ${searchType === 'persal' ? 'border-wcg-blue bg-wcg-blue text-white' : 'border-gray-300 bg-white text-gray-700 hover:border-wcg-blue'}`
+                                    }, "PERSAL Number")
+                                )
+                            ),
+                            e('div', { className: "mb-6" },
+                                e('label', { className: "block text-sm font-medium text-gray-700 mb-2" }, searchType === 'id' ? 'ID Number (13 digits)' : 'PERSAL Number (8 digits)'),
+                                e('input', {
+                                    type: "text",
+                                    value: searchValue,
+                                    onChange: (e) => setSearchValue(e.target.value),
+                                    onKeyPress: (e) => e.key === 'Enter' && canSearch && handleSearch(),
+                                    placeholder: searchType === 'id' ? '1234567890123' : '12345678',
+                                    className: "w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wcg-blue focus:border-transparent",
+                                    maxLength: searchType === 'id' ? 13 : 8
+                                }),
+                                searchValue && !isValidInput() && e('p', { className: "text-sm text-red-600 mt-1" }, `Please enter a valid ${searchType === 'id' ? '13-digit ID' : '8-digit PERSAL'} number`)
+                            ),
+                            e('div', { className: "mb-6" },
+                                e('label', { className: "flex items-start gap-3 cursor-pointer" },
+                                    e('input', {
+                                        type: "checkbox",
+                                        checked: acknowledged,
+                                        onChange: (e) => setAcknowledged(e.target.checked),
+                                        className: "mt-1 h-5 w-5 text-wcg-blue border-gray-300 rounded focus:ring-wcg-blue"
+                                    }),
+                                    e('span', { className: "text-sm text-gray-700" }, "I confirm I am accessing my own professional development records for personal verification purposes only.")
+                                )
+                            ),
+                            e('div', { className: "mb-6 bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-xs text-yellow-800" },
+                                e('strong', null, "DISCLAIMER:"),
+                                " This record is generated from self-captured attendance data. Every effort is made to ensure accuracy; discrepancies may occur due to manual entry errors. Please ensure consistency in your submissions to maintain an accurate transformation profile.",
+                                e('br'),
+                                e('strong', null, "Data last updated: "),
+                                DATA_LAST_UPDATED
+                            ),
+                            e('button', {
+                                onClick: handleSearch,
+                                disabled: !canSearch,
+                                className: `w-full py-3 px-4 rounded-lg font-semibold transition-colors ${canSearch ? 'bg-wcg-blue text-white hover:bg-blue-700' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`
+                            }, "View My History")
+                        )
+                    ) : e('div', null,
+                        results.profile ? e(React.Fragment, null,
+                            e(ChecklistModal, {
+                                isOpen: modalOpen.isOpen,
+                                onClose: () => setModalOpen({ isOpen: false, type: null }),
+                                type: modalOpen.type,
+                                completedSessions: modalOpen.type === 'spark' ? metrics.uniqueSparks : metrics.uniqueDovetails,
+                                allSessions: results.allSessions
+                            }),
+                            e('div', { className: "bg-white rounded-lg shadow-md p-6 mb-6 no-print" },
+                                e('div', { className: "flex justify-between items-start" },
+                                    e('div', null,
+                                        e('h2', { className: "text-2xl font-bold text-wcg-dark mb-2" }, results.profile.name),
+                                        e('p', { className: "text-gray-600" }, e('span', { className: "font-semibold" }, "School: "), results.profile.school),
+                                        e('p', { className: "text-gray-600" }, e('span', { className: "font-semibold" }, "District: "), results.profile.district),
+                                        e('p', { className: "text-xs text-gray-400 mt-1" }, `Data last updated: ${DATA_LAST_UPDATED}`),
+                                        e('p', { className: "text-sm text-gray-500 mt-1" }, `Generated: ${new Date().toLocaleDateString('en-GB')}`)
+                                    ),
+                                    e('button', {
+                                        onClick: () => { localStorage.removeItem('wced_pd_credentials'); setResults(null); },
+                                        className: "no-print px-4 py-2 text-sm text-red-500 hover:text-red-700 border border-red-300 rounded-lg hover:bg-red-50 transition-colors"
+                                    }, "Log Out")
+                                )
+                            ),
+                            e('div', { className: "bg-white rounded-lg shadow-md p-6 mb-6 no-print" },
+                                e('h3', { className: "text-lg font-semibold text-wcg-dark mb-4" }, "Summary"),
+                                e('div', { className: "grid grid-cols-2 md:grid-cols-7 gap-4" },
+                                    e('div', { className: "text-center p-4 bg-gray-50 rounded-lg" }, e('div', { className: "text-3xl font-bold text-wcg-dark" }, metrics.total), e('div', { className: "text-sm text-gray-600 mt-1" }, "Total Sessions")),
+                                    e('div', { className: "text-center p-4 bg-wcg-green/10 rounded-lg" }, e('div', { className: "text-3xl font-bold text-wcg-green" }, metrics.byLevel['Laying the Foundation']), e('div', { className: "text-sm text-gray-600 mt-1" }, "Foundation")),
+                                    e('div', { className: "text-center p-4 bg-wcg-yellow/10 rounded-lg" }, e('div', { className: "text-3xl font-bold text-wcg-yellow" }, metrics.byLevel['I can do it']), e('div', { className: "text-sm text-gray-600 mt-1" }, "I Can Do It")),
+                                    e('div', { className: "text-center p-4 bg-wcg-red/10 rounded-lg" }, e('div', { className: "text-3xl font-bold text-wcg-red" }, metrics.byLevel['I can do it better']), e('div', { className: "text-sm text-gray-600 mt-1" }, "Better")),
+                                    e('div', { className: "text-center p-4 bg-wcg-blue/10 rounded-lg" }, e('div', { className: "text-3xl font-bold text-wcg-blue" }, metrics.byLevel['The Summit']), e('div', { className: "text-sm text-gray-600 mt-1" }, "Summit")),
+                                    e('div', {
+                                        onClick: () => setModalOpen({ isOpen: true, type: 'spark' }),
+                                        className: "text-center p-4 bg-wcg-yellow/10 rounded-lg cursor-pointer hover:bg-wcg-yellow/20 transition-colors no-print",
+                                        title: "Click to view checklist"
+                                    }, e('div', { className: "text-3xl font-bold text-wcg-yellow" }, `⭐ ${metrics.totalSparks}`), e('div', { className: "text-sm text-gray-600 mt-1" }, "Sparks")),
+                                    e('div', {
+                                        onClick: () => setModalOpen({ isOpen: true, type: 'dovetail' }),
+                                        className: "text-center p-4 bg-wcg-pink/10 rounded-lg cursor-pointer hover:bg-wcg-pink/20 transition-colors no-print",
+                                        title: "Click to view checklist"
+                                    }, e('div', { className: "text-3xl font-bold text-wcg-pink" }, `💎 ${metrics.totalDovetails}`), e('div', { className: "text-sm text-gray-600 mt-1" }, "Dovetail"))
+                                )
+                            ),
+                            e('div', { className: "bg-white rounded-lg shadow-md p-6 mb-6 no-print" },
+                                e('div', { className: "flex flex-wrap gap-4 items-end" },
+                                    e('div', { className: "flex-1 min-w-[180px]" },
+                                        e('label', { className: "block text-sm font-medium text-gray-700 mb-2" }, "Development Level"),
+                                        e('select', {
+                                            value: filters.level,
+                                            onChange: (e) => setFilters({ ...filters, level: e.target.value }),
+                                            className: "w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wcg-blue text-sm"
+                                        },
+                                            e('option', { value: "" }, "All Levels"),
+                                            filterOptions.levels.map(lvl => e('option', { key: lvl, value: lvl }, lvl))
+                                        )
+                                    ),
+                                    e('div', { className: "flex-1 min-w-[180px]" },
+                                        e('label', { className: "block text-sm font-medium text-gray-700 mb-2" }, "Hosting District"),
+                                        e('select', {
+                                            value: filters.district,
+                                            onChange: (e) => setFilters({ ...filters, district: e.target.value }),
+                                            className: "w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wcg-blue text-sm"
+                                        },
+                                            e('option', { value: "" }, "All Districts"),
+                                            filterOptions.districts.map(dst => e('option', { key: dst, value: dst }, dst))
+                                        )
+                                    ),
+                                    e('div', { className: "flex-1 min-w-[180px]" },
+                                        e('label', { className: "block text-sm font-medium text-gray-700 mb-2" }, "Delivery Mode"),
+                                        e('select', {
+                                            value: filters.mode,
+                                            onChange: (e) => setFilters({ ...filters, mode: e.target.value }),
+                                            className: "w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wcg-blue text-sm"
+                                        },
+                                            e('option', { value: "" }, "All Modes"),
+                                            filterOptions.modes.map(md => e('option', { key: md, value: md }, md))
+                                        )
+                                    ),
+                                    e('div', { className: "flex-1 min-w-[180px]" },
+                                        e('label', { className: "block text-sm font-medium text-gray-700 mb-2" }, "Category"),
+                                        e('select', {
+                                            value: filters.category,
+                                            onChange: (e) => setFilters({ ...filters, category: e.target.value }),
+                                            className: "w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wcg-blue text-sm"
+                                        },
+                                            e('option', { value: "" }, "All Sessions"),
+                                            e('option', { value: "spark" }, "⭐ Sparks Only"),
+                                            e('option', { value: "dovetail" }, "💎 Dovetail Only")
+                                        )
+                                    ),
+                                    e('div', { className: "flex gap-2" },
+                                        e('button', {
+                                            onClick: () => setViewMode('cards'),
+                                            className: `px-4 py-2 rounded-lg border-2 transition-colors text-sm ${viewMode === 'cards' ? 'border-wcg-blue bg-wcg-blue text-white' : 'border-gray-300 text-gray-700 hover:border-wcg-blue'}`
+                                        }, "Cards"),
+                                        e('button', {
+                                            onClick: () => setViewMode('table'),
+                                            className: `px-4 py-2 rounded-lg border-2 transition-colors text-sm ${viewMode === 'table' ? 'border-wcg-blue bg-wcg-blue text-white' : 'border-gray-300 text-gray-700 hover:border-wcg-blue'}`
+                                        }, "Table")
+                                    ),
+                                    e('button', {
+                                        onClick: exportToCSV,
+                                        className: "px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors text-sm font-semibold flex items-center gap-2"
+                                    }, "Export CSV")
+                                )
+                            ),
+                            filteredSessions.length === 0 ? e('div', { className: "bg-white rounded-lg shadow-md p-12 text-center text-gray-500" }, "No sessions match the selected filters.") : (
+                                viewMode === 'cards' ? e('div', { className: "space-y-8" },
+                                    sessionsByYear.map(group => e('div', { key: group.year, className: "space-y-4" },
+                                        e('h3', { className: "text-xl font-bold text-wcg-dark border-b pb-2" }, group.year),
+                                        e('div', { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" },
+                                            group.sessions.map((session, idx) => e('div', {
+                                                key: idx,
+                                                className: `bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden relative flex flex-col justify-between ${session.isSpark ? 'spark-overlay border-amber-300' : ''} ${session.isDovetail ? 'dovetail-overlay border-pink-300' : ''}`
+                                            },
+                                                e('div', { className: "p-5 flex-grow" },
+                                                    e('div', { className: "flex justify-between items-start gap-2 mb-3" },
+                                                        e('span', { className: "text-xs font-semibold text-gray-400" }, formatDate(session.parsedDate)),
+                                                        e('div', { className: "flex gap-1" },
+                                                            session.isSpark && e('span', { className: "px-2 py-0.5 bg-amber-100 text-amber-800 text-[10px] font-bold rounded uppercase tracking-wide" }, "Spark"),
+                                                            session.isDovetail && e('span', { className: "px-2 py-0.5 bg-pink-100 text-pink-800 text-[10px] font-bold rounded uppercase tracking-wide" }, "Dovetail")
+                                                        )
+                                                    ),
+                                                    e('h4', { className: "font-bold text-gray-900 mb-4 leading-snug text-base" }, session['Session Name'] || 'Untitled Session'),
+                                                    e('div', { className: "space-y-2 text-xs" },
+                                                        e('div', { className: "flex justify-between" }, e('span', { className: "text-gray-500" }, "District:"), e('span', { className: "font-medium text-gray-800" }, session['Hosting District'] || 'N/A')),
+                                                        e('div', { className: "flex justify-between" }, e('span', { className: "text-gray-500" }, "Mode:"), e('span', { className: "font-medium text-gray-800" }, session['Delivery Mode'] || 'N/A')),
+                                                        e('div', { className: "flex justify-between" }, e('span', { className: "text-gray-500" }, "Facilitator:"), e('span', { className: "font-medium text-gray-800" }, session['Facilitator'] || 'N/A'))
+                                                    )
+                                                ),
+                                                e('div', { className: "p-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between" },
+                                                    e('span', { className: "text-xs text-gray-500 font-medium" }, "Development Level:"),
+                                                    e('span', { className: `text-[11px] font-bold px-2 py-0.5 rounded shadow-sm ${getLevelColor(session['Development Level'])}` }, session['Development Level'] || 'Other')
+                                                )
+                                            ))
+                                        )
+                                    ))
+                                ) : e('div', { className: "bg-white rounded-lg shadow-md overflow-x-auto" },
+                                    e('table', { className: "min-w-full divide-y divide-gray-200 text-sm text-left" },
+                                        e('thead', { className: "bg-gray-50 text-xs text-gray-500 uppercase tracking-wider font-semibold" },
+                                            e('tr', null,
+                                                e('th', { className: "px-6 py-3" }, "Date"),
+                                                e('th', { className: "px-6 py-3" }, "Session Name"),
+                                                e('th', { className: "px-6 py-3" }, "Development Level"),
+                                                e('th', { className: "px-6 py-3" }, "Hosting District"),
+                                                e('th', { className: "px-6 py-3" }, "Mode"),
+                                                e('th', { className: "px-6 py-3" }, "Facilitator"),
+                                                e('th', { className: "px-6 py-3 text-center" }, "Badges")
+                                            )
+                                        ),
+                                        e('tbody', { className: "divide-y divide-gray-200" },
+                                            filteredSessions.map((session, idx) => e('tr', { key: idx, className: `hover:bg-gray-50/80 ${session.isSpark ? 'bg-amber-50/20' : ''} ${session.isDovetail ? 'bg-pink-50/20' : ''}` },
+                                                e('th', { className: "px-6 py-4 font-medium text-gray-500 whitespace-nowrap" }, formatDate(session.parsedDate)),
+                                                e('td', { className: "px-6 py-4 font-bold text-gray-900" }, session['Session Name']),
+                                                e('td', { className: "px-6 py-4 whitespace-nowrap" }, e('span', { className: `text-[10px] font-bold px-2 py-0.5 rounded ${getLevelColor(session['Development Level'])}` }, session['Development Level'] || 'Other')),
+                                                e('td', { className: "px-6 py-4 whitespace-nowrap text-gray-600" }, session['Hosting District'] || 'N/A'),
+                                                e('td', { className: "px-6 py-4 whitespace-nowrap text-gray-600" }, session['Delivery Mode'] || 'N/A'),
+                                                e('td', { className: "px-6 py-4 whitespace-nowrap text-gray-600" }, session['Facilitator'] || 'N/A'),
+                                                e('td', { className: "px-6 py-4 whitespace-nowrap text-center" },
+                                                    e('div', { className: "flex justify-center gap-1" },
+                                                        session.isSpark && e('span', { className: "px-1.5 py-0.5 bg-amber-100 text-amber-800 text-[10px] font-bold rounded" }, "⭐"),
+                                                        session.isDovetail && e('span', { className: "px-1.5 py-0.5 bg-pink-100 text-pink-800 text-[10px] font-bold rounded" }, "💎")
+                                                    )
+                                                )
+                                            ))
+                                        )
+                                    )
+                                )
+                            )
+                        ) : e('div', { className: "max-w-2xl mx-auto p-12 bg-white rounded-lg shadow-md text-center no-print" },
+                            e('div', { className: "w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4" },
+                                e('svg', { className: "w-8 h-8", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
+                                    e('path', { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" })
+                                )
+                            ),
+                            e('h3', { className: "text-xl font-semibold text-gray-900 mb-2" }, "No Records Found"),
+                            e('p', { className: "text-gray-600 mb-6" }, `No professional development records were found for the ${searchType === 'id' ? 'ID' : 'PERSAL'} number you entered. Please check your details and try again.`),
+                            e('button', {
+                                onClick: () => { localStorage.removeItem('wced_pd_credentials'); setResults(null); },
+                                className: "px-6 py-2 bg-wcg-blue text-white rounded-lg hover:bg-blue-700 transition-colors"
+                            }, "Try Again")
+                        )
+                    )
+                )
             );
         }
 
-        ReactDOM.render(<App />, document.getElementById('root'));
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(e(App));
     </script>
 </body>
 
