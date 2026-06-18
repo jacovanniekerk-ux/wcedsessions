@@ -131,15 +131,15 @@
 
         // Utility: Check if session is a Spark
         function isSpark(sessionName) {
-            return SPARK_SESSIONS.includes(sessionName?.trim());
+            return SPARK_SESSIONS.includes(sessionName && sessionName.trim());
         }
 
         // Utility: Check if session is Dovetail Essential
         function isDovetail(sessionName) {
-            return DOVETAIL_SESSIONS.includes(sessionName?.trim());
+            return DOVETAIL_SESSIONS.includes(sessionName && sessionName.trim());
         }
 
-        // === DATA LAST UPDATED ===
+        // === DATA LAST UPDATED (manually update this when refreshing data) ===
         const DATA_LAST_UPDATED = '05 June 2026';
 
         // Checklist Modal Component
@@ -148,62 +148,47 @@
 
             const title = type === 'spark' ? '⭐ Spark Sessions' : '💎 Dovetail Essentials';
 
-            // For Sparks, check if they have bonus spark
             const uniqueDovetails = type === 'spark'
-                ? [...new Set(allSessions.filter(s => isDovetail(s['Session Name']?.trim())).map(s => s['Session Name']?.trim()))]
+                ? [...new Set(allSessions.filter(s => isDovetail(s['Session Name'] && s['Session Name'].trim())).map(s => s['Session Name'] && s['Session Name'].trim()))]
                 : [];
             const bonus5Dovetail = type === 'spark' && uniqueDovetails.length >= 5;
 
             const sessionsList = type === 'spark' ? SPARK_SESSIONS : DOVETAIL_SESSIONS;
 
-            return e('div', {
-                className: "fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop no-print",
-                onClick: onClose
-            },
-                e('div', {
-                    className: "bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] overflow-hidden",
-                    onClick: e => e.stopPropagation()
-                },
-                    e('div', { className: "p-6 border-b border-gray-200" },
-                        e('div', { className: "flex justify-between items-center" },
-                            e('h3', { className: "text-2xl font-bold text-wcg-dark" }, title),
-                            e('button', {
-                                onClick: onClose,
-                                className: "text-gray-400 hover:text-gray-600 text-2xl leading-none"
-                            }, "×")
+            return e('div', { className: 'fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop no-print', onClick: onClose },
+                e('div', { className: 'bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] overflow-hidden', onClick: ev => ev.stopPropagation() },
+                    e('div', { className: 'p-6 border-b border-gray-200' },
+                        e('div', { className: 'flex justify-between items-center' },
+                            e('h3', { className: 'text-2xl font-bold text-wcg-dark' }, title),
+                            e('button', { onClick: onClose, className: 'text-gray-400 hover:text-gray-600 text-2xl leading-none' }, '×')
                         )
                     ),
-                    e('div', { className: "p-6 overflow-y-auto max-h-[60vh]" },
-                        e('div', { className: "space-y-3" },
-                            sessionsList.map((session, idx) => {
+                    e('div', { className: 'p-6 overflow-y-auto max-h-[60vh]' },
+                        e('div', { className: 'space-y-3' },
+                            ...sessionsList.map((session, idx) => {
                                 const isCompleted = completedSessions.includes(session);
                                 return e('div', {
                                     key: idx,
                                     className: `flex items-start gap-3 p-3 rounded-lg border-2 ${isCompleted ? 'border-green-500 bg-green-50' : 'border-gray-300 bg-gray-50'}`
                                 },
-                                    e('div', {
-                                        className: `flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center ${isCompleted ? 'bg-green-500' : 'bg-gray-300'}`
-                                    },
-                                        isCompleted && e('svg', { className: "w-4 h-4 text-white", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
-                                            e('path', { strokeLinecap: "round", strokeLinejoin="round", strokeWidth: 3, d: "M5 13l4 4L19 7" })
+                                    e('div', { className: `flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center ${isCompleted ? 'bg-green-500' : 'bg-gray-300'}` },
+                                        isCompleted && e('svg', { className: 'w-4 h-4 text-white', fill: 'none', stroke: 'currentColor', viewBox: '0 0 24 24' },
+                                            e('path', { strokeLinecap: 'round', strokeLinejoin: 'round', strokeWidth: 3, d: 'M5 13l4 4L19 7' })
                                         )
                                     ),
                                     e('span', { className: `flex-1 ${isCompleted ? 'text-green-900 font-medium' : 'text-gray-500'}` }, session)
                                 );
                             }),
-
                             type === 'spark' && e('div', {
                                 className: `flex items-start gap-3 p-3 rounded-lg border-2 mt-4 ${bonus5Dovetail ? 'border-green-500 bg-green-50' : 'border-gray-300 bg-gray-50'}`
                             },
-                                e('div', {
-                                    className: `flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center ${bonus5Dovetail ? 'bg-green-500' : 'bg-gray-300'}`
-                                },
-                                    bonus5Dovetail && e('svg', { className: "w-4 h-4 text-white", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
-                                        e('path', { strokeLinecap: "round", strokeLinejoin="round", strokeWidth: 3, d: "M5 13l4 4L19 7" })
+                                e('div', { className: `flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center ${bonus5Dovetail ? 'bg-green-500' : 'bg-gray-300'}` },
+                                    bonus5Dovetail && e('svg', { className: 'w-4 h-4 text-white', fill: 'none', stroke: 'currentColor', viewBox: '0 0 24 24' },
+                                        e('path', { strokeLinecap: 'round', strokeLinejoin: 'round', strokeWidth: 3, d: 'M5 13l4 4L19 7' })
                                     )
                                 ),
                                 e('span', { className: `flex-1 ${bonus5Dovetail ? 'text-green-900 font-medium' : 'text-gray-500'}` },
-                                    e('strong', null, "Bonus Spark:"),
+                                    e('strong', null, 'Bonus Spark:'),
                                     ` Complete 5+ Dovetail Essentials (${uniqueDovetails.length}/5)`
                                 )
                             )
@@ -242,7 +227,7 @@
                 });
             }, []);
 
-            // Auto-login from localStorage
+            // Auto-login from localStorage (shared with My PD Journey)
             useEffect(() => {
                 if (!loading && data.length > 0 && !results) {
                     try {
@@ -252,12 +237,14 @@
                             const idIndex = {};
                             const persalIndex = {};
                             data.forEach(record => {
-                                const id = record['ID/Passport Number']?.trim();
-                                const persal = record['PERSAL Number']?.trim();
+                                const id = record['ID/Passport Number'] && record['ID/Passport Number'].trim();
+                                const persal = record['PERSAL Number'] && record['PERSAL Number'].trim();
                                 if (id) { if (!idIndex[id]) idIndex[id] = []; idIndex[id].push(record); }
                                 if (persal) { if (!persalIndex[persal]) persalIndex[persal] = []; persalIndex[persal].push(record); }
                             });
-                            const records = saved.searchType === 'id' ? (idIndex[searchKey] || []) : (persalIndex[searchKey] || []);
+                            const records = saved.searchType === 'id'
+                                ? (idIndex[searchKey] || [])
+                                : (persalIndex[searchKey] || []);
                             if (records.length > 0) {
                                 const sortedRecords = [...records].sort((a, b) => parseTimestamp(b.Timestamp) - parseTimestamp(a.Timestamp));
                                 const mostRecent = sortedRecords[0];
@@ -272,7 +259,7 @@
                                     .map(record => ({
                                         ...record,
                                         parsedDate: parseTimestamp(record.Timestamp),
-                                        year: parseTimestamp(record.Timestamp)?.getFullYear() || 'Unknown',
+                                        year: parseTimestamp(record.Timestamp) ? parseTimestamp(record.Timestamp).getFullYear() : 'Unknown',
                                         isSpark: isSpark(record['Session Name']),
                                         isDovetail: isDovetail(record['Session Name'])
                                     }));
@@ -289,7 +276,7 @@
                                 setFilters({ level: '', district: '', mode: '', category: '' });
                             }
                         }
-                    } catch (e) { /* ignore parse errors */ }
+                    } catch (err) { /* ignore parse errors */ }
                 }
             }, [loading, data]);
 
@@ -298,16 +285,10 @@
                 const idIndex = {};
                 const persalIndex = {};
                 data.forEach(record => {
-                    const id = record['ID/Passport Number']?.trim();
-                    const persal = record['PERSAL Number']?.trim();
-                    if (id) {
-                        if (!idIndex[id]) idIndex[id] = [];
-                        idIndex[id].push(record);
-                    }
-                    if (persal) {
-                        if (!persalIndex[persal]) persalIndex[persal] = [];
-                        persalIndex[persal].push(record);
-                    }
+                    const id = record['ID/Passport Number'] && record['ID/Passport Number'].trim();
+                    const persal = record['PERSAL Number'] && record['PERSAL Number'].trim();
+                    if (id) { if (!idIndex[id]) idIndex[id] = []; idIndex[id].push(record); }
+                    if (persal) { if (!persalIndex[persal]) persalIndex[persal] = []; persalIndex[persal].push(record); }
                 });
                 return { idIndex, persalIndex };
             }, [data]);
@@ -315,29 +296,28 @@
             // Handle search
             const handleSearch = () => {
                 if (!searchValue.trim() || !acknowledged) return;
-
                 const searchKey = searchValue.trim();
                 let records = [];
-
                 if (searchType === 'id') {
                     records = indexes.idIndex[searchKey] || [];
                 } else {
                     records = indexes.persalIndex[searchKey] || [];
                 }
-
                 if (records.length === 0) {
                     setResults({ profile: null, sessions: [], allSessions: [] });
                     return;
                 }
-
-                const sortedRecords = [...records].sort((a, b) => parseTimestamp(b.Timestamp) - parseTimestamp(a.Timestamp));
+                const sortedRecords = [...records].sort((a, b) => {
+                    const dateA = parseTimestamp(a.Timestamp);
+                    const dateB = parseTimestamp(b.Timestamp);
+                    return dateB - dateA;
+                });
                 const mostRecent = sortedRecords[0];
                 const profile = {
                     name: `${mostRecent['First Name']} ${mostRecent['Surname']}`.trim(),
                     school: mostRecent['School'] || 'N/A',
                     district: mostRecent['District'] || 'N/A'
                 };
-
                 const seenSessions = new Set();
                 const uniqueSessions = sortedRecords
                     .filter(record => {
@@ -349,14 +329,12 @@
                     .map(record => ({
                         ...record,
                         parsedDate: parseTimestamp(record.Timestamp),
-                        year: parseTimestamp(record.Timestamp)?.getFullYear() || 'Unknown',
+                        year: parseTimestamp(record.Timestamp) ? parseTimestamp(record.Timestamp).getFullYear() : 'Unknown',
                         isSpark: isSpark(record['Session Name']),
                         isDovetail: isDovetail(record['Session Name'])
                     }));
-
                 setResults({ profile, sessions: uniqueSessions, allSessions: uniqueSessions });
                 setFilters({ level: '', district: '', mode: '', category: '' });
-
                 localStorage.setItem('wced_pd_credentials', JSON.stringify({ searchType, searchValue: searchKey }));
             };
 
@@ -364,22 +342,17 @@
             const filteredSessions = useMemo(() => {
                 if (!results) return [];
                 let filtered = results.allSessions;
-
                 if (filters.level) {
-                    filtered = filtered.filter(s => s['Development Level']?.toLowerCase().trim() === filters.level.toLowerCase().trim());
+                    filtered = filtered.filter(s => s['Development Level'] && s['Development Level'].toLowerCase().trim() === filters.level.toLowerCase().trim());
                 }
                 if (filters.district) {
-                    filtered = filtered.filter(s => s['Hosting District']?.trim() === filters.district);
+                    filtered = filtered.filter(s => s['Hosting District'] && s['Hosting District'].trim() === filters.district);
                 }
                 if (filters.mode) {
-                    filtered = filtered.filter(s => s['Delivery Mode']?.trim() === filters.mode);
+                    filtered = filtered.filter(s => s['Delivery Mode'] && s['Delivery Mode'].trim() === filters.mode);
                 }
-                if (filters.category === 'spark') {
-                    filtered = filtered.filter(s => s.isSpark);
-                }
-                if (filters.category === 'dovetail') {
-                    filtered = filtered.filter(s => s.isDovetail);
-                }
+                if (filters.category === 'spark') { filtered = filtered.filter(s => s.isSpark); }
+                if (filters.category === 'dovetail') { filtered = filtered.filter(s => s.isDovetail); }
                 return filtered;
             }, [results, filters]);
 
@@ -391,54 +364,31 @@
                     if (!grouped[year]) grouped[year] = [];
                     grouped[year].push(session);
                 });
-                return Object.keys(grouped)
-                    .sort((a, b) => b - a)
-                    .map(year => ({ year, sessions: grouped[year] }));
+                return Object.keys(grouped).sort((a, b) => b - a).map(year => ({ year, sessions: grouped[year] }));
             }, [filteredSessions]);
 
             // Calculate metrics
             const metrics = useMemo(() => {
                 if (!results) return null;
                 const total = filteredSessions.length;
-                const byLevel = {
-                    'Laying the Foundation': 0,
-                    'I can do it': 0,
-                    'I can do it better': 0,
-                    'The Summit': 0,
-                    'Other': 0
-                };
-
+                const byLevel = { 'Laying the Foundation': 0, 'I can do it': 0, 'I can do it better': 0, 'The Summit': 0, 'Other': 0 };
                 filteredSessions.forEach(session => {
-                    const level = session['Development Level']?.trim();
-                    if (byLevel.hasOwnProperty(level)) {
-                        byLevel[level]++;
-                    } else {
-                        byLevel['Other']++;
-                    }
+                    const level = session['Development Level'] && session['Development Level'].trim();
+                    if (byLevel.hasOwnProperty(level)) { byLevel[level]++; } else { byLevel['Other']++; }
                 });
-
-                const uniqueSparkSessions = [...new Set(results.allSessions.filter(s => s.isSpark).map(s => s['Session Name']?.trim()))];
-                const uniqueDovetailSessions = [...new Set(results.allSessions.filter(s => s.isDovetail).map(s => s['Session Name']?.trim()))];
+                const uniqueSparkSessions = [...new Set(results.allSessions.filter(s => s.isSpark).map(s => s['Session Name'] && s['Session Name'].trim()))];
+                const uniqueDovetailSessions = [...new Set(results.allSessions.filter(s => s.isDovetail).map(s => s['Session Name'] && s['Session Name'].trim()))];
                 const bonusSpark = uniqueDovetailSessions.length >= 5 ? 1 : 0;
                 const totalSparks = uniqueSparkSessions.length + bonusSpark;
-
-                return {
-                    total,
-                    byLevel,
-                    uniqueSparks: uniqueSparkSessions,
-                    uniqueDovetails: uniqueDovetailSessions,
-                    totalSparks,
-                    totalDovetails: uniqueDovetailSessions.length,
-                    hasBonusSpark: bonusSpark === 1
-                };
+                return { total, byLevel, uniqueSparks: uniqueSparkSessions, uniqueDovetails: uniqueDovetailSessions, totalSparks, totalDovetails: uniqueDovetailSessions.length, hasBonusSpark: bonusSpark === 1 };
             }, [filteredSessions, results]);
 
             // Get unique filter values
             const filterOptions = useMemo(() => {
                 if (!results) return { levels: [], districts: [], modes: [] };
-                const levels = [...new Set(results.allSessions.map(s => s['Development Level']?.trim()).filter(Boolean))];
-                const districts = [...new Set(results.allSessions.map(s => s['Hosting District']?.trim()).filter(Boolean))].sort();
-                const modes = [...new Set(results.allSessions.map(s => s['Delivery Mode']?.trim()).filter(Boolean))].sort();
+                const levels = [...new Set(results.allSessions.map(s => s['Development Level'] && s['Development Level'].trim()).filter(Boolean))];
+                const districts = [...new Set(results.allSessions.map(s => s['Hosting District'] && s['Hosting District'].trim()).filter(Boolean))].sort();
+                const modes = [...new Set(results.allSessions.map(s => s['Delivery Mode'] && s['Delivery Mode'].trim()).filter(Boolean))].sort();
                 return { levels, districts, modes };
             }, [results]);
 
@@ -462,6 +412,7 @@
                 link.click();
             };
 
+            // Input validation
             const isValidInput = () => {
                 if (!searchValue.trim()) return false;
                 if (searchType === 'id') return /^\d{13}$/.test(searchValue.trim());
@@ -472,275 +423,484 @@
             const canSearch = acknowledged && isValidInput();
 
             if (loading) {
-                return e('div', { className: "min-h-screen flex items-center justify-center" },
-                    e('div', { className: "text-center" },
-                        e('div', { className: "animate-spin rounded-full h-12 w-12 border-b-2 border-wcg-blue mx-auto mb-4" }),
-                        e('p', { className: "text-gray-600" }, "Loading attendance records...")
+                return e('div', { className: 'min-h-screen flex items-center justify-center' },
+                    e('div', { className: 'text-center' },
+                        e('div', { className: 'animate-spin rounded-full h-12 w-12 border-b-2 border-wcg-blue mx-auto mb-4' }),
+                        e('p', { className: 'text-gray-600' }, 'Loading attendance records...')
                     )
                 );
             }
 
-            return e('div', { className: "min-h-screen bg-gray-50" },
-                e('header', { className: "bg-white shadow-sm no-print relative" },
-                    e('div', { className: "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center" },
-                        e('img', { src: "header.png", alt: "WCED Header", className: "h-12 sm:h-16" }),
-                        e('div', { className: "relative" },
+            return e('div', { className: 'min-h-screen bg-gray-50' },
+                // Header
+                e('header', { className: 'bg-white shadow-sm no-print relative' },
+                    e('div', { className: 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center' },
+                        e('img', { src: 'header.png', alt: 'WCED Header', className: 'h-12 sm:h-16' }),
+                        e('div', { className: 'relative' },
                             e('button', {
                                 onClick: () => setMenuOpen(!menuOpen),
-                                className: "flex items-center justify-center w-10 h-10 rounded-lg border-2 border-gray-300 hover:border-wcg-blue hover:bg-gray-50 transition-colors"
+                                className: 'flex items-center justify-center w-10 h-10 rounded-lg border-2 border-gray-300 hover:border-wcg-blue hover:bg-gray-50 transition-colors',
+                                'aria-label': 'Menu'
                             },
-                                menuOpen 
-                                    ? e('svg', { className: "w-5 h-5 text-gray-700", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" }, e('path', { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M6 18L18 6M6 6l12 12" }))
-                                    : e('svg', { className: "w-5 h-5 text-gray-700", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" }, e('path', { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M4 6h16M4 12h16M4 18h16" }))
+                                menuOpen
+                                    ? e('svg', { className: 'w-5 h-5 text-gray-700', fill: 'none', stroke: 'currentColor', viewBox: '0 0 24 24' },
+                                        e('path', { strokeLinecap: 'round', strokeLinejoin: 'round', strokeWidth: 2, d: 'M6 18L18 6M6 6l12 12' })
+                                    )
+                                    : e('svg', { className: 'w-5 h-5 text-gray-700', fill: 'none', stroke: 'currentColor', viewBox: '0 0 24 24' },
+                                        e('path', { strokeLinecap: 'round', strokeLinejoin: 'round', strokeWidth: 2, d: 'M4 6h16M4 12h16M4 18h16' })
+                                    )
                             ),
-                            menuOpen && e('div', { className: "absolute right-0 top-12 bg-white rounded-xl shadow-lg border border-gray-200 py-2 w-52 z-50" },
-                                e('a', { href: "my-journey.html", className: "block px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:text-wcg-blue transition-colors" }, "My PD Journey"),
-                                e('a', { href: "pathway.html", className: "block px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:text-wcg-blue transition-colors" }, "Pathway Overview"),
-                                e('a', { href: "index.html", className: "block px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:text-wcg-blue transition-colors" }, "Upcoming Sessions"),
-                                e('a', { href: "calendar.html", className: "block px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:text-wcg-blue transition-colors" }, "Calendar")
+                            menuOpen && e('div', { className: 'absolute right-0 top-12 bg-white rounded-xl shadow-lg border border-gray-200 py-2 w-52 z-50' },
+                                e('a', { href: 'my-journey.html', className: 'block px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:text-wcg-blue transition-colors' }, 'My PD Journey'),
+                                e('a', { href: 'pathway.html', className: 'block px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:text-wcg-blue transition-colors' }, 'Pathway Overview'),
+                                e('a', { href: 'index.html', className: 'block px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:text-wcg-blue transition-colors' }, 'Upcoming Sessions'),
+                                e('a', { href: 'calendar.html', className: 'block px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:text-wcg-blue transition-colors' }, 'Calendar')
                             )
                         )
                     )
                 ),
-                e('div', { className: "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 print-full-width" },
-                    !results ? e('div', { className: "max-w-2xl mx-auto no-print" },
-                        e('div', { className: "bg-white rounded-lg shadow-md p-8" },
-                            e('h1', { className: "text-3xl font-bold text-wcg-dark mb-6 text-center" }, "My PD History"),
-                            e('p', { className: "text-gray-600 mb-8 text-center" }, "View your complete professional development attendance record"),
-                            e('div', { className: "mb-6" },
-                                e('label', { className: "block text-sm font-medium text-gray-700 mb-2" }, "Search by:"),
-                                e('div', { className: "flex gap-4" },
-                                    e('button', {
-                                        onClick: () => { setSearchType('id'); setSearchValue(''); },
-                                        className: `flex-1 py-3 px-4 rounded-lg border-2 transition-colors ${searchType === 'id' ? 'border-wcg-blue bg-wcg-blue text-white' : 'border-gray-300 bg-white text-gray-700 hover:border-wcg-blue'}`
-                                    }, "ID Number"),
-                                    e('button', {
-                                        onClick: () => { setSearchType('persal'); setSearchValue(''); },
-                                        className: `flex-1 py-3 px-4 rounded-lg border-2 transition-colors ${searchType === 'persal' ? 'border-wcg-blue bg-wcg-blue text-white' : 'border-gray-300 bg-white text-gray-700 hover:border-wcg-blue'}`
-                                    }, "PERSAL Number")
-                                )
-                            ),
-                            e('div', { className: "mb-6" },
-                                e('label', { className: "block text-sm font-medium text-gray-700 mb-2" }, searchType === 'id' ? 'ID Number (13 digits)' : 'PERSAL Number (8 digits)'),
-                                e('input', {
-                                    type: "text",
-                                    value: searchValue,
-                                    onChange: (e) => setSearchValue(e.target.value),
-                                    onKeyPress: (e) => e.key === 'Enter' && canSearch && handleSearch(),
-                                    placeholder: searchType === 'id' ? '1234567890123' : '12345678',
-                                    className: "w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wcg-blue focus:border-transparent",
-                                    maxLength: searchType === 'id' ? 13 : 8
-                                }),
-                                searchValue && !isValidInput() && e('p', { className: "text-sm text-red-600 mt-1" }, `Please enter a valid ${searchType === 'id' ? '13-digit ID' : '8-digit PERSAL'} number`)
-                            ),
-                            e('div', { className: "mb-6" },
-                                e('label', { className: "flex items-start gap-3 cursor-pointer" },
+
+                // Main content
+                e('div', { className: 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 print-full-width' },
+                    !results
+                        // Login form
+                        ? e('div', { className: 'max-w-2xl mx-auto no-print' },
+                            e('div', { className: 'bg-white rounded-lg shadow-md p-8' },
+                                e('h1', { className: 'text-3xl font-bold text-wcg-dark mb-6 text-center' }, 'My PD History'),
+                                e('p', { className: 'text-gray-600 mb-8 text-center' }, 'View your complete professional development attendance record'),
+                                e('div', { className: 'mb-6' },
+                                    e('label', { className: 'block text-sm font-medium text-gray-700 mb-2' }, 'Search by:'),
+                                    e('div', { className: 'flex gap-4' },
+                                        e('button', {
+                                            onClick: () => { setSearchType('id'); setSearchValue(''); },
+                                            className: `flex-1 py-3 px-4 rounded-lg border-2 transition-colors ${searchType === 'id' ? 'border-wcg-blue bg-wcg-blue text-white' : 'border-gray-300 bg-white text-gray-700 hover:border-wcg-blue'}`
+                                        }, 'ID Number'),
+                                        e('button', {
+                                            onClick: () => { setSearchType('persal'); setSearchValue(''); },
+                                            className: `flex-1 py-3 px-4 rounded-lg border-2 transition-colors ${searchType === 'persal' ? 'border-wcg-blue bg-wcg-blue text-white' : 'border-gray-300 bg-white text-gray-700 hover:border-wcg-blue'}`
+                                        }, 'PERSAL Number')
+                                    )
+                                ),
+                                e('div', { className: 'mb-6' },
+                                    e('label', { className: 'block text-sm font-medium text-gray-700 mb-2' },
+                                        searchType === 'id' ? 'ID Number (13 digits)' : 'PERSAL Number (8 digits)'
+                                    ),
                                     e('input', {
-                                        type: "checkbox",
-                                        checked: acknowledged,
-                                        onChange: (e) => setAcknowledged(e.target.checked),
-                                        className: "mt-1 h-5 w-5 text-wcg-blue border-gray-300 rounded focus:ring-wcg-blue"
+                                        type: 'text',
+                                        value: searchValue,
+                                        onChange: (ev) => setSearchValue(ev.target.value),
+                                        onKeyPress: (ev) => ev.key === 'Enter' && canSearch && handleSearch(),
+                                        placeholder: searchType === 'id' ? '1234567890123' : '12345678',
+                                        className: 'w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wcg-blue focus:border-transparent',
+                                        maxLength: searchType === 'id' ? 13 : 8
                                     }),
-                                    e('span', { className: "text-sm text-gray-700" }, "I confirm I am accessing my own professional development records for personal verification purposes only.")
-                                )
-                            ),
-                            e('div', { className: "mb-6 bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-xs text-yellow-800" },
-                                e('strong', null, "DISCLAIMER:"),
-                                " This record is generated from self-captured attendance data. Every effort is made to ensure accuracy; discrepancies may occur due to manual entry errors. Please ensure consistency in your submissions to maintain an accurate transformation profile.",
-                                e('br'),
-                                e('strong', null, "Data last updated: "),
-                                DATA_LAST_UPDATED
-                            ),
-                            e('button', {
-                                onClick: handleSearch,
-                                disabled: !canSearch,
-                                className: `w-full py-3 px-4 rounded-lg font-semibold transition-colors ${canSearch ? 'bg-wcg-blue text-white hover:bg-blue-700' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`
-                            }, "View My History")
+                                    searchValue && !isValidInput() && e('p', { className: 'text-sm text-red-600 mt-1' },
+                                        `Please enter a valid ${searchType === 'id' ? '13-digit ID' : '8-digit PERSAL'} number`
+                                    )
+                                ),
+                                e('div', { className: 'mb-6' },
+                                    e('label', { className: 'flex items-start gap-3 cursor-pointer' },
+                                        e('input', {
+                                            type: 'checkbox',
+                                            checked: acknowledged,
+                                            onChange: (ev) => setAcknowledged(ev.target.checked),
+                                            className: 'mt-1 h-5 w-5 text-wcg-blue border-gray-300 rounded focus:ring-wcg-blue'
+                                        }),
+                                        e('span', { className: 'text-sm text-gray-700' },
+                                            'I confirm I am accessing my own professional development records for personal verification purposes only.'
+                                        )
+                                    )
+                                ),
+                                e('div', { className: 'mb-6 bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-xs text-yellow-800' },
+                                    e('strong', null, 'DISCLAIMER:'),
+                                    ' This record is generated from self-captured attendance data. Every effort is made to ensure accuracy; discrepancies may occur due to manual entry errors. Please ensure consistency in your submissions to maintain an accurate transformation profile.',
+                                    e('br'),
+                                    e('strong', null, 'Data last updated:'),
+                                    ' ' + DATA_LAST_UPDATED
+                                ),
+                                e('button', {
+                                    onClick: handleSearch,
+                                    disabled: !canSearch,
+                                    className: `w-full py-3 px-4 rounded-lg font-semibold transition-colors ${canSearch ? 'bg-wcg-blue text-white hover:bg-blue-700' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`
+                                }, 'View My History')
+                            )
                         )
-                    ) : e('div', null,
-                        results.profile ? e(React.Fragment, null,
-                            e(ChecklistModal, {
-                                isOpen: modalOpen.isOpen,
-                                onClose: () => setModalOpen({ isOpen: false, type: null }),
-                                type: modalOpen.type,
-                                completedSessions: modalOpen.type === 'spark' ? metrics.uniqueSparks : metrics.uniqueDovetails,
-                                allSessions: results.allSessions
-                            }),
-                            e('div', { className: "bg-white rounded-lg shadow-md p-6 mb-6 no-print" },
-                                e('div', { className: "flex justify-between items-start" },
-                                    e('div', null,
-                                        e('h2', { className: "text-2xl font-bold text-wcg-dark mb-2" }, results.profile.name),
-                                        e('p', { className: "text-gray-600" }, e('span', { className: "font-semibold" }, "School: "), results.profile.school),
-                                        e('p', { className: "text-gray-600" }, e('span', { className: "font-semibold" }, "District: "), results.profile.district),
-                                        e('p', { className: "text-xs text-gray-400 mt-1" }, `Data last updated: ${DATA_LAST_UPDATED}`),
-                                        e('p', { className: "text-sm text-gray-500 mt-1" }, `Generated: ${new Date().toLocaleDateString('en-GB')}`)
-                                    ),
-                                    e('button', {
-                                        onClick: () => { localStorage.removeItem('wced_pd_credentials'); setResults(null); },
-                                        className: "no-print px-4 py-2 text-sm text-red-500 hover:text-red-700 border border-red-300 rounded-lg hover:bg-red-50 transition-colors"
-                                    }, "Log Out")
-                                )
-                            ),
-                            e('div', { className: "bg-white rounded-lg shadow-md p-6 mb-6 no-print" },
-                                e('h3', { className: "text-lg font-semibold text-wcg-dark mb-4" }, "Summary"),
-                                e('div', { className: "grid grid-cols-2 md:grid-cols-7 gap-4" },
-                                    e('div', { className: "text-center p-4 bg-gray-50 rounded-lg" }, e('div', { className: "text-3xl font-bold text-wcg-dark" }, metrics.total), e('div', { className: "text-sm text-gray-600 mt-1" }, "Total Sessions")),
-                                    e('div', { className: "text-center p-4 bg-wcg-green/10 rounded-lg" }, e('div', { className: "text-3xl font-bold text-wcg-green" }, metrics.byLevel['Laying the Foundation']), e('div', { className: "text-sm text-gray-600 mt-1" }, "Foundation")),
-                                    e('div', { className: "text-center p-4 bg-wcg-yellow/10 rounded-lg" }, e('div', { className: "text-3xl font-bold text-wcg-yellow" }, metrics.byLevel['I can do it']), e('div', { className: "text-sm text-gray-600 mt-1" }, "I Can Do It")),
-                                    e('div', { className: "text-center p-4 bg-wcg-red/10 rounded-lg" }, e('div', { className: "text-3xl font-bold text-wcg-red" }, metrics.byLevel['I can do it better']), e('div', { className: "text-sm text-gray-600 mt-1" }, "Better")),
-                                    e('div', { className: "text-center p-4 bg-wcg-blue/10 rounded-lg" }, e('div', { className: "text-3xl font-bold text-wcg-blue" }, metrics.byLevel['The Summit']), e('div', { className: "text-sm text-gray-600 mt-1" }, "Summit")),
-                                    e('div', {
-                                        onClick: () => setModalOpen({ isOpen: true, type: 'spark' }),
-                                        className: "text-center p-4 bg-wcg-yellow/10 rounded-lg cursor-pointer hover:bg-wcg-yellow/20 transition-colors no-print",
-                                        title: "Click to view checklist"
-                                    }, e('div', { className: "text-3xl font-bold text-wcg-yellow" }, `⭐ ${metrics.totalSparks}`), e('div', { className: "text-sm text-gray-600 mt-1" }, "Sparks")),
-                                    e('div', {
-                                        onClick: () => setModalOpen({ isOpen: true, type: 'dovetail' }),
-                                        className: "text-center p-4 bg-wcg-pink/10 rounded-lg cursor-pointer hover:bg-wcg-pink/20 transition-colors no-print",
-                                        title: "Click to view checklist"
-                                    }, e('div', { className: "text-3xl font-bold text-wcg-pink" }, `💎 ${metrics.totalDovetails}`), e('div', { className: "text-sm text-gray-600 mt-1" }, "Dovetail"))
-                                )
-                            ),
-                            e('div', { className: "bg-white rounded-lg shadow-md p-6 mb-6 no-print" },
-                                e('div', { className: "flex flex-wrap gap-4 items-end" },
-                                    e('div', { className: "flex-1 min-w-[180px]" },
-                                        e('label', { className: "block text-sm font-medium text-gray-700 mb-2" }, "Development Level"),
-                                        e('select', {
-                                            value: filters.level,
-                                            onChange: (e) => setFilters({ ...filters, level: e.target.value }),
-                                            className: "w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wcg-blue text-sm"
-                                        },
-                                            e('option', { value: "" }, "All Levels"),
-                                            filterOptions.levels.map(lvl => e('option', { key: lvl, value: lvl }, lvl))
+                        // Results view
+                        : e('div', null,
+                            results.profile
+                                ? e(React.Fragment, null,
+                                    e(ChecklistModal, {
+                                        isOpen: modalOpen.isOpen,
+                                        onClose: () => setModalOpen({ isOpen: false, type: null }),
+                                        type: modalOpen.type,
+                                        completedSessions: modalOpen.type === 'spark' ? (metrics ? metrics.uniqueSparks : []) : (metrics ? metrics.uniqueDovetails : []),
+                                        allSessions: results.allSessions
+                                    }),
+
+                                    // Profile card
+                                    e('div', { className: 'bg-white rounded-lg shadow-md p-6 mb-6 no-print' },
+                                        e('div', { className: 'flex justify-between items-start' },
+                                            e('div', null,
+                                                e('h2', { className: 'text-2xl font-bold text-wcg-dark mb-2' }, results.profile.name),
+                                                e('p', { className: 'text-gray-600' }, e('span', { className: 'font-semibold' }, 'School:'), ' ' + results.profile.school),
+                                                e('p', { className: 'text-gray-600' }, e('span', { className: 'font-semibold' }, 'District:'), ' ' + results.profile.district),
+                                                e('p', { className: 'text-xs text-gray-400 mt-1' }, 'Data last updated: ' + DATA_LAST_UPDATED),
+                                                e('p', { className: 'text-sm text-gray-500 mt-1' }, 'Generated: ' + new Date().toLocaleDateString('en-GB'))
+                                            ),
+                                            e('button', {
+                                                onClick: () => { localStorage.removeItem('wced_pd_credentials'); setResults(null); },
+                                                className: 'no-print px-4 py-2 text-sm text-red-500 hover:text-red-700 border border-red-300 rounded-lg hover:bg-red-50 transition-colors'
+                                            }, 'Log Out')
                                         )
                                     ),
-                                    e('div', { className: "flex-1 min-w-[180px]" },
-                                        e('label', { className: "block text-sm font-medium text-gray-700 mb-2" }, "Hosting District"),
-                                        e('select', {
-                                            value: filters.district,
-                                            onChange: (e) => setFilters({ ...filters, district: e.target.value }),
-                                            className: "w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wcg-blue text-sm"
-                                        },
-                                            e('option', { value: "" }, "All Districts"),
-                                            filterOptions.districts.map(dst => e('option', { key: dst, value: dst }, dst))
-                                        )
-                                    ),
-                                    e('div', { className: "flex-1 min-w-[180px]" },
-                                        e('label', { className: "block text-sm font-medium text-gray-700 mb-2" }, "Delivery Mode"),
-                                        e('select', {
-                                            value: filters.mode,
-                                            onChange: (e) => setFilters({ ...filters, mode: e.target.value }),
-                                            className: "w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wcg-blue text-sm"
-                                        },
-                                            e('option', { value: "" }, "All Modes"),
-                                            filterOptions.modes.map(md => e('option', { key: md, value: md }, md))
-                                        )
-                                    ),
-                                    e('div', { className: "flex-1 min-w-[180px]" },
-                                        e('label', { className: "block text-sm font-medium text-gray-700 mb-2" }, "Category"),
-                                        e('select', {
-                                            value: filters.category,
-                                            onChange: (e) => setFilters({ ...filters, category: e.target.value }),
-                                            className: "w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wcg-blue text-sm"
-                                        },
-                                            e('option', { value: "" }, "All Sessions"),
-                                            e('option', { value: "spark" }, "⭐ Sparks Only"),
-                                            e('option', { value: "dovetail" }, "💎 Dovetail Only")
-                                        )
-                                    ),
-                                    e('div', { className: "flex gap-2" },
-                                        e('button', {
-                                            onClick: () => setViewMode('cards'),
-                                            className: `px-4 py-2 rounded-lg border-2 transition-colors text-sm ${viewMode === 'cards' ? 'border-wcg-blue bg-wcg-blue text-white' : 'border-gray-300 text-gray-700 hover:border-wcg-blue'}`
-                                        }, "Cards"),
-                                        e('button', {
-                                            onClick: () => setViewMode('table'),
-                                            className: `px-4 py-2 rounded-lg border-2 transition-colors text-sm ${viewMode === 'table' ? 'border-wcg-blue bg-wcg-blue text-white' : 'border-gray-300 text-gray-700 hover:border-wcg-blue'}`
-                                        }, "Table")
-                                    ),
-                                    e('button', {
-                                        onClick: exportToCSV,
-                                        className: "px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors text-sm font-semibold flex items-center gap-2"
-                                    }, "Export CSV")
-                                )
-                            ),
-                            filteredSessions.length === 0 ? e('div', { className: "bg-white rounded-lg shadow-md p-12 text-center text-gray-500" }, "No sessions match the selected filters.") : (
-                                viewMode === 'cards' ? e('div', { className: "space-y-8" },
-                                    sessionsByYear.map(group => e('div', { key: group.year, className: "space-y-4" },
-                                        e('h3', { className: "text-xl font-bold text-wcg-dark border-b pb-2" }, group.year),
-                                        e('div', { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" },
-                                            group.sessions.map((session, idx) => e('div', {
-                                                key: idx,
-                                                className: `bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden relative flex flex-col justify-between ${session.isSpark ? 'spark-overlay border-amber-300' : ''} ${session.isDovetail ? 'dovetail-overlay border-pink-300' : ''}`
+
+                                    // Summary metrics
+                                    metrics && e('div', { className: 'bg-white rounded-lg shadow-md p-6 mb-6 no-print' },
+                                        e('h3', { className: 'text-lg font-semibold text-wcg-dark mb-4' }, 'Summary'),
+                                        e('div', { className: 'grid grid-cols-2 md:grid-cols-7 gap-4' },
+                                            e('div', { className: 'text-center p-4 bg-gray-50 rounded-lg' },
+                                                e('div', { className: 'text-3xl font-bold text-wcg-dark' }, metrics.total),
+                                                e('div', { className: 'text-sm text-gray-600 mt-1' }, 'Total Sessions')
+                                            ),
+                                            e('div', { className: 'text-center p-4 bg-wcg-green/10 rounded-lg' },
+                                                e('div', { className: 'text-3xl font-bold text-wcg-green' }, metrics.byLevel['Laying the Foundation']),
+                                                e('div', { className: 'text-sm text-gray-600 mt-1' }, 'Foundation')
+                                            ),
+                                            e('div', { className: 'text-center p-4 bg-wcg-yellow/10 rounded-lg' },
+                                                e('div', { className: 'text-3xl font-bold text-wcg-yellow' }, metrics.byLevel['I can do it']),
+                                                e('div', { className: 'text-sm text-gray-600 mt-1' }, 'I Can Do It')
+                                            ),
+                                            e('div', { className: 'text-center p-4 bg-wcg-red/10 rounded-lg' },
+                                                e('div', { className: 'text-3xl font-bold text-wcg-red' }, metrics.byLevel['I can do it better']),
+                                                e('div', { className: 'text-sm text-gray-600 mt-1' }, 'Better')
+                                            ),
+                                            e('div', { className: 'text-center p-4 bg-wcg-blue/10 rounded-lg' },
+                                                e('div', { className: 'text-3xl font-bold text-wcg-blue' }, metrics.byLevel['The Summit']),
+                                                e('div', { className: 'text-sm text-gray-600 mt-1' }, 'Summit')
+                                            ),
+                                            e('div', {
+                                                className: 'text-center p-4 bg-wcg-yellow/10 rounded-lg cursor-pointer hover:bg-wcg-yellow/20 transition-colors no-print',
+                                                onClick: () => setModalOpen({ isOpen: true, type: 'spark' }),
+                                                title: 'Click to view checklist'
                                             },
-                                                e('div', { className: "p-5 flex-grow" },
-                                                    e('div', { className: "flex justify-between items-start gap-2 mb-3" },
-                                                        e('span', { className: "text-xs font-semibold text-gray-400" }, formatDate(session.parsedDate)),
-                                                        e('div', { className: "flex gap-1" },
-                                                            session.isSpark && e('span', { className: "px-2 py-0.5 bg-amber-100 text-amber-800 text-[10px] font-bold rounded uppercase tracking-wide" }, "Spark"),
-                                                            session.isDovetail && e('span', { className: "px-2 py-0.5 bg-pink-100 text-pink-800 text-[10px] font-bold rounded uppercase tracking-wide" }, "Dovetail")
-                                                        )
-                                                    ),
-                                                    e('h4', { className: "font-bold text-gray-900 mb-4 leading-snug text-base" }, session['Session Name'] || 'Untitled Session'),
-                                                    e('div', { className: "space-y-2 text-xs" },
-                                                        e('div', { className: "flex justify-between" }, e('span', { className: "text-gray-500" }, "District:"), e('span', { className: "font-medium text-gray-800" }, session['Hosting District'] || 'N/A')),
-                                                        e('div', { className: "flex justify-between" }, e('span', { className: "text-gray-500" }, "Mode:"), e('span', { className: "font-medium text-gray-800" }, session['Delivery Mode'] || 'N/A')),
-                                                        e('div', { className: "flex justify-between" }, e('span', { className: "text-gray-500" }, "Facilitator:"), e('span', { className: "font-medium text-gray-800" }, session['Facilitator'] || 'N/A'))
-                                                    )
-                                                ),
-                                                e('div', { className: "p-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between" },
-                                                    e('span', { className: "text-xs text-gray-500 font-medium" }, "Development Level:"),
-                                                    e('span', { className: `text-[11px] font-bold px-2 py-0.5 rounded shadow-sm ${getLevelColor(session['Development Level'])}` }, session['Development Level'] || 'Other')
-                                                )
-                                            ))
+                                                e('div', { className: 'text-3xl font-bold text-wcg-yellow' }, '⭐ ' + metrics.totalSparks),
+                                                e('div', { className: 'text-sm text-gray-600 mt-1' }, 'Sparks')
+                                            ),
+                                            e('div', {
+                                                className: 'text-center p-4 bg-wcg-pink/10 rounded-lg cursor-pointer hover:bg-wcg-pink/20 transition-colors no-print',
+                                                onClick: () => setModalOpen({ isOpen: true, type: 'dovetail' }),
+                                                title: 'Click to view checklist'
+                                            },
+                                                e('div', { className: 'text-3xl font-bold text-wcg-pink' }, '💎 ' + metrics.totalDovetails),
+                                                e('div', { className: 'text-sm text-gray-600 mt-1' }, 'Dovetail')
+                                            )
                                         )
-                                    ))
-                                ) : e('div', { className: "bg-white rounded-lg shadow-md overflow-x-auto" },
-                                    e('table', { className: "min-w-full divide-y divide-gray-200 text-sm text-left" },
-                                        e('thead', { className: "bg-gray-50 text-xs text-gray-500 uppercase tracking-wider font-semibold" },
-                                            e('tr', null,
-                                                e('th', { className: "px-6 py-3" }, "Date"),
-                                                e('th', { className: "px-6 py-3" }, "Session Name"),
-                                                e('th', { className: "px-6 py-3" }, "Development Level"),
-                                                e('th', { className: "px-6 py-3" }, "Hosting District"),
-                                                e('th', { className: "px-6 py-3" }, "Mode"),
-                                                e('th', { className: "px-6 py-3" }, "Facilitator"),
-                                                e('th', { className: "px-6 py-3 text-center" }, "Badges")
+                                    ),
+
+                                    // Filter bar
+                                    e('div', { className: 'bg-white rounded-lg shadow-md p-6 mb-6 no-print' },
+                                        e('div', { className: 'flex flex-wrap gap-4 items-end' },
+                                            e('div', { className: 'flex-1 min-w-[180px]' },
+                                                e('label', { className: 'block text-sm font-medium text-gray-700 mb-2' }, 'Development Level'),
+                                                e('select', {
+                                                    value: filters.level,
+                                                    onChange: (ev) => setFilters({ ...filters, level: ev.target.value }),
+                                                    className: 'w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wcg-blue text-sm'
+                                                },
+                                                    e('option', { value: '' }, 'All Levels'),
+                                                    ...filterOptions.levels.map(level => e('option', { key: level, value: level }, level))
+                                                )
+                                            ),
+                                            e('div', { className: 'flex-1 min-w-[180px]' },
+                                                e('label', { className: 'block text-sm font-medium text-gray-700 mb-2' }, 'Hosting District'),
+                                                e('select', {
+                                                    value: filters.district,
+                                                    onChange: (ev) => setFilters({ ...filters, district: ev.target.value }),
+                                                    className: 'w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wcg-blue text-sm'
+                                                },
+                                                    e('option', { value: '' }, 'All Districts'),
+                                                    ...filterOptions.districts.map(district => e('option', { key: district, value: district }, district))
+                                                )
+                                            ),
+                                            e('div', { className: 'flex-1 min-w-[180px]' },
+                                                e('label', { className: 'block text-sm font-medium text-gray-700 mb-2' }, 'Delivery Mode'),
+                                                e('select', {
+                                                    value: filters.mode,
+                                                    onChange: (ev) => setFilters({ ...filters, mode: ev.target.value }),
+                                                    className: 'w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wcg-blue text-sm'
+                                                },
+                                                    e('option', { value: '' }, 'All Modes'),
+                                                    ...filterOptions.modes.map(mode => e('option', { key: mode, value: mode }, mode))
+                                                )
+                                            ),
+                                            e('div', { className: 'flex-1 min-w-[180px]' },
+                                                e('label', { className: 'block text-sm font-medium text-gray-700 mb-2' }, 'Category'),
+                                                e('select', {
+                                                    value: filters.category,
+                                                    onChange: (ev) => setFilters({ ...filters, category: ev.target.value }),
+                                                    className: 'w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wcg-blue text-sm'
+                                                },
+                                                    e('option', { value: '' }, 'All Sessions'),
+                                                    e('option', { value: 'spark' }, '⭐ Sparks Only'),
+                                                    e('option', { value: 'dovetail' }, '💎 Dovetail Only')
+                                                )
+                                            ),
+                                            e('div', { className: 'flex gap-2' },
+                                                e('button', {
+                                                    onClick: () => setViewMode('cards'),
+                                                    className: `px-4 py-2 rounded-lg border-2 transition-colors text-sm ${viewMode === 'cards' ? 'border-wcg-blue bg-wcg-blue text-white' : 'border-gray-300 text-gray-700 hover:border-wcg-blue'}`
+                                                }, 'Cards'),
+                                                e('button', {
+                                                    onClick: () => setViewMode('table'),
+                                                    className: `px-4 py-2 rounded-lg border-2 transition-colors text-sm ${viewMode === 'table' ? 'border-wcg-blue bg-wcg-blue text-white' : 'border-gray-300 text-gray-700 hover:border-wcg-blue'}`
+                                                }, 'Table')
+                                            ),
+                                            e('div', { className: 'flex gap-2' },
+                                                e('button', {
+                                                    onClick: exportToCSV,
+                                                    className: 'px-4 py-2 bg-wcg-green text-white rounded-lg hover:bg-green-700 transition-colors text-sm'
+                                                }, 'Download CSV'),
+                                                e('button', {
+                                                    onClick: () => window.print(),
+                                                    className: 'px-4 py-2 bg-wcg-purple text-white rounded-lg hover:bg-purple-700 transition-colors text-sm'
+                                                }, 'Print / PDF')
+                                            )
+                                        )
+                                    ),
+
+                                    // Sessions list / table
+                                    filteredSessions.length === 0
+                                        ? e('div', { className: 'bg-white rounded-lg shadow-md p-8 text-center no-print' },
+                                            e('p', { className: 'text-gray-600' }, 'No sessions found matching the selected filters.')
+                                        )
+                                        : viewMode === 'cards'
+                                            ? e('div', { className: 'space-y-8 no-print' },
+                                                ...sessionsByYear.map(({ year, sessions }) =>
+                                                    e('div', { key: year },
+                                                        e('h3', { className: 'text-xl font-bold text-wcg-dark mb-4 pb-2 border-b-2 border-wcg-blue' }, year),
+                                                        e('div', { className: 'grid gap-4 md:grid-cols-2 lg:grid-cols-3' },
+                                                            ...sessions.map((session, idx) =>
+                                                                e('div', {
+                                                                    key: idx,
+                                                                    className: `bg-white rounded-lg shadow-md p-5 hover:shadow-lg transition-shadow relative overflow-hidden ${session.isSpark ? 'border-2 border-wcg-yellow spark-overlay' : session.isDovetail ? 'border-2 border-wcg-pink dovetail-overlay' : ''}`
+                                                                },
+                                                                    e('div', { className: 'flex justify-between items-start mb-3' },
+                                                                        e('span', { className: `px-3 py-1 rounded-full text-xs font-semibold ${getLevelColor(session['Development Level'])}` },
+                                                                            session['Development Level'] || 'N/A'
+                                                                        ),
+                                                                        e('span', { className: 'text-sm text-gray-500' }, formatDate(session.parsedDate))
+                                                                    ),
+                                                                    e('h4', { className: 'font-semibold text-wcg-dark mb-3 line-clamp-2' }, session['Session Name'] || 'Untitled Session'),
+                                                                    e('div', { className: 'space-y-1 text-sm text-gray-600 mb-3' },
+                                                                        e('p', null, e('span', { className: 'font-medium' }, 'Facilitator:'), ' ' + (session['Facilitator'] || 'N/A')),
+                                                                        e('p', null, e('span', { className: 'font-medium' }, 'District:'), ' ' + (session['Hosting District'] || 'N/A')),
+                                                                        e('p', null, e('span', { className: 'font-medium' }, 'Mode:'), ' ' + (session['Delivery Mode'] || 'N/A'))
+                                                                    ),
+                                                                    session.isSpark && e('div', { className: 'mt-3 pt-3 border-t border-gray-200' },
+                                                                        e('span', { className: 'inline-flex items-center gap-1 bg-wcg-yellow text-black px-2 py-1 rounded-full text-xs font-bold' }, '⭐ Spark')
+                                                                    ),
+                                                                    session.isDovetail && e('div', { className: 'mt-3 pt-3 border-t border-gray-200' },
+                                                                        e('span', { className: 'inline-flex items-center gap-1 bg-wcg-pink text-white px-2 py-1 rounded-full text-xs font-bold' }, '💎 Dovetail')
+                                                                    )
+                                                                )
+                                                            )
+                                                        )
+                                                    )
+                                                )
+                                            )
+                                            : e('div', { className: 'bg-white rounded-lg shadow-md overflow-hidden no-print' },
+                                                e('div', { className: 'overflow-x-auto' },
+                                                    e('table', { className: 'w-full' },
+                                                        e('thead', { className: 'bg-gray-50 border-b' },
+                                                            e('tr', null,
+                                                                e('th', { className: 'px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase' }, 'Date'),
+                                                                e('th', { className: 'px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase' }, 'Session Name'),
+                                                                e('th', { className: 'px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase' }, 'Level'),
+                                                                e('th', { className: 'px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase' }, 'Facilitator'),
+                                                                e('th', { className: 'px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase' }, 'District'),
+                                                                e('th', { className: 'px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase' }, 'Mode'),
+                                                                e('th', { className: 'px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase' }, 'Special')
+                                                            )
+                                                        ),
+                                                        e('tbody', { className: 'divide-y divide-gray-200' },
+                                                            ...filteredSessions.map((session, idx) =>
+                                                                e('tr', {
+                                                                    key: idx,
+                                                                    className: `hover:bg-gray-50 ${session.isSpark ? 'spark-overlay' : session.isDovetail ? 'dovetail-overlay' : ''}`
+                                                                },
+                                                                    e('td', { className: 'px-4 py-3 text-sm text-gray-900 whitespace-nowrap' }, formatDate(session.parsedDate)),
+                                                                    e('td', { className: 'px-4 py-3 text-sm text-gray-900' }, session['Session Name'] || 'Untitled Session'),
+                                                                    e('td', { className: 'px-4 py-3 text-sm' },
+                                                                        e('span', { className: `px-2 py-1 rounded text-xs font-semibold ${getLevelColor(session['Development Level'])}` },
+                                                                            session['Development Level'] || 'N/A'
+                                                                        )
+                                                                    ),
+                                                                    e('td', { className: 'px-4 py-3 text-sm text-gray-700' }, session['Facilitator'] || 'N/A'),
+                                                                    e('td', { className: 'px-4 py-3 text-sm text-gray-700' }, session['Hosting District'] || 'N/A'),
+                                                                    e('td', { className: 'px-4 py-3 text-sm text-gray-700' }, session['Delivery Mode'] || 'N/A'),
+                                                                    e('td', { className: 'px-4 py-3 text-sm' },
+                                                                        session.isSpark && e('span', { className: 'inline-flex items-center gap-1 bg-wcg-yellow text-black px-2 py-1 rounded text-xs font-bold whitespace-nowrap' }, 'Spark'),
+                                                                        session.isDovetail && e('span', { className: 'inline-flex items-center gap-1 bg-wcg-pink text-white px-2 py-1 rounded text-xs font-bold whitespace-nowrap' }, 'Dovetail')
+                                                                    )
+                                                                )
+                                                            )
+                                                        )
+                                                    )
+                                                )
+                                            ),
+
+                                    // Disclaimer
+                                    e('div', { className: 'bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-xs text-yellow-800 mb-6 no-print' },
+                                        e('strong', null, 'DISCLAIMER:'),
+                                        ' This record is generated from self-captured attendance data. Every effort is made to ensure accuracy; discrepancies may occur due to manual entry errors. Please ensure consistency in your submissions to maintain an accurate transformation profile.'
+                                    ),
+
+                                    // PRINT ONLY VIEW
+                                    e('div', { className: 'hidden print:block w-full' },
+                                        // 1. Header & Disclaimer
+                                        e('div', { className: 'text-center mb-8' },
+                                            e('img', { src: 'header.png', alt: 'WCED Header', className: 'h-16 mx-auto mb-4' }),
+                                            e('h1', { className: 'text-2xl font-bold text-wcg-dark mb-1' }, results.profile.name),
+                                            e('p', { className: 'text-sm text-gray-800 mb-1 font-semibold' }, results.profile.school + ' • ' + results.profile.district),
+                                            e('p', { className: 'text-sm text-gray-600 mb-2' }, 'Report Generated: ' + new Date().toLocaleDateString('en-GB')),
+                                            e('p', { className: 'text-xs text-gray-600 max-w-3xl mx-auto italic' },
+                                                'Disclaimer: The information in this report is based on self-captured data which could lead to inaccurate data. We endeavour to ensure the data is as clean and accurate as we can. (Data last updated: ' + DATA_LAST_UPDATED + ')'
                                             )
                                         ),
-                                        e('tbody', { className: "divide-y divide-gray-200" },
-                                            filteredSessions.map((session, idx) => e('tr', { key: idx, className: `hover:bg-gray-50/80 ${session.isSpark ? 'bg-amber-50/20' : ''} ${session.isDovetail ? 'bg-pink-50/20' : ''}` },
-                                                e('th', { className: "px-6 py-4 font-medium text-gray-500 whitespace-nowrap" }, formatDate(session.parsedDate)),
-                                                e('td', { className: "px-6 py-4 font-bold text-gray-900" }, session['Session Name']),
-                                                e('td', { className: "px-6 py-4 whitespace-nowrap" }, e('span', { className: `text-[10px] font-bold px-2 py-0.5 rounded ${getLevelColor(session['Development Level'])}` }, session['Development Level'] || 'Other')),
-                                                e('td', { className: "px-6 py-4 whitespace-nowrap text-gray-600" }, session['Hosting District'] || 'N/A'),
-                                                e('td', { className: "px-6 py-4 whitespace-nowrap text-gray-600" }, session['Delivery Mode'] || 'N/A'),
-                                                e('td', { className: "px-6 py-4 whitespace-nowrap text-gray-600" }, session['Facilitator'] || 'N/A'),
-                                                e('td', { className: "px-6 py-4 whitespace-nowrap text-center" },
-                                                    e('div', { className: "flex justify-center gap-1" },
-                                                        session.isSpark && e('span', { className: "px-1.5 py-0.5 bg-amber-100 text-amber-800 text-[10px] font-bold rounded" }, "⭐"),
-                                                        session.isDovetail && e('span', { className: "px-1.5 py-0.5 bg-pink-100 text-pink-800 text-[10px] font-bold rounded" }, "💎")
+
+                                        // 2. Developmental Level Breakdown
+                                        metrics && e('div', { className: 'mb-8' },
+                                            e('h3', { className: 'text-base font-bold text-wcg-dark mb-2' }, 'Developmental Level Breakdown'),
+                                            e('table', { className: 'w-full text-sm border-collapse border border-gray-300' },
+                                                e('thead', null,
+                                                    e('tr', { className: 'bg-gray-100' },
+                                                        e('th', { className: 'border border-gray-300 px-3 py-1.5 text-center' }, 'Total Sessions'),
+                                                        e('th', { className: 'border border-gray-300 px-3 py-1.5 text-center' }, 'Laying the Foundation'),
+                                                        e('th', { className: 'border border-gray-300 px-3 py-1.5 text-center' }, 'I can do it'),
+                                                        e('th', { className: 'border border-gray-300 px-3 py-1.5 text-center' }, 'I can do it better'),
+                                                        e('th', { className: 'border border-gray-300 px-3 py-1.5 text-center' }, 'The Summit')
+                                                    )
+                                                ),
+                                                e('tbody', null,
+                                                    e('tr', null,
+                                                        e('td', { className: 'border border-gray-300 px-3 py-1.5 text-center font-bold text-lg' }, metrics.total),
+                                                        e('td', { className: 'border border-gray-300 px-3 py-1.5 text-center' }, metrics.byLevel['Laying the Foundation']),
+                                                        e('td', { className: 'border border-gray-300 px-3 py-1.5 text-center' }, metrics.byLevel['I can do it']),
+                                                        e('td', { className: 'border border-gray-300 px-3 py-1.5 text-center' }, metrics.byLevel['I can do it better']),
+                                                        e('td', { className: 'border border-gray-300 px-3 py-1.5 text-center' }, metrics.byLevel['The Summit'])
                                                     )
                                                 )
-                                            ))
+                                            )
+                                        ),
+
+                                        // 3. Checklists
+                                        metrics && e('div', { className: 'flex gap-8 mb-8 w-full' },
+                                            e('div', { className: 'flex-1 border border-gray-300 p-4 rounded bg-yellow-50' },
+                                                e('h4', { className: 'font-bold text-sm mb-3 flex items-center justify-between' },
+                                                    e('span', null, '⭐ Spark Sessions'),
+                                                    e('span', { className: 'text-gray-600 font-normal' }, `${metrics.uniqueSparks.length} / ${SPARK_SESSIONS.length}`)
+                                                ),
+                                                e('ul', { className: 'text-xs space-y-2' },
+                                                    ...SPARK_SESSIONS.map(s => {
+                                                        const isCompleted = metrics.uniqueSparks.includes(s);
+                                                        return e('li', { key: s, className: `flex items-start gap-2 ${isCompleted ? 'text-gray-900 font-medium' : 'text-gray-500'}` },
+                                                            e('span', { className: 'w-4 h-4 border border-gray-400 bg-white inline-flex items-center justify-center font-bold flex-shrink-0 mt-0.5' },
+                                                                isCompleted ? '✓' : ''
+                                                            ),
+                                                            e('span', null, s)
+                                                        );
+                                                    })
+                                                )
+                                            ),
+                                            e('div', { className: 'flex-1 border border-gray-300 p-4 rounded bg-pink-50' },
+                                                e('h4', { className: 'font-bold text-sm mb-3 flex items-center justify-between' },
+                                                    e('span', null, '💎 Dovetail Essentials'),
+                                                    e('span', { className: 'text-gray-600 font-normal' }, `${metrics.uniqueDovetails.length} / ${DOVETAIL_SESSIONS.length}`)
+                                                ),
+                                                e('ul', { className: 'text-xs space-y-2' },
+                                                    ...DOVETAIL_SESSIONS.map(s => {
+                                                        const isCompleted = metrics.uniqueDovetails.includes(s);
+                                                        return e('li', { key: s, className: `flex items-start gap-2 ${isCompleted ? 'text-gray-900 font-medium' : 'text-gray-500'}` },
+                                                            e('span', { className: 'w-4 h-4 border border-gray-400 bg-white inline-flex items-center justify-center font-bold flex-shrink-0 mt-0.5' },
+                                                                isCompleted ? '✓' : ''
+                                                            ),
+                                                            e('span', null, s)
+                                                        );
+                                                    })
+                                                )
+                                            )
+                                        ),
+
+                                        // 4. Detailed Table
+                                        e('h3', { className: 'text-base font-bold text-wcg-dark mb-2' }, 'Detailed Attendance Record'),
+                                        e('table', { className: 'w-full text-xs border-collapse border border-gray-400' },
+                                            e('thead', null,
+                                                e('tr', { className: 'bg-gray-200' },
+                                                    e('th', { className: 'border border-gray-400 px-2 py-1.5 text-left font-semibold w-20' }, 'Date'),
+                                                    e('th', { className: 'border border-gray-400 px-2 py-1.5 text-left font-semibold' }, 'Session Name'),
+                                                    e('th', { className: 'border border-gray-400 px-2 py-1.5 text-left font-semibold' }, 'Development Level'),
+                                                    e('th', { className: 'border border-gray-400 px-2 py-1.5 text-left font-semibold' }, 'Facilitator'),
+                                                    e('th', { className: 'border border-gray-400 px-2 py-1.5 text-left font-semibold w-24' }, 'Mode')
+                                                )
+                                            ),
+                                            e('tbody', null,
+                                                ...filteredSessions.map((row, idx) => {
+                                                    let rowColor = '';
+                                                    if (row.isDovetail) rowColor = 'bg-pink-100';
+                                                    else if (row.isSpark) rowColor = 'bg-yellow-100';
+                                                    return e('tr', { key: idx, className: rowColor },
+                                                        e('td', { className: 'border border-gray-400 px-2 py-1' }, formatDate(row.parsedDate)),
+                                                        e('td', { className: 'border border-gray-400 px-2 py-1 font-medium' }, row['Session Name'] || 'Untitled'),
+                                                        e('td', { className: 'border border-gray-400 px-2 py-1' }, row['Development Level'] || 'N/A'),
+                                                        e('td', { className: 'border border-gray-400 px-2 py-1' }, row['Facilitator'] || 'N/A'),
+                                                        e('td', { className: 'border border-gray-400 px-2 py-1' }, row['Delivery Mode'] || 'N/A')
+                                                    );
+                                                })
+                                            )
+                                        ),
+
+                                        // 5. Legend
+                                        e('div', { className: 'mt-4 text-xs text-gray-700 space-y-2' },
+                                            e('div', { className: 'flex items-center gap-2' },
+                                                e('span', { className: 'inline-block w-4 h-4 bg-pink-100 border border-gray-400 rounded' }),
+                                                e('span', null,
+                                                    'Highlighted sessions are ',
+                                                    e('strong', null, 'Dovetail Essentials'),
+                                                    ' sessions. ',
+                                                    e('a', { href: 'https://jacovanniekerk-ux.github.io/wcedsessions/dovetail-essentials.html', target: '_blank', rel: 'noopener noreferrer', className: 'text-blue-600 underline hover:text-blue-800' }, 'Find out More')
+                                                )
+                                            ),
+                                            e('div', { className: 'flex items-center gap-2' },
+                                                e('span', { className: 'inline-block w-4 h-4 bg-yellow-100 border border-gray-400 rounded' }),
+                                                e('span', null,
+                                                    'Highlighted sessions are sessions that award a ',
+                                                    e('strong', null, 'Spark'),
+                                                    '. ',
+                                                    e('a', { href: 'https://jacovanniekerk-ux.github.io/wcedsessions/pathway.html', target: '_blank', rel: 'noopener noreferrer', className: 'text-blue-600 underline hover:text-blue-800' }, 'Find out More')
+                                                )
+                                            )
                                         )
                                     )
                                 )
-                            )
-                        ) : e('div', { className: "max-w-2xl mx-auto p-12 bg-white rounded-lg shadow-md text-center no-print" },
-                            e('div', { className: "w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4" },
-                                e('svg', { className: "w-8 h-8", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
-                                    e('path', { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" })
+                                // No records found
+                                : e('div', { className: 'max-w-2xl mx-auto no-print' },
+                                    e('div', { className: 'bg-white rounded-lg shadow-md p-8 text-center' },
+                                        e('div', { className: 'text-gray-400 mb-4' },
+                                            e('svg', { className: 'w-16 h-16 mx-auto', fill: 'none', stroke: 'currentColor', viewBox: '0 0 24 24' },
+                                                e('path', { strokeLinecap: 'round', strokeLinejoin: 'round', strokeWidth: 2, d: 'M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z' })
+                                            )
+                                        ),
+                                        e('h3', { className: 'text-xl font-semibold text-gray-900 mb-2' }, 'No Records Found'),
+                                        e('p', { className: 'text-gray-600 mb-6' },
+                                            `No professional development records were found for the ${searchType === 'id' ? 'ID' : 'PERSAL'} number you entered. Please check your details and try again.`
+                                        ),
+                                        e('button', {
+                                            onClick: () => { localStorage.removeItem('wced_pd_credentials'); setResults(null); },
+                                            className: 'px-6 py-2 bg-wcg-blue text-white rounded-lg hover:bg-blue-700 transition-colors'
+                                        }, 'Try Again')
+                                    )
                                 )
-                            ),
-                            e('h3', { className: "text-xl font-semibold text-gray-900 mb-2" }, "No Records Found"),
-                            e('p', { className: "text-gray-600 mb-6" }, `No professional development records were found for the ${searchType === 'id' ? 'ID' : 'PERSAL'} number you entered. Please check your details and try again.`),
-                            e('button', {
-                                onClick: () => { localStorage.removeItem('wced_pd_credentials'); setResults(null); },
-                                className: "px-6 py-2 bg-wcg-blue text-white rounded-lg hover:bg-blue-700 transition-colors"
-                            }, "Try Again")
                         )
-                    )
                 )
             );
         }
