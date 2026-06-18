@@ -6,9 +6,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Adoption & Transformation Pathway - Earn Your Sparks - WCED eLearning</title>
     <link rel="icon" type="image/png" href="favicon.png">
+    
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
     <style>
         * {
             margin: 0;
@@ -615,8 +616,9 @@
 <body>
     <div id="root"></div>
 
-    <script type="text/babel">
-        const { useState } = React;
+    <script>
+        const { useState, useRef } = React;
+        const e = React.createElement;
 
         const MILESTONES = [
             {
@@ -741,141 +743,128 @@
         function Modal({ milestone, onClose }) {
             if (!milestone) return null;
 
-            return (
-                <div className="modal-backdrop" onClick={onClose}>
-                    <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-                        <button className="modal-close" onClick={onClose}>×</button>
-                        <div className="modal-header" style={{ background: `linear-gradient(135deg, ${milestone.accentColor} 0%, ${milestone.accentColor}cc 100%)` }}>
-                            <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>{milestone.icon}</div>
-                            <h2 className="modal-title">{milestone.title}</h2>
-                            <p className="modal-subtitle">{milestone.subtitle}</p>
-                            <div style={{ marginTop: '1rem' }}>
-                                <span className="badge badge-blue">{milestone.duration}</span>
-                            </div>
-                        </div>
-                        <div className="modal-body">
-                            <div className="modal-section">
-                                <h3>Overview</h3>
-                                <p>{milestone.description}</p>
-                            </div>
+            const renderAvailability = () => {
+                const avail = milestone.availability;
+                if (!avail) return null;
 
-                            {milestone.keyPoints && (
-                                <div className="modal-section">
-                                    <h3>Key Focus Areas</h3>
-                                    <ul>
-                                        {milestone.keyPoints.map((point, idx) => (
-                                            <li key={idx}>{point}</li>
-                                        ))}
-                                    </ul>
-                                </div>
-                            )}
+                const now = new Date();
+                now.setHours(0, 0, 0, 0);
 
-                            {milestone.dovetailEssentials && (
-                                <div className="modal-section">
-                                    <h3>Dovetail Essentials (Highlighted Pathway)</h3>
-                                    <p style={{ fontStyle: 'italic', marginBottom: '1rem', color: '#78BE20', fontWeight: '600' }}>
-                                        These 10 sessions form a curated learning pathway within the broader micro-learning landscape.
-                                    </p>
-                                    <ul>
-                                        {milestone.dovetailEssentials.map((essential, idx) => (
-                                            <li key={idx}>{essential}</li>
-                                        ))}
-                                    </ul>
-                                </div>
-                            )}
-
-
-                            {/* Availability / Registration info */}
-                            {milestone.availability && (() => {
-                                const avail = milestone.availability;
-                                const now = new Date();
-                                now.setHours(0, 0, 0, 0);
-
-                                if (avail.type === 'registration') {
-                                    const expiry = new Date(avail.expiryDate + 'T23:59:59');
-                                    const isOpen = now <= expiry;
-                                    return (
-                                        <div className="modal-section">
-                                            <h3>{isOpen ? '🟢 Registration Open' : '🔴 Registration Closed'}</h3>
-                                            <p>{isOpen ? avail.activeMessage : avail.expiredMessage}</p>
-                                            {isOpen && (
-                                                <div style={{ marginTop: '1rem' }}>
-                                                    <p style={{ fontSize: '0.85rem', color: '#888', marginBottom: '0.75rem' }}>
-                                                        📅 Closes: {new Date(avail.expiryDate).toLocaleDateString('en-ZA', { day: 'numeric', month: 'long', year: 'numeric' })}
-                                                    </p>
-                                                    <a
-                                                        href={avail.registerUrl}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        style={{
-                                                            display: 'inline-flex',
-                                                            alignItems: 'center',
-                                                            gap: '0.5rem',
-                                                            padding: '0.75rem 1.5rem',
-                                                            background: '#16a34a',
-                                                            color: 'white',
-                                                            borderRadius: '10px',
-                                                            fontWeight: 'bold',
-                                                            fontSize: '0.95rem',
-                                                            textDecoration: 'none',
-                                                            transition: 'all 0.2s',
-                                                            boxShadow: '0 2px 8px rgba(22,163,74,0.3)'
-                                                        }}
-                                                    >
-                                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" /></svg>
-                                                        Register Now
-                                                    </a>
-                                                </div>
-                                            )}
-                                        </div>
-                                    );
+                if (avail.type === 'registration') {
+                    const expiry = new Date(avail.expiryDate + 'T23:59:59');
+                    const isOpen = now <= expiry;
+                    return e('div', { className: "modal-section" },
+                        e('h3', null, isOpen ? '🟢 Registration Open' : '🔴 Registration Closed'),
+                        e('p', null, isOpen ? avail.activeMessage : avail.expiredMessage),
+                        isOpen && e('div', { style: { marginTop: '1rem' } },
+                            e('p', { style: { fontSize: '0.85rem', color: '#888', marginBottom: '0.75rem' } },
+                                `📅 Closes: ${new Date(avail.expiryDate).toLocaleDateString('en-ZA', { day: 'numeric', month: 'long', year: 'numeric' })}`
+                            ),
+                            e('a', {
+                                href: avail.registerUrl,
+                                target: "_blank",
+                                rel: "noopener noreferrer",
+                                style: {
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '0.5rem',
+                                    padding: '0.75rem 1.5rem',
+                                    background: '#16a34a',
+                                    color: 'white',
+                                    borderRadius: '10px',
+                                    fontWeight: 'bold',
+                                    fontSize: '0.95rem',
+                                    textDecoration: 'none',
+                                    transition: 'all 0.2s',
+                                    boxShadow: '0 2px 8px rgba(22,163,74,0.3)'
                                 }
+                            },
+                                e('svg', { width: "16", height: "16", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2.5", strokeLinecap: "round", strokeLinejoin: "round" },
+                                    e('path', { d: "M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" }),
+                                    e('polyline', { points: "15 3 21 3 21 9" }),
+                                    e('line', { x1: "10", y1: "14", x2: "21", y2: "3" })
+                                ),
+                                "Register Now"
+                            )
+                        )
+                    );
+                }
 
-                                if (avail.type === 'info') {
-                                    return (
-                                        <div className="modal-section">
-                                            <h3>ℹ️ How to Join</h3>
-                                            <p>{avail.message}</p>
-                                        </div>
-                                    );
-                                }
+                if (avail.type === 'info') {
+                    return e('div', { className: "modal-section" },
+                        e('h3', null, "ℹ️ How to Join"),
+                        e('p', null, avail.message)
+                    );
+                }
 
-                                if (avail.type === 'upcoming') {
-                                    return (
-                                        <div className="modal-section">
-                                            <h3>📣 Coming Soon</h3>
-                                            <p>{avail.message}</p>
-                                        </div>
-                                    );
-                                }
+                if (avail.type === 'upcoming') {
+                    return e('div', { className: "modal-section" },
+                        e('h3', null, "📣 Coming Soon"),
+                        e('p', null, avail.message)
+                    );
+                }
 
-                                return null;
-                            })()}
+                return null;
+            };
 
-                            <div className="modal-section">
-                                <h3>Next Steps</h3>
-                                <p>{milestone.next}</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+            return e('div', { className: "modal-backdrop", onClick: onClose },
+                e('div', { className: "modal-content", onClick: (event) => event.stopPropagation() },
+                    e('button', { className: "modal-close", onClick: onClose }, "×"),
+                    e('div', { className: "modal-header", style: { background: `linear-gradient(135deg, ${milestone.accentColor} 0%, ${milestone.accentColor}cc 100%)` } },
+                        e('div', { style: { fontSize: '4rem', marginBottom: '1rem' } }, milestone.icon),
+                        e('h2', { className: "modal-title" }, milestone.title),
+                        e('p', { className: "modal-subtitle" }, milestone.subtitle),
+                        e('div', { style: { marginTop: '1rem' } },
+                            e('span', { className: "badge badge-blue" }, milestone.duration)
+                        )
+                    ),
+                    e('div', { className: "modal-body" },
+                        e('div', { className: "modal-section" },
+                            e('h3', null, "Overview"),
+                            e('p', null, milestone.description)
+                        ),
+
+                        milestone.keyPoints && e('div', { className: "modal-section" },
+                            e('h3', null, "Key Focus Areas"),
+                            e('ul', null,
+                                milestone.keyPoints.map((point, idx) => e('li', { key: idx }, point))
+                            )
+                        ),
+
+                        milestone.dovetailEssentials && e('div', { className: "modal-section" },
+                            e('h3', null, "Dovetail Essentials (Highlighted Pathway)"),
+                            e('p', { style: { fontStyle: 'italic', marginBottom: '1rem', color: '#78BE20', fontWeight: '600' } },
+                                "These 10 sessions form a curated learning pathway within the broader micro-learning landscape."
+                            ),
+                            e('ul', null,
+                                milestone.dovetailEssentials.map((essential, idx) => e('li', { key: idx }, essential))
+                            )
+                        ),
+
+                        renderAvailability(),
+
+                        e('div', { className: "modal-section" },
+                            e('h3', null, "Next Steps"),
+                            e('p', null, milestone.next)
+                        )
+                    )
+                )
             );
         }
 
         function PathwayVisualization() {
             const [selectedMilestone, setSelectedMilestone] = useState(null);
             const [menuOpen, setMenuOpen] = useState(false);
-            const scrollContainerRef = React.useRef(null);
+            const scrollContainerRef = useRef(null);
             const [touchStart, setTouchStart] = useState(0);
             const [touchEnd, setTouchEnd] = useState(0);
 
-            // Handle touch events for swipe on mobile
-            const handleTouchStart = (e) => {
-                setTouchStart(e.targetTouches[0].clientX);
+            const handleTouchStart = (event) => {
+                setTouchStart(event.targetTouches[0].clientX);
             };
 
-            const handleTouchMove = (e) => {
-                setTouchEnd(e.targetTouches[0].clientX);
+            const handleTouchMove = (event) => {
+                setTouchEnd(event.targetTouches[0].clientX);
             };
 
             const handleTouchEnd = () => {
@@ -886,7 +875,7 @@
                 const isRightSwipe = distance < -50;
 
                 if (scrollContainerRef.current) {
-                    const cardWidth = 280 + 64; // card width + gap
+                    const cardWidth = 280 + 64; 
                     if (isLeftSwipe) {
                         scrollContainerRef.current.scrollBy({ left: cardWidth, behavior: 'smooth' });
                     }
@@ -899,43 +888,38 @@
                 setTouchEnd(0);
             };
 
-            return (
-                <>
-                    <header className="header">
-                        <div className="header-content">
-                            <img src="header.png" alt="WCED eLearning" />
-                            <div style={{ position: 'relative' }}>
-                                <button
-                                    onClick={() => setMenuOpen(!menuOpen)}
-                                    className="burger-btn"
-                                    aria-label="Menu"
-                                >
-                                    {menuOpen ? (
-                                        <svg width="20" height="20" fill="none" stroke="#374151" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                                    ) : (
-                                        <svg width="20" height="20" fill="none" stroke="#374151" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
-                                    )}
-                                </button>
-                                {menuOpen && (
-                                    <div className="burger-dropdown">
-                                        <a href="my-journey.html">My PD Journey</a>
-                                        <a href="my-pd-history.html">Full PD History</a>
-                                        <a href="index.html">Upcoming Sessions</a>
-                                        <a href="calendar.html">Calendar</a>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    </header>
+            return e(React.Fragment, null,
+                e('header', { className: "header" },
+                    e('div', { className: "header-content" },
+                        e('img', { src: "header.png", alt: "WCED eLearning" }),
+                        e('div', { style: { position: 'relative' } },
+                            e('button', {
+                                onClick: () => setMenuOpen(!menuOpen),
+                                className: "burger-btn",
+                                "aria-label": "Menu"
+                            },
+                                menuOpen ? e('svg', { width: "20", height: "20", fill: "none", stroke: "#374151", viewBox: "0 0 24 24" }, e('path', { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M6 18L18 6M6 6l12 12" }))
+                                         : e('svg', { width: "20", height: "20", fill: "none", stroke: "#374151", viewBox: "0 0 24 24" }, e('path', { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M4 6h16M4 12h16M4 18h16" }))
+                            ),
+                            menuOpen && e('div', { className: "burger-dropdown" },
+                                e('a', { href: "my-journey.html" }, "My PD Journey"),
+                                e('a', { href: "my-pd-history.html" }, "Full PD History"),
+                                e('a', { href: "index.html" }, "Upcoming Sessions"),
+                                e('a', { href: "calendar.html" }, "Calendar")
+                            )
+                        )
+                    )
+                ),
 
-                    <div className="hero">
-                        <h1>Your Pathway to Transformation</h1>
-                        <p>
-                            Welcome to the Adoption and Transformation Pathway. This interactive journey represents a shift towards decentralised learning, designed to put you at the centre of your professional growth. Why does this matter? Because true digital transformation is built on teacher agency. We want to empower you to take control of your development so that you can take full control of the transformation in your classroom. Explore the tiers below to understand the pathway and see how you can grow your digital wisdom.
-                        </p>
-                    </div>
-                    <div style={{ textAlign: 'center', marginTop: '1rem', marginBottom: '1.5rem', position: 'relative', zIndex: 1 }}>
-                        <a href="my-journey.html" style={{
+                e('div', { className: "hero" },
+                    e('h1', null, "Your Pathway to Transformation"),
+                    e('p', null, "Welcome to the Adoption and Transformation Pathway. This interactive journey represents a shift towards decentralised learning, designed to put you at the centre of your professional growth. Why does this matter? Because true digital transformation is built on teacher agency. We want to empower you to take control of your development so that you can take full control of the transformation in your classroom. Explore the tiers below to understand the pathway and see how you can grow your digital wisdom.")
+                ),
+
+                e('div', { style: { textAlign: 'center', marginTop: '1rem', marginBottom: '1.5rem', position: 'relative', zIndex: 1 } },
+                    e('a', {
+                        href: "my-journey.html",
+                        style: {
                             display: 'inline-block',
                             background: 'linear-gradient(135deg, #001489, #007DBA)',
                             color: 'white',
@@ -946,85 +930,82 @@
                             fontSize: '1rem',
                             boxShadow: '0 4px 15px rgba(0, 20, 137, 0.3)',
                             transition: 'all 0.3s ease'
-                        }}
-                            onMouseOver={e => e.currentTarget.style.transform = 'translateY(-2px)'}
-                            onMouseOut={e => e.currentTarget.style.transform = 'translateY(0)'}
-                        >
-                            👤 View My Progress on This Pathway
-                        </a>
-                    </div>
-                    <div
-                        className="pathway-container"
-                        ref={scrollContainerRef}
-                        onTouchStart={handleTouchStart}
-                        onTouchMove={handleTouchMove}
-                        onTouchEnd={handleTouchEnd}
-                    >
-                        <div className="pathway-scroll">
-                            <svg className="connection-line" style={{
+                        },
+                        onMouseOver: (event) => event.currentTarget.style.transform = 'translateY(-2px)',
+                        onMouseOut: (event) => event.currentTarget.style.transform = 'translateY(0)'
+                    }, "👤 View My Progress on This Pathway")
+                ),
+
+                e('div', {
+                    className: "pathway-container",
+                    ref: scrollContainerRef,
+                    onTouchStart: handleTouchStart,
+                    onTouchMove: handleTouchMove,
+                    onTouchEnd: handleTouchEnd
+                },
+                    e('div', { className: "pathway-scroll" },
+                        e('svg', {
+                            className: "connection-line",
+                            style: {
                                 position: 'absolute',
                                 top: '50%',
                                 left: '140px',
                                 width: 'calc(100% - 280px)',
                                 height: '4px',
                                 transform: 'translateY(-50%)'
-                            }}>
-                                <line
-                                    className="path-line"
-                                    x1="0"
-                                    y1="2"
-                                    x2="100%"
-                                    y2="2"
-                                    stroke="url(#pathGradient)"
-                                />
-                                <defs>
-                                    <linearGradient id="pathGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                                        <stop offset="0%" style={{ stopColor: '#00A1A3', stopOpacity: 0.6 }} />
-                                        <stop offset="33%" style={{ stopColor: '#8FAD15', stopOpacity: 0.6 }} />
-                                        <stop offset="66%" style={{ stopColor: '#007DBA', stopOpacity: 0.6 }} />
-                                        <stop offset="100%" style={{ stopColor: '#C8126E', stopOpacity: 0.6 }} />
-                                    </linearGradient>
-                                </defs>
-                            </svg>
+                            }
+                        },
+                            e('line', {
+                                className: "path-line",
+                                x1: "0",
+                                y1: "2",
+                                x2: "100%",
+                                y2: "2",
+                                stroke: "url(#pathGradient)"
+                            }),
+                            e('defs', null,
+                                e('linearGradient', { id: "pathGradient", x1: "0%", y1: "0%", x2: "100%", y2: "0%" },
+                                    e('stop', { offset: "0%", style: { stopColor: '#00A1A3', stopOpacity: 0.6 } }),
+                                    e('stop', { offset: "33%", style: { stopColor: '#8FAD15', stopOpacity: 0.6 } }),
+                                    e('stop', { offset: "66%", style: { stopColor: '#007DBA', stopOpacity: 0.6 } }),
+                                    e('stop', { offset: "100%", style: { stopColor: '#C8126E', stopOpacity: 0.6 } })
+                                )
+                            )
+                        ),
 
-                            {MILESTONES.map((milestone) => (
-                                <div
-                                    key={milestone.id}
-                                    className={`milestone-card ${milestone.color}`}
-                                    onClick={() => setSelectedMilestone(milestone)}
-                                >
-                                    <div className="milestone-number">{milestone.step}</div>
-                                    <div className="milestone-icon">{milestone.icon}</div>
-                                    <div className="milestone-title">{milestone.title}</div>
-                                    <div className="milestone-subtitle">{milestone.subtitle}</div>
-                                    <div style={{ textAlign: 'center' }}>
-                                        <span className="milestone-duration">{milestone.duration}</span>
-                                    </div>
-                                    <div style={{ textAlign: 'center' }}>
-                                        <span className="spark-badge">Earn 1 Spark</span>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
+                        MILESTONES.map((milestone) => e('div', {
+                            key: milestone.id,
+                            className: `milestone-card ${milestone.color}`,
+                            onClick: () => setSelectedMilestone(milestone)
+                        },
+                            e('div', { className: "milestone-number" }, milestone.step),
+                            e('div', { className: "milestone-icon" }, milestone.icon),
+                            e('div', { className: "milestone-title" }, milestone.title),
+                            e('div', { className: "milestone-subtitle" }, milestone.subtitle),
+                            e('div', { style: { textAlign: 'center' } },
+                                e('span', { className: "milestone-duration" }, milestone.duration)
+                            ),
+                            e('div', { style: { textAlign: 'center' } },
+                                e('span', { className: "spark-badge" }, "Earn 1 Spark")
+                            )
+                        ))
+                    )
+                ),
 
-                    {/* Non-linear pathway subtext */}
-                    <div style={{ maxWidth: '860px', margin: '0 auto 2rem', padding: '0 2rem', textAlign: 'center', position: 'relative', zIndex: 1 }}>
-                        <p style={{ fontSize: '0.95rem', color: '#666', lineHeight: 1.6, fontStyle: 'italic' }}>
-                            This is a non-linear pathway and completing steps is not a pre-requisite for a next step. Active participants will be notified and prompted to complete steps they have not yet completed.
-                        </p>
-                    </div>
+                e('div', { style: { maxWidth: '860px', margin: '0 auto 2rem', padding: '0 2rem', textAlign: 'center', position: 'relative', zIndex: 1 } },
+                    e('p', { style: { fontSize: '0.95rem', color: '#666', lineHeight: 1.6, fontStyle: 'italic' } },
+                        "This is a non-linear pathway and completing steps is not a pre-requisite for a next step. Active participants will be notified and prompted to complete steps they have not yet completed."
+                    )
+                ),
 
-                    {selectedMilestone && (
-                        <Modal
-                            milestone={selectedMilestone}
-                            onClose={() => setSelectedMilestone(null)}
-                        />
-                    )}
+                selectedMilestone && e(Modal, {
+                    milestone: selectedMilestone,
+                    onClose: () => setSelectedMilestone(null)
+                }),
 
-                    {/* Edvance ARC */}
-                    <div style={{ maxWidth: '860px', margin: '0 auto 3rem', padding: '0 2rem', position: 'relative', zIndex: 1 }}>
-                        <div style={{
+                e('div', { style: { maxWidth: '860px', margin: '0 auto 3rem', padding: '0 2rem', position: 'relative', zIndex: 1 } },
+                    e('div', {
+                        style: {
                             background: 'white',
                             borderRadius: '16px',
                             padding: '1.5rem 2rem',
@@ -1033,58 +1014,60 @@
                             display: 'flex',
                             alignItems: 'flex-start',
                             gap: '1rem'
-                        }}>
-                            <span style={{ fontSize: '2rem', flexShrink: 0 }}>🎓</span>
-                            <div style={{ flex: 1 }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '0.5rem' }}>
-                                    <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#672D82', margin: 0 }}>Edvance ARC</h3>
-                                    <span style={{ fontSize: '0.75rem', background: '#f3ebf7', color: '#672D82', padding: '0.2rem 0.6rem', borderRadius: '20px', fontWeight: '600' }}>By Invitation</span>
-                                </div>
-                                <p style={{ fontSize: '0.9rem', color: '#555', marginBottom: '1rem', lineHeight: 1.6 }}>
-                                    A specialised developmental pathway for teachers with strong PD engagement. The <strong>Facilitator Think Tank</strong> is the entry point and earns a Spark. The remaining steps deepen your capacity as a transformation leader.
-                                </p>
-                                <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-                                    {EDVANCE_ARC.steps.map((step, idx) => (
-                                        <div key={idx} style={{
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: '0.4rem',
-                                            background: '#f9f5fc',
-                                            border: '1px solid #e0d0eb',
-                                            borderRadius: '8px',
-                                            padding: '0.4rem 0.75rem',
-                                            fontSize: '0.85rem',
-                                            color: '#444'
-                                        }}>
-                                            <span style={{ fontWeight: '600', color: '#672D82' }}>{step.label}</span>
-                                            <span>·</span>
-                                            <span>{step.name}</span>
-                                            {step.spark && (
-                                                <span style={{
-                                                    background: 'linear-gradient(135deg, #FFD700, #FFA500)',
-                                                    color: '#000',
-                                                    fontSize: '0.7rem',
-                                                    fontWeight: 'bold',
-                                                    padding: '0.1rem 0.4rem',
-                                                    borderRadius: '10px',
-                                                    marginLeft: '0.25rem'
-                                                }}>⚡ Spark</span>
-                                            )}
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-                        {/* Edvance ARC subtext */}
-                        <p style={{ fontSize: '0.85rem', color: '#888', lineHeight: 1.6, fontStyle: 'italic', marginTop: '0.75rem', paddingLeft: '0.5rem' }}>
-                            The Edvance ARC is per invitation only for teachers who show an interest in becoming Transformation Agents.
-                        </p>
-                    </div>
-                </>
+                        }
+                    },
+                        e('span', { style: { fontSize: '2rem', flexShrink: 0 } }, "🎓"),
+                        e('div', { style: { flex: 1 } },
+                            e('div', { style: { display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '0.5rem' } },
+                                e('h3', { style: { fontSize: '1.1rem', fontWeight: 'bold', color: '#672D82', margin: 0 } }, "Edvance ARC"),
+                                e('span', { style: { fontSize: '0.75rem', background: '#f3ebf7', color: '#672D82', padding: '0.2rem 0.6rem', borderRadius: '20px', fontWeight: '600' } }, "By Invitation")
+                            ),
+                            e('p', { style: { fontSize: '0.9rem', color: '#555', marginBottom: '1rem', lineHeight: 1.6 } },
+                                "A specialised developmental pathway for teachers with strong PD engagement. The ",
+                                e('strong', null, "Facilitator Think Tank"),
+                                " is the entry point and earns a Spark. The remaining steps deepen your capacity as a transformation leader."
+                            ),
+                            e('div', { style: { display: 'flex', gap: '0.75rem', flexWrap: 'wrap' } },
+                                EDVANCE_ARC.steps.map((step, idx) => e('div', {
+                                    key: idx,
+                                    style: {
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '0.4rem',
+                                        background: '#f9f5fc',
+                                        border: '1px solid #e0d0eb',
+                                        borderRadius: '8px',
+                                        padding: '0.4rem 0.75rem',
+                                        fontSize: '0.85rem',
+                                        color: '#444'
+                                    }
+                                },
+                                    e('span', { style: { fontWeight: '600', color: '#672D82' } }, step.label),
+                                    e('span', null, "·"),
+                                    e('span', null, step.name),
+                                    step.spark && e('span', {
+                                        style: {
+                                            background: 'linear-gradient(135deg, #FFD700, #FFA500)',
+                                            color: '#000',
+                                            fontSize: '0.7rem',
+                                            fontWeight: 'bold',
+                                            padding: '0.1rem 0.4rem',
+                                            borderRadius: '10px',
+                                            marginLeft: '0.25rem'
+                                        }
+                                    }, "⚡ Spark")
+                                ))
+                            )
+                        )
+                    ),
+                    e('p', { style: { fontSize: '0.85rem', color: '#888', lineHeight: 1.6, fontStyle: 'italic', marginTop: '0.75rem', paddingLeft: '0.5rem' } },
+                        "The Edvance ARC is per invitation only for teachers who show an interest in becoming Transformation Agents."
+                    )
+                )
             );
         }
 
-        ReactDOM.render(<PathwayVisualization />, document.getElementById('root'));
+        ReactDOM.render(e(PathwayVisualization), document.getElementById('root'));
     </script>
 </body>
 
