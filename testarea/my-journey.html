@@ -325,7 +325,7 @@
                                     e('button', {
                                         key: i,
                                         onClick: () => onSessionClick && onSessionClick(s),
-                                        className: "w-full min-w-0min-w-0 text-left flex items-center gap-2 text-xs bg-white rounded-lg px-3 py-2 border border-gray-100 hover:border-wcg-blue hover:shadow-sm transition-all group"
+                                        className: "w-full min-w-0 text-left flex items-center gap-2 text-xs bg-white rounded-lg px-3 py-2 border border-gray-100 hover:border-wcg-blue hover:shadow-sm transition-all group"
                                     },
                                         e('span', { className: "text-gray-400 group-hover:text-wcg-blue" }, "📅"),
                                         e('span', { className: "font-medium text-gray-800" }, s.date),
@@ -393,13 +393,13 @@
         },
             isOpen ? e(CloseIcon) : e(MenuIcon)
         ),
-        isOpen ? e('div', { className: "absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.1)] border border-gray-100 overflow-hidden animate-fade-in-up" },
-            e('div', { className: "py-1" },
-                e('a', { href: "index.html", className: linkStyle }, e('span', { className: "text-base" }, "🏠"), "Home"),
-                e('a', { href: "pathway.html", className: linkStyle }, e('span', { className: "text-base" }, "👣"), "Pathway Info"),
-                e('a', { href: "my-pd-history.html", className: linkStyle }, e('span', { className: "text-base" }, "📜"), "My History"),
-                e('a', { href: "my-journey.html", className: linkStyle }, e('span', { className: "text-base" }, "🗺️"), "My Journey"),
-                e('a', { href: "calendar.html", className: linkStyle }, e('span', { className: "text-base" }, "📅"), "Calendar View")
+isOpen ? e('div', { className: "absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.1)] border border-gray-100 overflow-hidden animate-fade-in-up" },
+    e('div', { className: "py-1" },
+        e('a', { href: "index.html", className: linkStyle }, "Home"),
+        e('a', { href: "pathway.html", className: linkStyle }, "Pathway Info"),
+        e('a', { href: "my-pd-history.html", className: linkStyle }, "My History"),
+        e('a', { href: "my-journey.html", className: linkStyle }, "My Journey"),
+        e('a', { href: "calendar.html", className: linkStyle }, "Calendar View")
             )
         ) : null
     );
