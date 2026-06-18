@@ -8,7 +8,6 @@
     <link rel="icon" type="image/png" href="favicon.png">
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -130,8 +129,9 @@
 <body class="bg-gray-50">
     <div id="root"></div>
 
-    <script type="text/babel">
+    <script>
         const { useState, useEffect, useMemo } = React;
+        const e = React.createElement;
 
         // === SESSION DEFINITIONS ===
         const SPARK_SESSIONS = [
@@ -267,11 +267,6 @@
                 'not-started': { text: '⬜ Not Started', color: '#9ca3af' }
             };
 
-            return (
-                <div
-                    className="relative rounded-2xl p-5 cursor-pointer transition-all duration-300 hover:shadow-lg hover:-translate-y-1 flex-shrink-0"
-                    style={{
-                        ...statusStyles[status.state],
                         width: '220px',
                         minHeight: '280px'
                     }}
