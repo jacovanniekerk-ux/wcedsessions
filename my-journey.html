@@ -709,7 +709,7 @@ isOpen ? e('div', { className: "absolute right-0 mt-2 w-56 bg-white rounded-xl s
                             time: row['Time'] || '',
                             venue: row['Venue'] || '',
                             link: row['Registration Link'] || row['Pre-Register'] || '',
-                            description: row['Session Description'] || '',
+                            description: row['Session Desciption'] || '',
                             level: row['Developmental Level'] || ''
                         }))
                         .sort((a, b) => parseDate(a.date) - parseDate(b.date))
