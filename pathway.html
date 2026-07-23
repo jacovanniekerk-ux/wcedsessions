@@ -630,7 +630,7 @@
                 color: 'teal-border',
                 accentColor: '#00A1A3',
                 duration: '24-hour self-paced course',
-                description: 'A foundational online course providing a broad perspective on the visibility of the digital landscape and the "Transformation Agenda." This journey moves you from digital literacy (the what) toward understanding the possibilities of technology in education.',
+                description: 'A foundational online course providing a broad perspective on the visibility of the digital landscape and the "Transformation Agenda." This journey moves you from digital literacy into digitally transformed practice.',
                 keyPoints: [
                     'Comprehensive 12-week self-paced online course',
                     'Explore the landscape of ICT integration in education',
@@ -689,7 +689,7 @@
                 color: 'blue-border',
                 accentColor: '#007DBA',
                 duration: '4-week hybrid immersion',
-                description: 'An experiential hybrid course that shifts your focus from "how to use" to "how to learn." View technology from the learner\'s perspective and develop digital wisdom (the when and why) through hands-on practice, reflection, and collaboration.',
+                description: 'An experiential hybrid course that shifts your focus from "how to use" to "how to learn." View technology from the learner\'s perspective and develop digital wisdom (the why).',
                 keyPoints: [
                     'Immersive 4-week hybrid learning experience',
                     'Shift from teacher-centered to learner-centered perspective',
@@ -714,7 +714,7 @@
                 color: 'pink-border',
                 accentColor: '#C8126E',
                 duration: 'Self-paced 4-week course',
-                description: 'Deepen your ability to engage with the ethical, emotional, psychological, and behavioural dimensions of technology use. Master the 4P Affective Transformation Model (People, Practices, Pedagogy, Platforms) and lead with reflective digital responsibility.',
+                description: 'Deepen your ability to engage with the ethical, emotional, psychological, and behavioural dimensions of technology use. Master the 4P Affective Transformation Model (People, Practices, Pedagogy, Platforms).',
                 keyPoints: [
                     'Focus on digital citizenship and cyber wellness',
                     'Understand human-centered design principles',
@@ -726,8 +726,8 @@
                 availability: {
                     type: 'registration',
                     registerUrl: 'YOUR_REGISTER_LINK_HERE',
-                    waitlistUrl: 'https://docs.google.com/forms/d/e/1FAIpQLSeT-sQEVUDnNQ652jxOLogI6DzXV6ZDv9wCPZSa8VXKjNOKFQ/viewform?usp=pp_url&entry.1581432046=Cyber+Effect+Ambassador+Initiation+Course',
-                    expiryDate: '2026-07-01', // Update this to your actual closing date
+                    waitlistUrl: 'https://docs.google.com/forms/d/e/1FAIpQLSeT-sQEVUDnNQ652jxOLogI6DzXV6ZDv9wCPZSa8VXKjNOKFQ/viewform?usp=pp_url&entry.1581432046=Cyber+Ambassador',
+                    expiryDate: '2026-07-01',
                     activeMessage: 'Registrations are currently open!',
                     expiredMessage: 'Registrations have closed. Please join the waitlist to be notified of the next intake.'
 },
@@ -744,7 +744,7 @@
                 { name: 'Elevate', label: 'Step 2', spark: false },
                 { name: 'Shift and Spark', label: 'Step 3', spark: false }
             ],
-            description: 'A specialised developmental pathway for teachers with strong PD engagement. The Facilitator Think Tank is the entry point and earns a Spark. Elevate and Shift and Spark deepen your capacity as a transformation leader.'
+            description: 'A specialised developmental pathway for teachers with strong PD engagement. The Facilitator Think Tank is the entry point and earns a Spark. Elevate and Shift and Spark deepen expertise.'
         };
 
         function Modal({ milestone, onClose }) {
@@ -807,7 +807,7 @@
                     alignItems: 'center',
                     gap: '0.5rem',
                     padding: '0.75rem 1.5rem',
-                    background: '#007DBA', // A distinct blue color for the waitlist
+                    background: '#007DBA',
                     color: 'white',
                     borderRadius: '10px',
                     fontWeight: 'bold',
@@ -912,7 +912,7 @@
                             ),
                             e('ul', null,
                                 milestone.dovetailEssentials.map((essential, idx) => e('li', { key: idx }, essential))
-                            )
+                            ),
                             e('a', {
                                 href: milestone.sessionsInfoUrl,
                                 target: "_blank",
@@ -993,12 +993,12 @@
 
                 e('div', { className: "hero" },
                     e('h1', null, "Your Pathway to Transformation"),
-                    e('p', null, "Welcome to the Adoption and Transformation Pathway. This interactive journey represents a shift towards decentralised learning, designed to put you at the centre of your professional growth. Why does this matter? Because true digital transformation is built on teacher agency. We want to empower you to take control of your development so that you can take full control of the transformation in your classroom. Explore the tiers below to understand the pathway and see how you can grow your digital wisdom.")
+                    e('p', null, "Welcome to the Adoption and Transformation Pathway. This interactive journey represents a shift towards decentralised learning, designed to put you at the centre of your own professional growth.")
                 ),
 
                 e('div', { style: { textAlign: 'center', marginTop: '1rem', marginBottom: '1.5rem', position: 'relative', zIndex: 1 } },
                     e('a', {
-                        href: "my-journey.html",
+                        href: 'my-journey.html',
                         style: {
                             display: 'inline-block',
                             background: 'linear-gradient(135deg, #001489, #007DBA)',
@@ -1011,9 +1011,11 @@
                             boxShadow: '0 4px 15px rgba(0, 20, 137, 0.3)',
                             transition: 'all 0.3s ease'
                         },
-                        onMouseOver: (event) => event.currentTarget.style.transform = 'translateY(-2px)',
-                        onMouseOut: (event) => event.currentTarget.style.transform = 'translateY(0)'
-                    }, "👤 View My Progress on This Pathway")
+                        onMouseOver: (e) => e.currentTarget.style.transform = 'translateY(-2px)',
+                        onMouseOut: (e) => e.currentTarget.style.transform = 'translateY(0)'
+                    },
+                        '👤 View My Progress on This Pathway'
+                    )
                 ),
 
                 e('div', {
@@ -1024,130 +1026,29 @@
                     onTouchEnd: handleTouchEnd
                 },
                     e('div', { className: "pathway-scroll" },
-                        e('svg', {
-                            className: "connection-line",
-                            style: {
-                                position: 'absolute',
-                                top: '50%',
-                                left: '140px',
-                                width: 'calc(100% - 280px)',
-                                height: '4px',
-                                transform: 'translateY(-50%)'
-                            }
-                        },
-                            e('line', {
-                                className: "path-line",
-                                x1: "0",
-                                y1: "2",
-                                x2: "100%",
-                                y2: "2",
-                                stroke: "url(#pathGradient)"
-                            }),
-                            e('defs', null,
-                                e('linearGradient', { id: "pathGradient", x1: "0%", y1: "0%", x2: "100%", y2: "0%" },
-                                    e('stop', { offset: "0%", style: { stopColor: '#00A1A3', stopOpacity: 0.6 } }),
-                                    e('stop', { offset: "33%", style: { stopColor: '#8FAD15', stopOpacity: 0.6 } }),
-                                    e('stop', { offset: "66%", style: { stopColor: '#007DBA', stopOpacity: 0.6 } }),
-                                    e('stop', { offset: "100%", style: { stopColor: '#C8126E', stopOpacity: 0.6 } })
-                                )
-                            )
-                        ),
-
-                        MILESTONES.map((milestone) => e('div', {
-                            key: milestone.id,
-                            className: `milestone-card ${milestone.color}`,
-                            onClick: () => setSelectedMilestone(milestone)
-                        },
-                            e('div', { className: "milestone-number" }, milestone.step),
-                            e('div', { className: "milestone-icon" }, milestone.icon),
-                            e('div', { className: "milestone-title" }, milestone.title),
-                            e('div', { className: "milestone-subtitle" }, milestone.subtitle),
-                            e('div', { style: { textAlign: 'center' } },
-                                e('span', { className: "milestone-duration" }, milestone.duration)
-                            ),
-                            e('div', { style: { textAlign: 'center' } },
-                                e('span', { className: "spark-badge" }, "Earn 1 Spark")
-                            )
-                        ))
-                    )
-                ),
-
-                e('div', { style: { maxWidth: '860px', margin: '0 auto 2rem', padding: '0 2rem', textAlign: 'center', position: 'relative', zIndex: 1 } },
-                    e('p', { style: { fontSize: '0.95rem', color: '#666', lineHeight: 1.6, fontStyle: 'italic' } },
-                        "This is a non-linear pathway and completing steps is not a pre-requisite for a next step. Active participants will be notified and prompted to complete steps they have not yet completed."
-                    )
-                ),
-
-                selectedMilestone && e(Modal, {
-                    milestone: selectedMilestone,
-                    onClose: () => setSelectedMilestone(null)
-                }),
-
-                e('div', { style: { maxWidth: '860px', margin: '0 auto 3rem', padding: '0 2rem', position: 'relative', zIndex: 1 } },
-                    e('div', {
-                        style: {
-                            background: 'white',
-                            borderRadius: '16px',
-                            padding: '1.5rem 2rem',
-                            boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-                            borderLeft: '6px solid #672D82',
-                            display: 'flex',
-                            alignItems: 'flex-start',
-                            gap: '1rem'
-                        }
-                    },
-                        e('span', { style: { fontSize: '2rem', flexShrink: 0 } }, "🎓"),
-                        e('div', { style: { flex: 1 } },
-                            e('div', { style: { display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '0.5rem' } },
-                                e('h3', { style: { fontSize: '1.1rem', fontWeight: 'bold', color: '#672D82', margin: 0 } }, "Edvance ARC"),
-                                e('span', { style: { fontSize: '0.75rem', background: '#f3ebf7', color: '#672D82', padding: '0.2rem 0.6rem', borderRadius: '20px', fontWeight: '600' } }, "By Invitation")
-                            ),
-                            e('p', { style: { fontSize: '0.9rem', color: '#555', marginBottom: '1rem', lineHeight: 1.6 } },
-                                "A specialised developmental pathway for teachers with strong PD engagement. The ",
-                                e('strong', null, "Facilitator Think Tank"),
-                                " is the entry point and earns a Spark. The remaining steps deepen your capacity as a transformation leader."
-                            ),
-                            e('div', { style: { display: 'flex', gap: '0.75rem', flexWrap: 'wrap' } },
-                                EDVANCE_ARC.steps.map((step, idx) => e('div', {
-                                    key: idx,
-                                    style: {
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: '0.4rem',
-                                        background: '#f9f5fc',
-                                        border: '1px solid #e0d0eb',
-                                        borderRadius: '8px',
-                                        padding: '0.4rem 0.75rem',
-                                        fontSize: '0.85rem',
-                                        color: '#444'
-                                    }
-                                },
-                                    e('span', { style: { fontWeight: '600', color: '#672D82' } }, step.label),
-                                    e('span', null, "·"),
-                                    e('span', null, step.name),
-                                    step.spark && e('span', {
-                                        style: {
-                                            background: 'linear-gradient(135deg, #FFD700, #FFA500)',
-                                            color: '#000',
-                                            fontSize: '0.7rem',
-                                            fontWeight: 'bold',
-                                            padding: '0.1rem 0.4rem',
-                                            borderRadius: '10px',
-                                            marginLeft: '0.25rem'
-                                        }
-                                    }, "⚡ Spark")
-                                ))
+                        MILESTONES.map((milestone) =>
+                            e('div', {
+                                key: milestone.id,
+                                className: `milestone-card ${milestone.color}`,
+                                onClick: () => setSelectedMilestone(milestone)
+                            },
+                                e('div', { className: "milestone-number" }, milestone.step),
+                                e('div', { className: "milestone-icon" }, milestone.icon),
+                                e('div', { className: "milestone-title" }, milestone.title),
+                                e('div', { className: "milestone-subtitle" }, milestone.subtitle),
+                                e('div', { className: "milestone-duration" }, milestone.duration),
+                                e('div', { className: "spark-badge" }, "Earn a Spark")
                             )
                         )
-                    ),
-                    e('p', { style: { fontSize: '0.85rem', color: '#888', lineHeight: 1.6, fontStyle: 'italic', marginTop: '0.75rem', paddingLeft: '0.5rem' } },
-                        "The Edvance ARC is per invitation only for teachers who show an interest in becoming Transformation Agents."
                     )
-                )
+                ),
+
+                selectedMilestone && e(Modal, { milestone: selectedMilestone, onClose: () => setSelectedMilestone(null) })
             );
         }
 
-        ReactDOM.render(e(PathwayVisualization), document.getElementById('root'));
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(e(PathwayVisualization));
     </script>
 </body>
 
