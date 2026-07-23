@@ -630,7 +630,7 @@
                 color: 'teal-border',
                 accentColor: '#00A1A3',
                 duration: '24-hour self-paced course',
-                description: 'A foundational online course providing a broad perspective on the visibility of the digital landscape and the "Transformation Agenda." This journey moves you from digital literacy into digitally transformed practice.',
+                description: 'A foundational online course providing a broad perspective on the visibility of the digital landscape and the "Transformation Agenda." This journey moves you from digital[...]
                 keyPoints: [
                     'Comprehensive 12-week self-paced online course',
                     'Explore the landscape of ICT integration in education',
@@ -657,7 +657,7 @@
                 color: 'olive-border',
                 accentColor: '#8FAD15',
                 duration: '10 focused micro-learning sessions',
-                description: 'A non-linear pathway through targeted 60-120 minute sessions that build practical digital competency (the how). Choose the sessions that match your needs and context across four developmental levels.',
+                description: 'A non-linear pathway through targeted 60-120 minute sessions that build practical digital competency (the how). Choose the sessions that match your needs and context acro[...]
                 dovetailEssentials: [
                     'ePedagogy: Building a Digital Lesson',
                     'Integrating digital resources from the ePortal',
@@ -689,7 +689,7 @@
                 color: 'blue-border',
                 accentColor: '#007DBA',
                 duration: '4-week hybrid immersion',
-                description: 'An experiential hybrid course that shifts your focus from "how to use" to "how to learn." View technology from the learner\'s perspective and develop digital wisdom (the why).',
+                description: 'An experiential hybrid course that shifts your focus from "how to use" to "how to learn." View technology from the learner\'s perspective and develop digital wisdom (the [...]
                 keyPoints: [
                     'Immersive 4-week hybrid learning experience',
                     'Shift from teacher-centered to learner-centered perspective',
@@ -714,7 +714,7 @@
                 color: 'pink-border',
                 accentColor: '#C8126E',
                 duration: 'Self-paced 4-week course',
-                description: 'Deepen your ability to engage with the ethical, emotional, psychological, and behavioural dimensions of technology use. Master the 4P Affective Transformation Model (People, Practices, Pedagogy, Platforms).',
+                description: 'Deepen your ability to engage with the ethical, emotional, psychological, and behavioural dimensions of technology use. Master the 4P Affective Transformation Model (Peop[...]
                 keyPoints: [
                     'Focus on digital citizenship and cyber wellness',
                     'Understand human-centered design principles',
@@ -744,7 +744,7 @@
                 { name: 'Elevate', label: 'Step 2', spark: false },
                 { name: 'Shift and Spark', label: 'Step 3', spark: false }
             ],
-            description: 'A specialised developmental pathway for teachers with strong PD engagement. The Facilitator Think Tank is the entry point and earns a Spark. Elevate and Shift and Spark deepen expertise.'
+            description: 'A specialised developmental pathway for teachers with strong PD engagement. The Facilitator Think Tank is the entry point and earns a Spark. Elevate and Shift and Spark deepe[...]
         };
 
         function Modal({ milestone, onClose }) {
@@ -912,13 +912,7 @@
                             ),
                             e('ul', null,
                                 milestone.dovetailEssentials.map((essential, idx) => e('li', { key: idx }, essential))
-                            ),
-                            e('a', {
-                                href: milestone.sessionsInfoUrl,
-                                target: "_blank",
-                                rel: "noopener noreferrer",
-                                style: { display: 'inline-block', marginTop: '1rem', color: '#8FAD15', fontWeight: 'bold', textDecoration: 'underline' }
-                                }, "View session details & schedule →")
+                            )
                         ),
 
                         renderAvailability(),
@@ -926,6 +920,35 @@
                         e('div', { className: "modal-section" },
                             e('h3', null, "Next Steps"),
                             e('p', null, milestone.next)
+                        ),
+
+                        milestone.dovetailEssentials && e('div', { style: { marginTop: '1rem' } },
+                            e('a', {
+                                href: milestone.sessionsInfoUrl,
+                                target: "_blank",
+                                rel: "noopener noreferrer",
+                                style: {
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '0.5rem',
+                                    padding: '0.75rem 1.5rem',
+                                    background: '#8FAD15',
+                                    color: 'white',
+                                    borderRadius: '10px',
+                                    fontWeight: 'bold',
+                                    fontSize: '0.95rem',
+                                    textDecoration: 'none',
+                                    transition: 'all 0.2s',
+                                    boxShadow: '0 2px 8px rgba(143,173,21,0.3)'
+                                }
+                            },
+                                e('svg', { width: "16", height: "16", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2.5", strokeLinecap: "round", strokeLinejoin: "round" },
+                                    e('path', { d: "M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" }),
+                                    e('polyline', { points: "15 3 21 3 21 9" }),
+                                    e('line', { x1: "10", y1: "14", x2: "21", y2: "3" })
+                                ),
+                                "View Session Details & Schedule"
+                            )
                         )
                     )
                 )
@@ -993,12 +1016,12 @@
 
                 e('div', { className: "hero" },
                     e('h1', null, "Your Pathway to Transformation"),
-                    e('p', null, "Welcome to the Adoption and Transformation Pathway. This interactive journey represents a shift towards decentralised learning, designed to put you at the centre of your own professional growth.")
+                    e('p', null, "Welcome to the Adoption and Transformation Pathway. This interactive journey represents a shift towards decentralised learning, designed to put you at the centre of your learning experience.")
                 ),
 
                 e('div', { style: { textAlign: 'center', marginTop: '1rem', marginBottom: '1.5rem', position: 'relative', zIndex: 1 } },
                     e('a', {
-                        href: 'my-journey.html',
+                        href: "my-journey.html",
                         style: {
                             display: 'inline-block',
                             background: 'linear-gradient(135deg, #001489, #007DBA)',
@@ -1014,7 +1037,7 @@
                         onMouseOver: (e) => e.currentTarget.style.transform = 'translateY(-2px)',
                         onMouseOut: (e) => e.currentTarget.style.transform = 'translateY(0)'
                     },
-                        '👤 View My Progress on This Pathway'
+                        "👤 View My Progress on This Pathway"
                     )
                 ),
 
@@ -1026,6 +1049,18 @@
                     onTouchEnd: handleTouchEnd
                 },
                     e('div', { className: "pathway-scroll" },
+                        e('svg', { className: "connection-line", style: { position: 'absolute', top: '50%', left: '140px', width: 'calc(100% - 280px)', height: '4px', transform: 'translateY(-50%)' } },
+                            e('line', { className: "path-line", x1: "0", y1: "2", x2: "100%", y2: "2", stroke: "url(#pathGradient)" }),
+                            e('defs', null,
+                                e('linearGradient', { id: "pathGradient", x1: "0%", y1: "0%", x2: "100%", y2: "0%" },
+                                    e('stop', { offset: "0%", style: { stopColor: '#00A1A3', stopOpacity: 0.6 } }),
+                                    e('stop', { offset: "33%", style: { stopColor: '#8FAD15', stopOpacity: 0.6 } }),
+                                    e('stop', { offset: "66%", style: { stopColor: '#007DBA', stopOpacity: 0.6 } }),
+                                    e('stop', { offset: "100%", style: { stopColor: '#C8126E', stopOpacity: 0.6 } })
+                                )
+                            )
+                        ),
+
                         MILESTONES.map((milestone) =>
                             e('div', {
                                 key: milestone.id,
@@ -1036,9 +1071,23 @@
                                 e('div', { className: "milestone-icon" }, milestone.icon),
                                 e('div', { className: "milestone-title" }, milestone.title),
                                 e('div', { className: "milestone-subtitle" }, milestone.subtitle),
-                                e('div', { className: "milestone-duration" }, milestone.duration),
-                                e('div', { className: "spark-badge" }, "Earn a Spark")
+                                e('div', { style: { textAlign: 'center' } },
+                                    e('div', { className: "milestone-duration" }, milestone.duration),
+                                    e('div', { className: "spark-badge" }, "Spark")
+                                )
                             )
+                        ),
+
+                        e('div', {
+                            key: 'edvance-arc',
+                            className: "milestone-card blue-border",
+                            onClick: () => { }
+                        },
+                            e('div', { className: "milestone-number", style: { background: '#fbbf24' } }, "★"),
+                            e('div', { className: "milestone-icon" }, EDVANCE_ARC.icon),
+                            e('div', { className: "milestone-title" }, EDVANCE_ARC.title),
+                            e('div', { className: "milestone-subtitle" }, EDVANCE_ARC.subtitle),
+                            e('div', { style: { textAlign: 'center', fontSize: '0.75rem', color: '#666' } }, "Advanced pathway")
                         )
                     )
                 ),
@@ -1047,8 +1096,7 @@
             );
         }
 
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(e(PathwayVisualization));
+        ReactDOM.createRoot(document.getElementById('root')).render(e(PathwayVisualization));
     </script>
 </body>
 
