@@ -670,6 +670,7 @@
                     'AI In Education: Work Smarter, not Harder',
                     'Introduction to Cyber Wellness Education'
                 ],
+                sessionsInfoUrl: 'https://jacovanniekerk-ux.github.io/wcedsessions/dovetail-essentials.html',
                 keyPoints: [
                     'Flexible, non-linear pathway—attend what you need',
                     'Short, practical sessions (60-120 minutes)',
@@ -912,6 +913,12 @@
                             e('ul', null,
                                 milestone.dovetailEssentials.map((essential, idx) => e('li', { key: idx }, essential))
                             )
+                            e('a', {
+                                href: milestone.sessionsInfoUrl,
+                                target: "_blank",
+                                rel: "noopener noreferrer",
+                                style: { display: 'inline-block', marginTop: '1rem', color: '#8FAD15', fontWeight: 'bold', textDecoration: 'underline' }
+                                }, "View session details & schedule →")
                         ),
 
                         renderAvailability(),
