@@ -79,9 +79,9 @@
         // ============================================================
         // SUPABASE CONFIG — replace with your own project URL and key
         // ============================================================
-        const SUPABASE_URL = 'https://cftpufjzwpmhgzdcgpjb.supabase.co';
-        const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_b1H_5DJYLQSrr83T_dvz6A_2UAqOVg4';
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+        const SUPABASE_URL = 'YOUR_SUPABASE_PROJECT_URL';
+        const SUPABASE_PUBLISHABLE_KEY = 'YOUR_SUPABASE_PUBLISHABLE_KEY';
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
         // Name of the table in Supabase that holds the attendance records
         const TABLE_NAME = 'attendance';
@@ -90,18 +90,18 @@
         // headers) to the actual column names in your Supabase table.
         // Edit the right-hand values below to match your table's columns.
         const COLUMN_MAP = {
-    'Timestamp': 'Timestamp',
-    'First Name': 'First Name',
-    'Surname': 'Surname',
-    'School': 'School',
-    'District': 'District',
-    'ID/Passport Number': 'ID/Passport Number',
-    'PERSAL Number': 'PERSAL Number',
-    'Session Name': 'Session Name',
-    'Development Level': 'Development Level',
-    'Facilitator': 'Facilitator',
-    'Delivery Mode': 'Delivery Mode'
-};
+            'Timestamp': 'Timestamp',
+            'First Name': 'First Name',
+            'Surname': 'Surname',
+            'School': 'School',
+            'District': 'District',
+            'ID/Passport Number': 'ID/Passport Number',
+            'PERSAL Number': 'PERSAL Number',
+            'Session Name': 'Session Name',
+            'Development Level': 'Development Level',
+            'Facilitator': 'Facilitator',
+            'Delivery Mode': 'Delivery Mode'
+        };
 
         // Converts a row returned from Supabase (snake_case columns) back
         // into the object shape the rest of the app expects (CSV-style keys)
@@ -117,7 +117,7 @@
         // number. Only matching rows are ever sent to the browser.
         async function fetchRecordsByKey(searchType, key) {
             const column = searchType === 'id' ? COLUMN_MAP['ID/Passport Number'] : COLUMN_MAP['PERSAL Number'];
-            const { data: rows, error } = await supabase
+            const { data: rows, error } = await supabaseClient
                 .from(TABLE_NAME)
                 .select('*')
                 .eq(column, key);
