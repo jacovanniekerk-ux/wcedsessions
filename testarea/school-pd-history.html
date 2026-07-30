@@ -10,6 +10,7 @@
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script>
@@ -63,6 +64,70 @@
 
     <script type="text/babel">
         const { useState, useEffect, useMemo, useRef } = React;
+
+        // ============================================================
+        // SUPABASE CONFIG — replace with your own project URL and key
+        // ============================================================
+        const SUPABASE_URL = 'https://cftpufjzwpmhgzdcgpjb.supabase.co';
+        const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_b1H_5DJYLQSrr83T_dvz6A_2UAqOVg4';
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+
+        const ATTENDANCE_TABLE = 'attendance';
+        const SCHOOLS_TABLE = 'schools';
+
+        // Same attendance columns as the individual PD history page
+        const COLUMN_MAP = {
+            'Timestamp': 'Timestamp',
+            'First Name': 'First Name',
+            'Surname': 'Surname',
+            'School': 'School',
+            'District': 'District',
+            'ID/Passport Number': 'ID/Passport Number',
+            'PERSAL Number': 'PERSAL Number',
+            'Session Name': 'Session Name',
+            'Development Level': 'Development Level',
+            'Facilitator': 'Facilitator',
+            'Delivery Mode': 'Delivery Mode'
+        };
+
+        // Maps to the columns in the `schools` table
+        const SCHOOL_COLUMN_MAP = {
+            'DataID': 'DataID',
+            'SchoolName': 'School_Name'
+        };
+
+        function mapRowToRecord(row) {
+            const record = {};
+            Object.keys(COLUMN_MAP).forEach(appKey => {
+                record[appKey] = row[COLUMN_MAP[appKey]] != null ? String(row[COLUMN_MAP[appKey]]) : '';
+            });
+            return record;
+        }
+
+        // Looks up a school's name from its DataID via the `schools` table.
+        // Returns null if no matching school is found.
+        async function resolveSchoolName(dataId) {
+            const { data: rows, error } = await supabaseClient
+                .from(SCHOOLS_TABLE)
+                .select('*')
+                .eq(SCHOOL_COLUMN_MAP.DataID, dataId)
+                .limit(1);
+            if (error) throw error;
+            if (rows && rows.length > 0) {
+                return rows[0][SCHOOL_COLUMN_MAP.SchoolName] || null;
+            }
+            return null;
+        }
+
+        // Fetches only the attendance rows belonging to a given school
+        async function fetchAttendanceForSchool(schoolName) {
+            const { data: rows, error } = await supabaseClient
+                .from(ATTENDANCE_TABLE)
+                .select('*')
+                .eq(COLUMN_MAP['School'], schoolName);
+            if (error) throw error;
+            return (rows || []).map(mapRowToRecord);
+        }
 
         // *** UPDATE THIS DATE WHEN YOU UPDATE THE CSV FILE ***
         const DATA_LAST_UPDATED = '2026-06-05'; // Format: YYYY-MM-DD
@@ -149,7 +214,6 @@
         }
 
         function App() {
-            const [data, setData] = useState([]);
             const [loading, setLoading] = useState(true);
             const [schoolName, setSchoolName] = useState('');
             const [schoolData, setSchoolData] = useState([]);
@@ -167,100 +231,75 @@
             const [viewMode, setViewMode] = useState('teachers');
 
             // DataID security state
-            const [schoolIdMap, setSchoolIdMap] = useState(null); // Map<DataID, SchoolName>
             const [dataIdInput, setDataIdInput] = useState('');
             const [lookupError, setLookupError] = useState('');
-            const [idMapLoaded, setIdMapLoaded] = useState(false);
+            const [checkingId, setCheckingId] = useState(false);
 
             const quarterChartRef = useRef(null);
             const pieChartRef = useRef(null);
             const quarterChartInstance = useRef(null);
             const pieChartInstance = useRef(null);
 
-            // Load SchoolID.csv to build DataID → SchoolName map
+            // Resolve DataID from the URL on mount (Supabase lookup, not the whole CSV)
             useEffect(() => {
-                Papa.parse('SchoolID.csv', {
-                    download: true,
-                    header: true,
-                    skipEmptyLines: true,
-                    complete: (result) => {
-                        const map = new Map();
-                        result.data.forEach(row => {
-                            const dataId = row.DataID?.trim();
-                            const name = row.SchoolName?.trim();
-                            if (dataId && name) {
-                                map.set(dataId, name);
-                            }
-                        });
-                        setSchoolIdMap(map);
-                        setIdMapLoaded(true);
-                    },
-                    error: (error) => {
-                        console.error('Error loading SchoolID.csv:', error);
-                        setIdMapLoaded(true);
+                (async () => {
+                    const dataId = getURLParameter('school');
+                    if (!dataId) {
+                        setLoading(false);
+                        return;
                     }
-                });
-            }, []);
-
-            // Resolve DataID from URL once map is loaded
-            useEffect(() => {
-                if (!idMapLoaded || !schoolIdMap) return;
-                const dataId = getURLParameter('school');
-                if (dataId) {
-                    const resolved = schoolIdMap.get(dataId);
-                    if (resolved) {
-                        setSchoolName(resolved);
-                        setLookupError('');
-                    } else {
-                        setSchoolName('');
+                    try {
+                        const resolved = await resolveSchoolName(dataId);
+                        if (resolved) {
+                            setSchoolName(resolved);
+                            setLookupError('');
+                            // loading stays true; the attendance-fetch effect below clears it
+                        } else {
+                            setLookupError('invalid');
+                            setLoading(false);
+                        }
+                    } catch (err) {
+                        console.error('Error resolving school ID:', err);
                         setLookupError('invalid');
-                    }
-                }
-            }, [idMapLoaded, schoolIdMap]);
-
-            // Load CSV
-            useEffect(() => {
-                Papa.parse('attendance.csv', {
-                    download: true,
-                    header: true,
-                    skipEmptyLines: true,
-                    complete: (result) => {
-                        setData(result.data);
-                        setLoading(false);
-                    },
-                    error: (error) => {
-                        console.error('Error loading CSV:', error);
                         setLoading(false);
                     }
-                });
+                })();
             }, []);
 
-            // Filter data for the selected school
+            // Fetch attendance rows for the resolved school (only that school's rows are ever sent to the browser)
             useEffect(() => {
-                if (!schoolName || !data.length) return;
+                if (!schoolName) return;
+                (async () => {
+                    try {
+                        const rows = await fetchAttendanceForSchool(schoolName);
+                        const filtered = rows
+                            .map(record => ({
+                                ...record,
+                                parsedDate: parseTimestamp(record.Timestamp),
+                                year: parseTimestamp(record.Timestamp)?.getFullYear(),
+                                quarter: getQuarter(parseTimestamp(record.Timestamp)),
+                                isSpark: isSpark(record['Session Name']),
+                                isDovetail: isDovetail(record['Session Name'])
+                            }))
+                            .filter(record => record.parsedDate); // Only valid dates
 
-                const filtered = data
-                    .filter(record => record.School?.trim() === schoolName)
-                    .map(record => ({
-                        ...record,
-                        parsedDate: parseTimestamp(record.Timestamp),
-                        year: parseTimestamp(record.Timestamp)?.getFullYear(),
-                        quarter: getQuarter(parseTimestamp(record.Timestamp)),
-                        isSpark: isSpark(record['Session Name']),
-                        isDovetail: isDovetail(record['Session Name'])
-                    }))
-                    .filter(record => record.parsedDate); // Only valid dates
+                        setSchoolData(filtered);
 
-                setSchoolData(filtered);
+                        // Auto-select only current and previous year
+                        const currentYear = new Date().getFullYear();
+                        const previousYear = currentYear - 1;
+                        const years = [...new Set(filtered.map(r => r.year))].sort();
+                        const defaultYears = years.filter(y => y === currentYear || y === previousYear);
 
-                // Auto-select only current and previous year
-                const currentYear = new Date().getFullYear();
-                const previousYear = currentYear - 1;
-                const years = [...new Set(filtered.map(r => r.year))].sort();
-                const defaultYears = years.filter(y => y === currentYear || y === previousYear);
-
-                setFilters(prev => ({ ...prev, years: defaultYears }));
-            }, [schoolName, data]);
+                        setFilters(prev => ({ ...prev, years: defaultYears }));
+                    } catch (err) {
+                        console.error('Error loading attendance for school:', err);
+                        setSchoolData([]);
+                    } finally {
+                        setLoading(false);
+                    }
+                })();
+            }, [schoolName]);
 
             // Get available years for checkboxes
             const availableYears = useMemo(() => {
@@ -635,7 +674,7 @@
                 }));
             };
 
-            if (loading || !idMapLoaded) {
+            if (loading) {
                 return (
                     <div className="min-h-screen flex items-center justify-center">
                         <div className="text-center">
@@ -662,7 +701,7 @@
                                     The school ID provided is not recognised. Please check the link you were given and try again.
                                 </p>
                                 <button
-                                    onClick={() => { setLookupError(''); window.history.replaceState({}, '', window.location.pathname); }}
+                                    onClick={() => { setLookupError(''); setCheckingId(false); window.history.replaceState({}, '', window.location.pathname); }}
                                     className="px-6 py-2 bg-wcg-blue text-white rounded-lg hover:opacity-90 transition-colors font-medium"
                                 >
                                     Enter School ID Manually
@@ -674,14 +713,23 @@
             }
 
             if (!schoolName) {
-                const handleDataIdSubmit = (e) => {
+                const handleDataIdSubmit = async (e) => {
                     e.preventDefault();
                     const trimmed = dataIdInput.trim();
-                    if (!trimmed) return;
-                    if (schoolIdMap && schoolIdMap.has(trimmed)) {
-                        window.location.href = `${window.location.pathname}?school=${encodeURIComponent(trimmed)}`;
-                    } else {
+                    if (!trimmed || checkingId) return;
+                    setCheckingId(true);
+                    try {
+                        const resolved = await resolveSchoolName(trimmed);
+                        if (resolved) {
+                            window.location.href = `${window.location.pathname}?school=${encodeURIComponent(trimmed)}`;
+                        } else {
+                            setLookupError('invalid');
+                            setCheckingId(false);
+                        }
+                    } catch (err) {
+                        console.error('Error resolving school ID:', err);
                         setLookupError('invalid');
+                        setCheckingId(false);
                     }
                 };
 
@@ -706,9 +754,10 @@
                                     />
                                     <button
                                         type="submit"
-                                        className="w-full px-6 py-3 bg-wcg-blue text-white rounded-lg hover:opacity-90 transition-colors font-medium text-lg"
+                                        disabled={checkingId}
+                                        className={`w-full px-6 py-3 rounded-lg font-medium text-lg text-white transition-colors ${checkingId ? 'bg-gray-400 cursor-not-allowed' : 'bg-wcg-blue hover:opacity-90'}`}
                                     >
-                                        View Report
+                                        {checkingId ? 'Checking…' : 'View Report'}
                                     </button>
                                 </form>
                                 <p className="text-xs text-gray-400 mt-4">
