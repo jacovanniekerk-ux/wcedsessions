@@ -283,20 +283,23 @@
                             }))
                             .filter(record => record.parsedDate); // Only valid dates
 
-                        setSchoolData(filtered);
-
                         // Auto-select only current and previous year
                         const currentYear = new Date().getFullYear();
                         const previousYear = currentYear - 1;
                         const years = [...new Set(filtered.map(r => r.year))].sort();
                         const defaultYears = years.filter(y => y === currentYear || y === previousYear);
 
-                        setFilters(prev => ({ ...prev, years: defaultYears }));
+                        ReactDOM.unstable_batchedUpdates(() => {
+                            setSchoolData(filtered);
+                            setFilters(prev => ({ ...prev, years: defaultYears }));
+                            setLoading(false);
+                        });
                     } catch (err) {
                         console.error('Error loading attendance for school:', err);
-                        setSchoolData([]);
-                    } finally {
-                        setLoading(false);
+                        ReactDOM.unstable_batchedUpdates(() => {
+                            setSchoolData([]);
+                            setLoading(false);
+                        });
                     }
                 })();
             }, [schoolName]);
