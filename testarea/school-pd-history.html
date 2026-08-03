@@ -541,107 +541,130 @@
                 return sessionList.sort((a, b) => b.totalAttendances - a.totalAttendances);
             }, [filteredData, filters.sessionLevel]);
 
-            // Render quarter chart
-            useEffect(() => {
-                if (!quarterChartRef.current || quarterlyData.length === 0) return;
+            // Render quarterly bar chart
+useEffect(() => {
+    if (!quarterChartRef.current || quarterlyData.length === 0) return;
 
-                if (quarterChartInstance.current) {
-                    quarterChartInstance.current.destroy();
+    if (quarterChartInstance.current) {
+        quarterChartInstance.current.destroy();
+    }
+
+    const ctx = quarterChartRef.current.getContext('2d');
+    quarterChartInstance.current = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: quarterlyData.map(d => d.label),
+            datasets: [
+                {
+                    label: 'Unique Teachers',
+                    data: quarterlyData.map(d => d.uniqueTeachers),
+                    backgroundColor: '#001489',
+                    borderColor: '#001489', // Added missing comma here
+                    borderWidth: 1
+                },
+                {
+                    label: 'Total Attendances',
+                    data: quarterlyData.map(d => d.totalAttendances),
+                    backgroundColor: '#8FAD15', // WCG Green
+                    borderColor: '#8FAD15',
+                    borderWidth: 1
                 }
-
-                const ctx = quarterChartRef.current.getContext('2d');
-                quarterChartInstance.current = new Chart(ctx, {
-                    type: 'bar',
-                    data: {
-                        labels: quarterlyData.map(d => d.label),
-                        datasets: [
-                            {
-                                label: 'Unique Teachers',
-                                data: quarterlyData.map(d => d.uniqueTeachers),
-                                backgroundColor: 'rgba(0, 20, 137, 0.7)',
-                                borderColor: 'rgba(0, 20, 137, 1)',
-                                borderWidth: 1
-                            },
-                            {
-                                label: 'Total Attendances',
-                                data: quarterlyData.map(d => d.totalAttendances),
-                                backgroundColor: 'rgba(118, 184, 42, 0.7)',
-                                borderColor: 'rgba(118, 184, 42, 1)',
-                                borderWidth: 1
-                            }
-                        ]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                ticks: { precision: 0 }
-                            }
-                        },
-                        plugins: {
-                            legend: {
-                                display: true,
-                                position: 'top'
-                            }
-                        }
-                    }
-                });
-
-                return () => {
-                    if (quarterChartInstance.current) {
-                        quarterChartInstance.current.destroy();
-                    }
-                };
-            }, [quarterlyData]);
-
-            // Render pie chart
-            useEffect(() => {
-                if (!pieChartRef.current || Object.values(levelDistribution).every(v => v === 0)) return;
-
-                if (pieChartInstance.current) {
-                    pieChartInstance.current.destroy();
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: { precision: 0 }
                 }
+            },
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top'
+                }
+            }
+        }
+    });
 
-                const ctx = pieChartRef.current.getContext('2d');
-                pieChartInstance.current = new Chart(ctx, {
-                    type: 'pie',
-                    data: {
-                        labels: ['Laying the Foundation', 'I can do it', 'I can do it better', 'The Summit'],
-                        datasets: [{
-                            data: [
-                                levelDistribution['Laying the Foundation'],
-                                levelDistribution['I can do it'],
-                                levelDistribution['I can do it better'],
-                                levelDistribution['The Summit']
-                            ],
-                            backgroundColor: [
-                                '#76B82A',
-                                '#FDB913',
-                                '#E30613',
-                                '#001489'
-                            ]
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                display: true,
-                                position: 'right'
-                            }
+    return () => {
+        if (quarterChartInstance.current) {
+            quarterChartInstance.current.destroy();
+        }
+    };
+}, [quarterlyData]);
+
+// Render pie chart
+useEffect(() => {
+    if (!pieChartRef.current || Object.values(levelDistribution).every(v => v === 0)) return;
+
+    if (pieChartInstance.current) {
+        pieChartInstance.current.destroy();
+    }
+
+    const ctx = pieChartRef.current.getContext('2d');
+    pieChartInstance.current = new Chart(ctx, {
+        type: 'pie',
+        data: {
+            labels: ['Laying the Foundation', 'I can do it', 'I can do it better', 'The Summit'],
+            datasets: [{
+                data: [
+                    levelDistribution['Laying the Foundation'],
+                    levelDistribution['I can do it'],
+                    levelDistribution['I can do it better'],
+                    levelDistribution['The Summit']
+                ],
+                backgroundColor: [
+                    '#8FAD15', // Updated to WCG Green
+                    '#FDB913',
+                    '#E30613',
+                    '#001489'  // WCG Blue
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'right'
+                }
+            }
+        },
+        // Custom plugin to render numerical session counts directly on slices
+        plugins: [{
+            id: 'pieSliceNumbers',
+            afterDraw(chart) {
+                const { ctx } = chart;
+                chart.data.datasets.forEach((dataset, datasetIndex) => {
+                    const meta = chart.getDatasetMeta(datasetIndex);
+                    meta.data.forEach((element, index) => {
+                        const value = dataset.data[index];
+                        if (value && value > 0) {
+                            const { x, y } = element.tooltipPosition();
+                            ctx.save();
+                            ctx.fillStyle = '#FFFFFF';
+                            ctx.font = 'bold 13px sans-serif';
+                            ctx.textAlign = 'center';
+                            ctx.textBaseline = 'middle';
+                            ctx.fillText(value, x, y);
+                            ctx.restore();
                         }
-                    }
+                    });
                 });
+            }
+        }]
+    });
 
-                return () => {
-                    if (pieChartInstance.current) {
-                        pieChartInstance.current.destroy();
-                    }
-                };
-            }, [levelDistribution]);
+    return () => {
+        if (pieChartInstance.current) {
+            pieChartInstance.current.destroy();
+        }
+    };
+}, [levelDistribution]);
 
             // Toggle handlers
             const toggleTeacher = (name) => {
@@ -812,7 +835,7 @@
                                 </div>
                                 <button
                                     onClick={() => window.print()}
-                                    className="no-print px-4 py-2 bg-wcg-purple text-white rounded-lg hover:bg-purple-700 transition-colors"
+                                    className="no-print px-4 py-2 bg-wcg-grey text-black rounded-lg hover:bg-wcg-blue text-white transition-colors"
                                 >
                                     Print / PDF
                                 </button>
@@ -953,7 +976,7 @@
                                             : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                                             }`}
                                     >
-                                        👥 Teachers ({teacherData.length})
+                                        Per Teacher ({teacherData.length})
                                     </button>
                                     <button
                                         onClick={() => setViewMode('sessions')}
@@ -962,7 +985,7 @@
                                             : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                                             }`}
                                     >
-                                        📚 Sessions ({sessionData.length})
+                                        By Sessions ({sessionData.length})
                                     </button>
                                 </div>
 
