@@ -1,396 +1,685 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>My PD Profile & Pathway Progress</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
-  <style>
-    :root {
-      --color-adoption: #00A1A3;     /* Teal */
-      --color-essentials: #76B82A;   /* Green/Olive */
-      --color-skills: #007DBA;       /* Blue */
-      --color-cyber: #C8126E;        /* Magenta */
-      --color-arc: #70298D;          /* Purple (Facilitator) */
-      --bg-light: #f8f9fa;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My PD - WCED Professional Development Dashboard</title>
+    <link rel="icon" type="image/png" href="favicon.png">
 
-    body {
-      background-color: #f4f6f9;
-      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-    }
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
 
-    /* Top Summary Strip Cards */
-    .summary-card {
-      background: #ffffff;
-      border: 1px solid #e3e6f0;
-      border-radius: 12px;
-      padding: 18px 20px;
-      transition: all 0.2s ease-in-out;
-      cursor: pointer;
-    }
-    .summary-card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 15px rgba(0,0,0,0.08);
-    }
-    .summary-card .icon-box {
-      width: 48px;
-      height: 48px;
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.4rem;
-    }
+    <!-- React 18 & ReactDOM UMD -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 
-    /* Tab Bar Styling */
-    .nav-tabs-custom {
-      border-bottom: 2px solid #e3e6f0;
-    }
-    .nav-tabs-custom .nav-link {
-      border: none;
-      color: #6c757d;
-      font-weight: 600;
-      padding: 12px 20px;
-      border-bottom: 3px solid transparent;
-      transition: all 0.2s;
-    }
-    .nav-tabs-custom .nav-link:hover {
-      color: #0d6efd;
-    }
-    .nav-tabs-custom .nav-link.active {
-      color: #0d6efd;
-      background: transparent;
-      border-bottom-color: #0d6efd;
-    }
+    <!-- Babel Standalone for inline JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-    /* Pathway Step Cards */
-    .pathway-card {
-      border: none;
-      border-radius: 12px;
-      background: #ffffff;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-      border-left: 6px solid #6c757d;
-      transition: transform 0.2s;
-    }
-    .pathway-card:hover {
-      transform: translateY(-2px);
-    }
-    .pathway-card.step-adoption { border-left-color: var(--color-adoption); }
-    .pathway-card.step-essentials { border-left-color: var(--color-essentials); }
-    .pathway-card.step-skills { border-left-color: var(--color-skills); }
-    .pathway-card.step-cyber { border-left-color: var(--color-cyber); }
-    .pathway-card.step-arc { border-left-color: var(--color-arc); }
+    <!-- Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-    .badge-spark {
-      background-color: #fff3cd;
-      color: #856404;
-      border: 1px solid #ffeeba;
-      font-weight: 600;
-    }
-  </style>
+    <!-- PapaParse CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+
+    <style>
+        body {
+            font-family: 'Century Gothic', Arial, Helvetica, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf1 50%, #dde3ea 100%);
+            min-height: 100vh;
+        }
+
+        /* Milestone Border Accents */
+        .border-teal-accent { border-left: 6px solid #00A1A3; }
+        .border-olive-accent { border-left: 6px solid #8FAD15; }
+        .border-blue-accent { border-left: 6px solid #007DBA; }
+        .border-pink-accent { border-left: 6px solid #C8126E; }
+        .border-gold-accent { border-left: 6px solid #FFD700; }
+
+        /* Smooth scroll and modal transitions */
+        .modal-backdrop {
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+        }
+
+        .spark-glow {
+            box-shadow: 0 0 12px rgba(253, 185, 19, 0.5);
+        }
+    </style>
 </head>
-<body class="py-4">
 
-<div class="container max-width-lg">
+<body>
+    <div id="root"></div>
 
-  <!-- Header Section -->
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-      <h2 class="fw-bold mb-1">My Professional Development</h2>
-      <p class="text-muted mb-0">Track your learning progress, sparks earned, and attendance history.</p>
-    </div>
-  </div>
+    <script type="text/babel">
+        const { useState, useEffect, useMemo, useRef } = React;
 
-  <!-- Summary Dashboard Cards (Interactive Controls) -->
-  <div class="row g-3 mb-4">
-    
-    <!-- Spark Count Card -> Opens Pathway Tab -->
-    <div class="col-md-4">
-      <div class="summary-card d-flex align-items-center justify-content-between" onclick="switchTab('pathway')">
-        <div>
-          <span class="text-muted small fw-semibold text-uppercase">Sparks Earned</span>
-          <h3 class="fw-bold text-dark mb-0 mt-1">4 <span class="fs-6 text-warning"><i class="bi bi-star-fill"></i></span></h3>
-          <small class="text-success"><i class="bi bi-patch-check"></i> 3 Core + 1 Facilitator</small>
-        </div>
-        <div class="icon-box bg-warning-subtle text-warning">
-          <i class="bi bi-stars"></i>
-        </div>
-      </div>
-    </div>
+        // Core Pathway Milestones Definition (derived from pathway.html)
+        const MILESTONES = [
+            {
+                id: 'adoption',
+                step: 1,
+                isCore: true,
+                title: 'ICT Adoption Strategy',
+                subtitle: 'The Entry Point',
+                icon: '🧭',
+                colorClass: 'border-teal-accent',
+                accentColor: '#00A1A3',
+                duration: '24-hour self-paced course',
+                description: 'A foundational online course providing a broad perspective on the visibility of the digital landscape and the "Transformation Agenda." This journey moves you from digital novice to confident ICT integrator.',
+                keyPoints: [
+                    'Comprehensive 12-week self-paced online course',
+                    'Explore the landscape of ICT integration in education',
+                    'Understand the vision of the Transformation Agenda',
+                    'Build foundational digital literacy and confidence',
+                    'Earn your first Spark toward becoming a Transformation Agent'
+                ],
+                availability: {
+                    type: 'registration',
+                    registerUrl: 'http://bit.ly/4sgSf9g?r=lp&m=Mma39rNpG6w',
+                    waitlistUrl: 'https://docs.google.com/forms/d/e/1FAIpQLSeT-sQEVUDnNQ652jxOLogI6DzXV6ZDv9wCPZSa8VXKjNOKFQ/viewform?usp=pp_url&entry.1581432046=ICT+Adoption+Strategy',
+                    expiryDate: '2026-03-22',
+                    activeMessage: 'Registrations are currently open!',
+                    expiredMessage: 'Registrations for the current cohort have closed. Keep an eye on eTPD communications for the next intake, or join the waitlist below.'
+                },
+                next: 'Begin your transformation journey by exploring the digital landscape and understanding how technology can enhance teaching and learning.'
+            },
+            {
+                id: 'dovetail',
+                step: 2,
+                isCore: true,
+                title: 'Dovetail Essentials',
+                subtitle: 'Customisation & Micro-Learning',
+                icon: '🧰',
+                colorClass: 'border-olive-accent',
+                accentColor: '#8FAD15',
+                duration: '10 focused micro-learning sessions',
+                description: 'A non-linear pathway through targeted 60-120 minute sessions that build practical digital competency (the how). Choose the sessions that match your needs and context across multiple platforms and tools.',
+                dovetailEssentials: [
+                    'ePedagogy: Building a Digital Lesson',
+                    'Integrating digital resources from the ePortal',
+                    'Google Fundamentals 1: Account and Google Chrome',
+                    'Office Online Fundamentals',
+                    'Improved Presentation Skills',
+                    'Ease of Access with QR Codes and Bit.ly links',
+                    'Teaching with Videos',
+                    'Orientation to Google Forms',
+                    'AI In Education: Work Smarter, not Harder',
+                    'Introduction to Cyber Wellness Education'
+                ],
+                sessionsInfoUrl: 'https://jacovanniekerk-ux.github.io/wcedsessions/dovetail-essentials.html',
+                keyPoints: [
+                    'Flexible, non-linear pathway—attend what you need',
+                    'Short, practical sessions (60-120 minutes)',
+                    'Four developmental levels: Laying the Foundation → I Can Do It → I Can Do It Better → The Summit',
+                    'Build practical classroom-ready digital skills',
+                    'Earn your second Spark toward becoming a Transformation Agent'
+                ],
+                next: 'Customize your learning journey by selecting sessions that address your specific needs and developmental level.'
+            },
+            {
+                id: 'digitalskills',
+                step: 3,
+                isCore: true,
+                title: 'Digital Skills Course',
+                subtitle: 'The Experiential Shift',
+                icon: '📖',
+                colorClass: 'border-blue-accent',
+                accentColor: '#007DBA',
+                duration: '4-week hybrid immersion',
+                description: 'An experiential hybrid course that shifts your focus from "how to use" to "how to learn." View technology from the learner\'s perspective and develop digital wisdom (the why).',
+                keyPoints: [
+                    'Immersive 4-week hybrid learning experience',
+                    'Shift from teacher-centered to learner-centered perspective',
+                    'Synthesize the "what" and "how" into "when" and "why"',
+                    'Develop digital wisdom through experiential learning',
+                    'Foster pedagogical understanding of technology integration',
+                    'Earn your third Spark and become a School-Level Transformation Agent'
+                ],
+                availability: {
+                    type: 'waitlist_only',
+                    waitlistUrl: 'https://docs.google.com/forms/d/e/1FAIpQLSeT-sQEVUDnNQ652jxOLogI6DzXV6ZDv9wCPZSa8VXKjNOKFQ/viewform?usp=pp_url&entry.1581432046=Digital+Skills+Course',
+                    message: 'These courses are hosted each term in the district and are by invitation only. Join the waitlist to express your interest to join a course when available.'
+                },
+                next: 'Experience transformation by seeing technology through your learners\' eyes and develop the wisdom to make informed pedagogical decisions.'
+            },
+            {
+                id: 'cybereffect',
+                step: 4,
+                isCore: true,
+                title: 'Cyber Ambassador',
+                subtitle: 'Ethical Capstone',
+                icon: '🌐',
+                colorClass: 'border-pink-accent',
+                accentColor: '#C8126E',
+                duration: 'Self-paced 4-week course',
+                description: 'Deepen your ability to engage with the ethical, emotional, psychological, and behavioural dimensions of technology use. Master the 4P Affective Transformation Model (People, Practices, Pedagogy, Platforms).',
+                keyPoints: [
+                    'Focus on digital citizenship and cyber wellness',
+                    'Understand human-centered design principles',
+                    'Master the 4P Model: People, Practices, Pedagogy, Platforms',
+                    'Address emotional readiness and psychological safety',
+                    'Promote reflective digital responsibility and ethical technology use',
+                    'Earn your fourth Spark and become a Cluster-Level Transformation Agent'
+                ],
+                availability: {
+                    type: 'registration',
+                    registerUrl: 'https://docs.google.com/forms/d/e/1FAIpQLSeT-sQEVUDnNQ652jxOLogI6DzXV6ZDv9wCPZSa8VXKjNOKFQ/viewform',
+                    waitlistUrl: 'https://docs.google.com/forms/d/e/1FAIpQLSeT-sQEVUDnNQ652jxOLogI6DzXV6ZDv9wCPZSa8VXKjNOKFQ/viewform?usp=pp_url&entry.1581432046=Cyber+Ambassador',
+                    expiryDate: '2026-07-01',
+                    activeMessage: 'Registrations are currently open!',
+                    expiredMessage: 'Registrations have closed. Please join the waitlist to be notified of the next intake.'
+                },
+                next: 'Become a champion for ethical, human-centered technology integration and support your school community in building a positive digital culture.'
+            }
+        ];
 
-    <!-- Pathway Progress Card -> Opens Pathway Tab -->
-    <div class="col-md-4">
-      <div class="summary-card" onclick="switchTab('pathway')">
-        <div class="d-flex align-items-center justify-content-between mb-2">
-          <span class="text-muted small fw-semibold text-uppercase">Core Pathway Progress</span>
-          <span class="fw-bold text-primary">75%</span>
-        </div>
-        <div class="progress" style="height: 10px;">
-          <div class="progress-bar bg-primary progress-bar-striped" role="progressbar" style="width: 75%;" aria-valuenow="75" aria-valuemin="0" aria-valuemax="100"></div>
-        </div>
-        <div class="mt-2 text-end">
-          <small class="text-muted">3 of 4 Core Steps Completed</small>
-        </div>
-      </div>
-    </div>
+        const EDVANCE_ARC = {
+            id: 'arc',
+            isCore: false,
+            icon: '🎓',
+            title: 'Edvance ARC Track',
+            subtitle: 'By Invitation Only',
+            colorClass: 'border-gold-accent',
+            accentColor: '#001489',
+            description: 'A specialised developmental pathway for teachers with strong PD engagement. The Facilitator Think Tank is the entry point and earns a Spark. Elevate and Shift & Spark deepen leadership.',
+            steps: [
+                { name: 'Facilitator Think Tank', label: 'Step 1', spark: true },
+                { name: 'Elevate', label: 'Step 2', spark: false },
+                { name: 'Shift and Spark', label: 'Step 3', spark: false }
+            ]
+        };
 
-    <!-- Attendance Summary Card -> Opens Detailed History Tab -->
-    <div class="col-md-4">
-      <div class="summary-card d-flex align-items-center justify-content-between" onclick="switchTab('history')">
-        <div>
-          <span class="text-muted small fw-semibold text-uppercase">Total Attendances</span>
-          <h3 class="fw-bold text-dark mb-0 mt-1">14</h3>
-          <small class="text-primary"><i class="bi bi-clock-history"></i> Click to view full log</small>
-        </div>
-        <div class="icon-box bg-info-subtle text-info">
-          <i class="bi bi-calendar-check"></i>
-        </div>
-      </div>
-    </div>
+        // Modal Component
+        function MilestoneModal({ milestone, onClose }) {
+            if (!milestone) return null;
 
-  </div>
+            const renderAvailability = () => {
+                const avail = milestone.availability;
+                if (!avail) return null;
 
-  <!-- Main Clean Navigation Tabs -->
-  <ul class="nav nav-tabs nav-tabs-custom mb-4" id="pdTabs" role="tablist">
-    <li class="nav-item" role="presentation">
-      <button class="nav-link active" id="pathway-tab" data-bs-toggle="tab" data-bs-target="#pathway-pane" type="button" role="tab">
-        Pathway Progress
-      </button>
-    </li>
-    <li class="nav-item" role="presentation">
-      <button class="nav-link" id="nextsteps-tab" data-bs-toggle="tab" data-bs-target="#nextsteps-pane" type="button" role="tab">
-        Next Steps <span class="badge bg-danger rounded-pill ms-1">1</span>
-      </button>
-    </li>
-    <li class="nav-item" role="presentation">
-      <button class="nav-link" id="history-tab" data-bs-toggle="tab" data-bs-target="#history-pane" type="button" role="tab">
-        Detailed History
-      </button>
-    </li>
-  </ul>
+                const now = new Date();
+                now.setHours(0, 0, 0, 0);
 
-  <!-- Tab Contents -->
-  <div class="tab-content" id="pdTabsContent">
-    
-    <!-- Tab 1: Pathway Progress -->
-    <div class="tab-pane fade show active" id="pathway-pane" role="tabpanel">
-      <h5 class="fw-bold mb-3">Core Pathway Milestones</h5>
-      
-      <div class="row g-3">
-        <!-- Step 1: Adoption Strategy -->
-        <div class="col-md-6">
-          <div class="card pathway-card step-adoption p-3">
-            <div class="d-flex justify-content-between align-items-start">
-              <div>
-                <span class="badge bg-secondary-subtle text-secondary mb-1">Step 1</span>
-                <h6 class="fw-bold mb-1">ICT Adoption Strategy</h6>
-                <p class="text-muted small mb-2">School vision alignment and strategic planning.</p>
-              </div>
-              <span class="badge badge-spark"><i class="bi bi-star-fill text-warning"></i> Spark Earned</span>
-            </div>
-            <div class="d-flex justify-content-between align-items-center mt-2 pt-2 border-top">
-              <span class="badge bg-success-subtle text-success"><i class="bi bi-check-circle-fill"></i> Completed</span>
-              <button class="btn btn-sm btn-outline-secondary" onclick="openDetails('adoption')">View Details</button>
-            </div>
-          </div>
-        </div>
+                if (avail.type === 'registration') {
+                    const expiry = new Date(avail.expiryDate + 'T23:59:59');
+                    const isOpen = now <= expiry;
 
-        <!-- Step 2: Dovetail Essentials -->
-        <div class="col-md-6">
-          <div class="card pathway-card step-essentials p-3">
-            <div class="d-flex justify-content-between align-items-start">
-              <div>
-                <span class="badge bg-secondary-subtle text-secondary mb-1">Step 2</span>
-                <h6 class="fw-bold mb-1">Dovetail Essentials</h6>
-                <p class="text-muted small mb-2">Core tool mastery & interactive teaching integration.</p>
-              </div>
-              <span class="badge badge-spark"><i class="bi bi-star-fill text-warning"></i> Spark Earned</span>
-            </div>
-            <div class="d-flex justify-content-between align-items-center mt-2 pt-2 border-top">
-              <span class="badge bg-success-subtle text-success"><i class="bi bi-check-circle-fill"></i> Completed (6 Sessions)</span>
-              <button class="btn btn-sm btn-outline-secondary" onclick="openDetails('essentials')">View Details</button>
-            </div>
-          </div>
-        </div>
+                    return (
+                        <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 my-4">
+                            <h4 className="font-bold text-gray-800 mb-1">
+                                {isOpen ? '🟢 Registration Open' : '🔴 Registration Closed'}
+                            </h4>
+                            <p className="text-sm text-gray-600 mb-3">
+                                {isOpen ? avail.activeMessage : avail.expiredMessage}
+                            </p>
+                            {isOpen ? (
+                                <div>
+                                    <p className="text-xs text-gray-500 mb-2">
+                                        📅 Closes: {new Date(avail.expiryDate).toLocaleDateString('en-ZA', { day: 'numeric', month: 'long', year: 'numeric' })}
+                                    </p>
+                                    <a
+                                        href={avail.registerUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center gap-2 px-5 py-2.5 bg-green-600 text-white font-bold text-sm rounded-lg shadow hover:bg-green-700 transition-all"
+                                    >
+                                        📝 Register Now
+                                    </a>
+                                </div>
+                            ) : (
+                                <a
+                                    href={avail.waitlistUrl || '#'}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#007DBA] text-white font-bold text-sm rounded-lg shadow hover:bg-blue-700 transition-all"
+                                >
+                                    ✉️ Join Waitlist
+                                </a>
+                            )}
+                        </div>
+                    );
+                }
 
-        <!-- Step 3: Digital Skills Course -->
-        <div class="col-md-6">
-          <div class="card pathway-card step-skills p-3">
-            <div class="d-flex justify-content-between align-items-start">
-              <div>
-                <span class="badge bg-secondary-subtle text-secondary mb-1">Step 3</span>
-                <h6 class="fw-bold mb-1">Digital Skills Course</h6>
-                <p class="text-muted small mb-2">Pedagogical transformation & workflow optimization.</p>
-              </div>
-              <span class="badge badge-spark"><i class="bi bi-star-fill text-warning"></i> Spark Earned</span>
-            </div>
-            <div class="d-flex justify-content-between align-items-center mt-2 pt-2 border-top">
-              <span class="badge bg-success-subtle text-success"><i class="bi bi-check-circle-fill"></i> Completed</span>
-              <button class="btn btn-sm btn-outline-secondary" onclick="openDetails('skills')">View Details</button>
-            </div>
-          </div>
-        </div>
+                if (avail.type === 'waitlist_only') {
+                    return (
+                        <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 my-4">
+                            <h4 className="font-bold text-gray-800 mb-1">✉️ By Invitation Only</h4>
+                            <p className="text-sm text-gray-600 mb-3">{avail.message}</p>
+                            <a
+                                href={avail.waitlistUrl || '#'}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#007DBA] text-white font-bold text-sm rounded-lg shadow hover:bg-blue-700 transition-all"
+                            >
+                                ✉️ Express Interest / Join Waitlist
+                            </a>
+                        </div>
+                    );
+                }
 
-        <!-- Step 4: Cyber Ambassador (Pending) -->
-        <div class="col-md-6">
-          <div class="card pathway-card step-cyber p-3">
-            <div class="d-flex justify-content-between align-items-start">
-              <div>
-                <span class="badge bg-secondary-subtle text-secondary mb-1">Step 4</span>
-                <h6 class="fw-bold mb-1">Cyber Ambassador</h6>
-                <p class="text-muted small mb-2">Digital citizenship, online safety & cyber hygiene.</p>
-              </div>
-              <span class="badge bg-light text-muted border">Spark Pending</span>
-            </div>
-            <div class="d-flex justify-content-between align-items-center mt-2 pt-2 border-top">
-              <span class="badge bg-warning-subtle text-warning-emphasis"><i class="bi bi-hourglass-split"></i> Incomplete</span>
-              <button class="btn btn-sm btn-primary" onclick="switchTab('nextsteps')">View Action</button>
-            </div>
-          </div>
-        </div>
+                return null;
+            };
 
-      </div>
+            return (
+                <div className="fixed inset-0 z-50 flex items-center justify-center modal-backdrop p-4" onClick={onClose}>
+                    <div
+                        className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl relative"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <button
+                            onClick={onClose}
+                            className="absolute top-4 right-4 w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center font-bold text-gray-600 text-xl transition-all z-10"
+                        >
+                            ✕
+                        </button>
 
-      <!-- Extension Track -->
-      <h5 class="fw-bold mb-3 mt-4">Leadership & Extension Tracks</h5>
-      <div class="row g-3">
-        <div class="col-md-6">
-          <div class="card pathway-card step-arc p-3">
-            <div class="d-flex justify-content-between align-items-start">
-              <div>
-                <span class="badge bg-purple-subtle text-purple mb-1" style="background-color: #f3e8ff; color: #70298D;">Invitation Track</span>
-                <h6 class="fw-bold mb-1">Facilitator Think Tank (ARC)</h6>
-                <p class="text-muted small mb-2">Peer mentoring, workshop facilitation & leadership.</p>
-              </div>
-              <span class="badge badge-spark"><i class="bi bi-star-fill text-warning"></i> Spark Earned</span>
-            </div>
-            <div class="d-flex justify-content-between align-items-center mt-2 pt-2 border-top">
-              <span class="badge bg-success-subtle text-success"><i class="bi bi-check-circle-fill"></i> Completed</span>
-              <button class="btn btn-sm btn-outline-secondary" onclick="openDetails('arc')">View Details</button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+                        <div
+                            className="p-8 text-white rounded-t-2xl text-center relative"
+                            style={{ background: `linear-gradient(135deg, ${milestone.accentColor} 0%, #001489 100%)` }}
+                        >
+                            <div className="text-5xl mb-2">{milestone.icon}</div>
+                            <h2 className="text-2xl font-bold">{milestone.title}</h2>
+                            <p className="text-white/80 font-semibold">{milestone.subtitle}</p>
+                            <span className="inline-block mt-3 px-4 py-1 bg-white/20 backdrop-blur-md rounded-full text-xs font-bold">
+                                {milestone.duration || 'Special Track'}
+                            </span>
+                        </div>
 
-    <!-- Tab 2: Next Steps (Actionable Spark Events) -->
-    <div class="tab-pane fade" id="nextsteps-pane" role="tabpanel">
-      <div class="alert alert-info d-flex align-items-center mb-4" role="alert">
-        <i class="bi bi-info-circle-fill me-2 fs-5"></i>
-        <div>
-          Complete your remaining sparkable events to finalize your Core Pathway transformation!
-        </div>
-      </div>
+                        <div className="p-6 space-y-6">
+                            <div>
+                                <h3 className="text-lg font-bold text-[#001489] border-b pb-1 mb-2">Overview</h3>
+                                <p className="text-gray-600 text-sm leading-relaxed">{milestone.description}</p>
+                            </div>
 
-      <div class="card border-0 shadow-sm mb-3">
-        <div class="card-body d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
-          <div>
-            <div class="d-flex align-items-center gap-2 mb-1">
-              <span class="badge bg-danger">Required for Step 4</span>
-              <span class="text-muted small">Cohort 4 Opening Soon</span>
-            </div>
-            <h5 class="fw-bold mb-1">Cyber Ambassador Training</h5>
-            <p class="text-muted small mb-0">Learn how to promote digital citizenship and student online safety leadership at your school.</p>
-          </div>
-          <div class="d-flex gap-2 w-100 w-md-auto justify-content-end">
-            <!-- Registration Link or Waitlist logic -->
-            <a href="https://forms.google.com/sample-waitlist-cyber" target="_blank" class="btn btn-outline-primary btn-sm">
-              <i class="bi bi-clock-history"></i> Join Waitlist
-            </a>
-            <a href="https://forms.google.com/sample-register-cyber" target="_blank" class="btn btn-primary btn-sm">
-              <i class="bi bi-pencil-square"></i> Register Now
-            </a>
-          </div>
-        </div>
-      </div>
+                            {milestone.keyPoints && (
+                                <div>
+                                    <h3 className="text-lg font-bold text-[#001489] border-b pb-1 mb-2">Key Focus Areas</h3>
+                                    <ul className="space-y-2">
+                                        {milestone.keyPoints.map((pt, i) => (
+                                            <li key={i} className="text-sm text-gray-600 bg-gray-50 p-2.5 rounded-lg border-l-4 border-[#007DBA] flex items-start gap-2">
+                                                <span className="text-green-600 font-bold">✓</span>
+                                                <span>{pt}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
 
-      <div class="card border-0 shadow-sm mb-3">
-        <div class="card-body d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
-          <div>
-            <div class="d-flex align-items-center gap-2 mb-1">
-              <span class="badge bg-secondary">Elective Workshop</span>
-              <span class="text-muted small">Continuous PD</span>
-            </div>
-            <h5 class="fw-bold mb-1">Advanced Dovetail Integration Masterclass</h5>
-            <p class="text-muted small mb-0">Deep dive into custom assessment workflows and LMS integration strategies.</p>
-          </div>
-          <div>
-            <a href="https://forms.google.com/sample-waitlist-masterclass" target="_blank" class="btn btn-outline-secondary btn-sm">
-              <i class="bi bi-clock-history"></i> Join Waitlist
-            </a>
-          </div>
-        </div>
-      </div>
+                            {milestone.dovetailEssentials && (
+                                <div>
+                                    <h3 className="text-lg font-bold text-[#001489] border-b pb-1 mb-2">Dovetail Essentials (Curated Pathway)</h3>
+                                    <p className="text-xs text-[#8FAD15] font-semibold mb-3">
+                                        10 micro-learning sessions designed to build classroom readiness. Completing 5+ earns a Spark!
+                                    </p>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                        {milestone.dovetailEssentials.map((s, idx) => (
+                                            <div key={idx} className="text-xs bg-gray-50 p-2 rounded border border-gray-200 text-gray-700 font-medium">
+                                                • {s}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
 
-    </div>
+                            {renderAvailability()}
 
-    <!-- Tab 3: Detailed History -->
-    <div class="tab-pane fade" id="history-pane" role="tabpanel">
-      <h5 class="fw-bold mb-3">Complete Attendance Log</h5>
-      
-      <div class="table-responsive bg-white rounded-3 shadow-sm border">
-        <table class="table table-hover align-middle mb-0">
-          <thead class="table-light">
-            <tr>
-              <th>Date</th>
-              <th>Session Name</th>
-              <th>Track</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>2026-07-15</td>
-              <td>Facilitator Think Tank Q3</td>
-              <td><span class="badge text-bg-purple" style="background-color: var(--color-arc); color: white;">ARC</span></td>
-              <td><span class="badge bg-success">Attended</span></td>
-            </tr>
-            <tr>
-              <td>2026-06-10</td>
-              <td>Digital Skills Module 4</td>
-              <td><span class="badge" style="background-color: var(--color-skills); color: white;">Digital Skills</span></td>
-              <td><span class="badge bg-success">Attended</span></td>
-            </tr>
-            <tr>
-              <td>2026-05-18</td>
-              <td>Dovetail Essentials #5</td>
-              <td><span class="badge" style="background-color: var(--color-essentials); color: white;">Essentials</span></td>
-              <td><span class="badge bg-success">Attended</span></td>
-            </tr>
-            <tr>
-              <td>2026-03-22</td>
-              <td>ICT Adoption Strategy Briefing</td>
-              <td><span class="badge" style="background-color: var(--color-adoption); color: white;">Adoption</span></td>
-              <td><span class="badge bg-success">Attended</span></td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
+                            {milestone.sessionsInfoUrl && (
+                                <div className="pt-2">
+                                    <a
+                                        href={milestone.sessionsInfoUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#8FAD15] text-white font-bold text-sm rounded-lg shadow hover:bg-opacity-90 transition-all"
+                                    >
+                                        🌐 View Session Details & Schedule
+                                    </a>
+                                </div>
+                            )}
 
-  </div>
-</div>
+                            {milestone.next && (
+                                <div>
+                                    <h3 className="text-lg font-bold text-[#001489] border-b pb-1 mb-2">Next Steps</h3>
+                                    <p className="text-sm text-gray-600">{milestone.next}</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            );
+        }
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-<script>
-  // Dynamic Tab Switcher
-  function switchTab(tabId) {
-    let targetButton;
-    if (tabId === 'pathway') targetButton = document.getElementById('pathway-tab');
-    if (tabId === 'nextsteps') targetButton = document.getElementById('nextsteps-tab');
-    if (tabId === 'history') targetButton = document.getElementById('history-tab');
+        // Main Application
+        function App() {
+            const [persalInput, setPersalInput] = useState('');
+            const [activeTab, setActiveTab] = useState('pathway'); // 'pathway', 'next-steps', 'history'
+            const [selectedMilestone, setSelectedMilestone] = useState(null);
 
-    if (targetButton) {
-      const tab = new bootstrap.Tab(targetButton);
-      tab.show();
-    }
-  }
+            // Mock user completion state for demo/testing (3 core steps + 1 ARC spark = 4 sparks total)
+            const [userData, setUserData] = useState({
+                name: 'Educator Record',
+                persal: '83749201',
+                district: 'Metro East',
+                school: 'WCED Academy',
+                completedSteps: ['adoption', 'dovetail', 'digitalskills'], // 3 of 4 core steps
+                earnedSparks: ['adoption', 'dovetail', 'digitalskills', 'thinktank'], // 4 sparks earned total
+                totalHours: 42
+            });
 
-  function openDetails(moduleKey) {
-    alert('Opening detailed info modal for: ' + moduleKey);
-  }
-</script>
+            // Option A Calculations:
+            const coreCompletedCount = userData.completedSteps.length; // 3
+            const corePathwayPercentage = Math.round((coreCompletedCount / 4) * 100); // 75%
+            const totalSparksCount = userData.earnedSparks.length; // 4
+
+            // Interactive handler to switch tab & view milestone details
+            const handleJumpToMilestone = (milestoneId) => {
+                setActiveTab('pathway');
+                if (milestoneId === 'arc' || milestoneId === 'thinktank') {
+                    setSelectedMilestone(EDVANCE_ARC);
+                } else {
+                    const m = MILESTONES.find(item => item.id === milestoneId);
+                    if (m) setSelectedMilestone(m);
+                }
+            };
+
+            return (
+                <div className="max-w-7xl mx-auto px-4 py-6">
+                    {/* Header Banner */}
+                    <header className="bg-white rounded-2xl shadow-md p-6 mb-6 flex flex-col md:flex-row justify-between items-center gap-4 border border-gray-100">
+                        <div className="flex items-center gap-4">
+                            <img src="header.png" alt="WCED eLearning" className="h-12 object-contain" onError={(e) => e.target.style.display = 'none'} />
+                            <div>
+                                <h1 className="text-2xl font-bold text-[#001489]">My PD Dashboard</h1>
+                                <p className="text-xs text-gray-500">Western Cape Education Department • Professional Development</p>
+                            </div>
+                        </div>
+
+                        {/* Search / Persal Lookup */}
+                        <div className="flex items-center gap-2 w-full md:w-auto">
+                            <input
+                                type="text"
+                                placeholder="Enter PERSAL or ID Number"
+                                value={persalInput}
+                                onChange={(e) => setPersalInput(e.target.value)}
+                                className="px-4 py-2 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#001489] w-full md:w-64"
+                            />
+                            <button className="px-5 py-2 bg-[#001489] text-white font-bold text-sm rounded-xl hover:bg-blue-900 transition-all">
+                                Lookup
+                            </button>
+                        </div>
+                    </header>
+
+                    {/* Educator Summary Header */}
+                    <div className="bg-white rounded-2xl shadow-sm p-6 mb-6 border border-gray-100 grid grid-cols-1 md:grid-cols-4 gap-6">
+                        <div>
+                            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Educator Profile</span>
+                            <h3 className="text-lg font-bold text-gray-800">{userData.name}</h3>
+                            <p className="text-xs text-gray-500">PERSAL: {userData.persal} • {userData.district}</p>
+                        </div>
+
+                        {/* Interactive Timeline Quick Navigation */}
+                        <div>
+                            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1 block">Timeline Progress</span>
+                            <div className="flex items-center gap-2 mt-2">
+                                {MILESTONES.map((m) => {
+                                    const isDone = userData.completedSteps.includes(m.id);
+                                    return (
+                                        <button
+                                            key={m.id}
+                                            onClick={() => handleJumpToMilestone(m.id)}
+                                            title={`Step ${m.step}: ${m.title} (Click to view)`}
+                                            className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-xs transition-all ${
+                                                isDone ? 'bg-[#001489] text-white shadow' : 'bg-gray-100 text-gray-400 border border-gray-200'
+                                            } hover:scale-110`}
+                                        >
+                                            {m.step}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        {/* Interactive Sparks Summary */}
+                        <div>
+                            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1 block">Earned Sparks</span>
+                            <div className="flex flex-wrap gap-1.5 mt-1">
+                                {userData.earnedSparks.map((s, idx) => (
+                                    <button
+                                        key={idx}
+                                        onClick={() => handleJumpToMilestone(s)}
+                                        className="px-2.5 py-1 bg-amber-100 border border-amber-300 rounded-full text-xs font-bold text-amber-900 flex items-center gap-1 spark-glow hover:scale-105 transition-transform"
+                                    >
+                                        ⚡ {s.toUpperCase()}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Hours */}
+                        <div>
+                            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Total PD Hours</span>
+                            <h3 className="text-2xl font-bold text-[#007DBA]">{userData.totalHours} hrs</h3>
+                            <p className="text-xs text-gray-400">Verified attendance history</p>
+                        </div>
+                    </div>
+
+                    {/* CLEAN TAB NAVIGATION SWITCHER (NO EMOTICONS) */}
+                    <div className="flex space-x-2 border-b border-gray-200 mb-6 bg-white px-4 pt-2 rounded-t-xl shadow-sm">
+                        <button
+                            onClick={() => setActiveTab('pathway')}
+                            className={`py-3 px-6 font-semibold text-sm border-b-2 transition-colors ${
+                                activeTab === 'pathway'
+                                    ? 'border-[#001489] text-[#001489]'
+                                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                            }`}
+                        >
+                            Pathway Progress
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('next-steps')}
+                            className={`py-3 px-6 font-semibold text-sm border-b-2 transition-colors ${
+                                activeTab === 'next-steps'
+                                    ? 'border-[#001489] text-[#001489]'
+                                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                            }`}
+                        >
+                            Next Steps
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('history')}
+                            className={`py-3 px-6 font-semibold text-sm border-b-2 transition-colors ${
+                                activeTab === 'history'
+                                    ? 'border-[#001489] text-[#001489]'
+                                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                            }`}
+                        >
+                            Detailed History
+                        </button>
+                    </div>
+
+                    {/* TAB 1: PATHWAY PROGRESS */}
+                    {activeTab === 'pathway' && (
+                        <div className="space-y-6">
+                            {/* Option A Progress Calculation Display */}
+                            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-wrap items-center justify-between gap-6">
+                                <div className="flex-1 min-w-[280px]">
+                                    <div className="flex justify-between items-center mb-2">
+                                        <span className="text-sm font-bold text-gray-700">Core Pathway Completion</span>
+                                        <span className="text-lg font-extrabold text-[#001489]">{corePathwayPercentage}%</span>
+                                    </div>
+                                    <div className="w-full bg-gray-200 h-3.5 rounded-full overflow-hidden">
+                                        <div
+                                            className="bg-gradient-to-r from-[#00A1A3] via-[#007DBA] to-[#001489] h-full transition-all duration-500"
+                                            style={{ width: `${corePathwayPercentage}%` }}
+                                        ></div>
+                                    </div>
+                                    <p className="text-xs text-gray-400 mt-2">
+                                        Completed {coreCompletedCount} of 4 Core Sequential Milestones
+                                    </p>
+                                </div>
+
+                                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center gap-3">
+                                    <span className="text-3xl">⚡</span>
+                                    <div>
+                                        <div className="text-xs text-amber-800 font-bold uppercase tracking-wider">Total Sparks Earned</div>
+                                        <div className="text-xl font-black text-amber-900">{totalSparksCount} Sparks</div>
+                                        <div className="text-[11px] text-amber-700">Includes Core Milestones + Edvance ARC Track</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Core Pathway Cards Grid */}
+                            <h3 className="text-lg font-bold text-gray-800">Core Transformation Steps</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                                {MILESTONES.map((milestone) => {
+                                    const isDone = userData.completedSteps.includes(milestone.id);
+
+                                    return (
+                                        <div
+                                            key={milestone.id}
+                                            onClick={() => setSelectedMilestone(milestone)}
+                                            className={`bg-white rounded-2xl p-6 shadow-sm hover:shadow-md transition-all cursor-pointer relative flex flex-col justify-between ${milestone.colorClass}`}
+                                        >
+                                            <div>
+                                                <div className="flex justify-between items-start mb-3">
+                                                    <span className="w-8 h-8 rounded-full bg-[#001489] text-white font-bold flex items-center justify-center text-sm">
+                                                        {milestone.step}
+                                                    </span>
+                                                    {isDone && (
+                                                        <span className="px-2.5 py-1 bg-green-100 text-green-700 font-bold text-xs rounded-full">
+                                                            ✓ Completed
+                                                        </span>
+                                                    )}
+                                                </div>
+
+                                                <div className="text-4xl text-center my-3">{milestone.icon}</div>
+                                                <h4 className="font-bold text-gray-900 text-center text-base">{milestone.title}</h4>
+                                                <p className="text-xs text-gray-500 text-center font-medium mb-3">{milestone.subtitle}</p>
+                                                <p className="text-xs text-gray-600 leading-relaxed text-center line-clamp-3">
+                                                    {milestone.description}
+                                                </p>
+                                            </div>
+
+                                            <div className="mt-4 pt-3 border-t border-gray-100 text-center">
+                                                <span className="inline-block px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-[11px] font-semibold">
+                                                    {milestone.duration}
+                                                </span>
+                                                <div className="mt-2 text-xs font-bold text-[#007DBA] hover:underline">
+                                                    View Details & Links →
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+
+                            {/* Edvance ARC Track Highlight */}
+                            <div
+                                onClick={() => setSelectedMilestone(EDVANCE_ARC)}
+                                className="bg-gradient-to-r from-blue-900 to-indigo-900 text-white rounded-2xl p-6 shadow-md border-gold-accent cursor-pointer hover:opacity-95 transition-all flex flex-col md:flex-row justify-between items-center gap-6"
+                            >
+                                <div className="flex items-center gap-4">
+                                    <div className="text-5xl">{EDVANCE_ARC.icon}</div>
+                                    <div>
+                                        <div className="inline-block px-3 py-0.5 bg-amber-400 text-black font-bold text-[10px] rounded-full uppercase mb-1">
+                                            Special Recognition
+                                        </div>
+                                        <h3 className="text-xl font-bold">{EDVANCE_ARC.title}</h3>
+                                        <p className="text-xs text-blue-200 max-w-xl">{EDVANCE_ARC.description}</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    {EDVANCE_ARC.steps.map((st, i) => (
+                                        <div key={i} className="bg-white/10 px-3 py-2 rounded-xl text-center backdrop-blur-sm border border-white/10">
+                                            <div className="text-[10px] text-amber-300 font-bold">{st.label}</div>
+                                            <div className="text-xs font-semibold">{st.name}</div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* TAB 2: NEXT STEPS */}
+                    {activeTab === 'next-steps' && (
+                        <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 space-y-4">
+                            <h3 className="text-xl font-bold text-gray-800">Recommended Next Steps</h3>
+                            <p className="text-sm text-gray-600">
+                                Based on your current completion of core milestones, here are available micro-learning sessions and course waitlists to continue your transformation journey.
+                            </p>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
+                                <div className="p-4 border border-gray-200 rounded-xl hover:border-[#007DBA] transition-colors">
+                                    <span className="text-xs font-bold text-[#8FAD15] uppercase">Micro-Learning</span>
+                                    <h4 className="font-bold text-gray-800 text-base mt-1">Dovetail Essentials Sessions</h4>
+                                    <p className="text-xs text-gray-500 my-2">Attend 60-120 minute focused practical workshops across various platforms.</p>
+                                    <a href="https://jacovanniekerk-ux.github.io/wcedsessions/dovetail-essentials.html" target="_blank" rel="noopener noreferrer" className="text-xs font-bold text-[#007DBA]">
+                                        View Schedule & Book →
+                                    </a>
+                                </div>
+                                <div className="p-4 border border-gray-200 rounded-xl hover:border-[#007DBA] transition-colors">
+                                    <span className="text-xs font-bold text-[#C8126E] uppercase">Capstone</span>
+                                    <h4 className="font-bold text-gray-800 text-base mt-1">Cyber Ambassador Waitlist</h4>
+                                    <p className="text-xs text-gray-500 my-2">Prepare for the 4-week ethical capstone course on cyber wellness.</p>
+                                    <button onClick={() => handleJumpToMilestone('cybereffect')} className="text-xs font-bold text-[#007DBA]">
+                                        Open Registration Details →
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* TAB 3: DETAILED HISTORY */}
+                    {activeTab === 'history' && (
+                        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                            <h3 className="text-xl font-bold text-gray-800 mb-4">Verified Attendance Records</h3>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left text-sm text-gray-600">
+                                    <thead className="bg-gray-50 text-xs font-bold text-gray-500 uppercase border-b">
+                                        <tr>
+                                            <th className="p-3">Course / Session</th>
+                                            <th className="p-3">Category</th>
+                                            <th className="p-3">Hours</th>
+                                            <th className="p-3">Date</th>
+                                            <th className="p-3">Certificate</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-100">
+                                        <tr className="hover:bg-gray-50">
+                                            <td className="p-3 font-semibold text-gray-800">ICT Adoption Strategy</td>
+                                            <td className="p-3"><span className="px-2 py-0.5 bg-teal-100 text-teal-800 text-xs rounded-full">Core Step 1</span></td>
+                                            <td className="p-3">24 hrs</td>
+                                            <td className="p-3">2025-11-14</td>
+                                            <td className="p-3"><button className="text-xs font-bold text-[#007DBA] hover:underline">Download Certificate</button></td>
+                                        </tr>
+                                        <tr className="hover:bg-gray-50">
+                                            <td className="p-3 font-semibold text-gray-800">AI In Education: Work Smarter</td>
+                                            <td className="p-3"><span className="px-2 py-0.5 bg-lime-100 text-lime-800 text-xs rounded-full">Dovetail</span></td>
+                                            <td className="p-3">2 hrs</td>
+                                            <td className="p-3">2026-02-10</td>
+                                            <td className="p-3"><button className="text-xs font-bold text-[#007DBA] hover:underline">Download Certificate</button></td>
+                                        </tr>
+                                        <tr className="hover:bg-gray-50">
+                                            <td className="p-3 font-semibold text-gray-800">Digital Skills Course</td>
+                                            <td className="p-3"><span className="px-2 py-0.5 bg-blue-100 text-blue-800 text-xs rounded-full">Core Step 3</span></td>
+                                            <td className="p-3">16 hrs</td>
+                                            <td className="p-3">2026-05-20</td>
+                                            <td className="p-3"><button className="text-xs font-bold text-[#007DBA] hover:underline">Download Certificate</button></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Modal Details View */}
+                    <MilestoneModal milestone={selectedMilestone} onClose={() => setSelectedMilestone(null)} />
+                </div>
+            );
+        }
+
+        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+    </script>
 </body>
+
 </html>
