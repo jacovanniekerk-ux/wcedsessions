@@ -858,51 +858,72 @@
             );
         }
 
+        // Quarter helpers for the attendance timeline
+        const QUARTER_LABELS = { 1: 'Q1 (Jan – Mar)', 2: 'Q2 (Apr – Jun)', 3: 'Q3 (Jul – Sep)', 4: 'Q4 (Oct – Dec)' };
+        function getQuarter(date) {
+            if (!date) return null;
+            return Math.floor(date.getMonth() / 3) + 1;
+        }
+
         // === DETAILED HISTORY TAB ===
         function HistoryTab({
-            profileName, filteredSessions, sessionsByYear, historyMetrics, filterOptions,
-            filters, setFilters, viewMode, setViewMode, exportToCSV, onOpenChecklist
+            profileName, filteredSessions, sessionsByYear, filterOptions,
+            filters, setFilters, viewMode, setViewMode, exportToCSV
         }) {
+            const timelineByYear = useMemo(() => {
+                const years = {};
+                filteredSessions.forEach(s => {
+                    const year = s.year;
+                    const q = getQuarter(s.parsedDate) || 0;
+                    if (!years[year]) years[year] = {};
+                    if (!years[year][q]) years[year][q] = [];
+                    years[year][q].push(s);
+                });
+                return Object.keys(years).sort((a, b) => b - a).map(year => ({
+                    year,
+                    total: Object.values(years[year]).reduce((sum, arr) => sum + arr.length, 0),
+                    quarters: Object.keys(years[year]).sort((a, b) => a - b).map(q => ({
+                        quarter: Number(q),
+                        sessions: [...years[year][q]].sort((a, b) => (a.parsedDate || 0) - (b.parsedDate || 0))
+                    }))
+                }));
+            }, [filteredSessions]);
+
             return e('div', { className: "space-y-6 animate-fade-in-up" },
-                // Summary metrics for the filtered set
-                historyMetrics && e('div', { className: 'bg-white rounded-2xl shadow-lg p-6 no-print' },
-                    e('h3', { className: 'text-lg font-semibold text-wcg-dark mb-4' }, 'History Summary'),
-                    e('div', { className: 'grid grid-cols-2 md:grid-cols-7 gap-4' },
-                        e('div', { className: 'text-center p-4 bg-gray-50 rounded-lg' },
-                            e('div', { className: 'text-3xl font-bold text-wcg-dark' }, historyMetrics.total),
-                            e('div', { className: 'text-sm text-gray-600 mt-1' }, 'Total Sessions')
-                        ),
-                        e('div', { className: 'text-center p-4 bg-wcg-green/10 rounded-lg' },
-                            e('div', { className: 'text-3xl font-bold text-wcg-green' }, historyMetrics.byLevel['Laying the Foundation']),
-                            e('div', { className: 'text-sm text-gray-600 mt-1' }, 'Foundation')
-                        ),
-                        e('div', { className: 'text-center p-4 bg-wcg-yellow/10 rounded-lg' },
-                            e('div', { className: 'text-3xl font-bold text-wcg-yellow' }, historyMetrics.byLevel['I can do it']),
-                            e('div', { className: 'text-sm text-gray-600 mt-1' }, 'I Can Do It')
-                        ),
-                        e('div', { className: 'text-center p-4 bg-wcg-red/10 rounded-lg' },
-                            e('div', { className: 'text-3xl font-bold text-wcg-red' }, historyMetrics.byLevel['I can do it better']),
-                            e('div', { className: 'text-sm text-gray-600 mt-1' }, 'Better')
-                        ),
-                        e('div', { className: 'text-center p-4 bg-wcg-blue/10 rounded-lg' },
-                            e('div', { className: 'text-3xl font-bold text-wcg-blue' }, historyMetrics.byLevel['The Summit']),
-                            e('div', { className: 'text-sm text-gray-600 mt-1' }, 'Summit')
-                        ),
-                        e('div', {
-                            className: 'text-center p-4 bg-wcg-yellow/10 rounded-lg cursor-pointer hover:bg-wcg-yellow/20 transition-colors',
-                            onClick: () => onOpenChecklist('spark'), title: 'Click to view checklist'
-                        },
-                            e('div', { className: 'text-3xl font-bold text-wcg-yellow' }, '⭐ ' + historyMetrics.totalSparks),
-                            e('div', { className: 'text-sm text-gray-600 mt-1' }, 'Sparks')
-                        ),
-                        e('div', {
-                            className: 'text-center p-4 bg-wcg-pink/10 rounded-lg cursor-pointer hover:bg-wcg-pink/20 transition-colors',
-                            onClick: () => onOpenChecklist('dovetail'), title: 'Click to view checklist'
-                        },
-                            e('div', { className: 'text-3xl font-bold text-wcg-pink' }, '💎 ' + historyMetrics.totalDovetails),
-                            e('div', { className: 'text-sm text-gray-600 mt-1' }, 'Dovetail')
+                // Attendance timeline — replaces the level-breakdown summary (already shown up top)
+                e('div', { className: 'bg-white rounded-2xl shadow-lg p-6 no-print' },
+                    e('h3', { className: 'text-lg font-semibold text-wcg-dark mb-6' }, 'Attendance Timeline'),
+                    timelineByYear.length === 0
+                        ? e('p', { className: 'text-sm text-gray-500' }, 'No sessions to display for the selected filters.')
+                        : e('div', { className: 'space-y-8' },
+                            timelineByYear.map(({ year, total, quarters }) => e('div', { key: year },
+                                e('div', { className: 'flex items-center gap-3 mb-4' },
+                                    e('span', { className: 'text-xl font-bold text-wcg-dark' }, year),
+                                    e('span', { className: 'text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full font-semibold' }, `${total} session${total !== 1 ? 's' : ''}`)
+                                ),
+                                e('div', { className: 'relative pl-6 border-l-2 border-gray-200 space-y-6' },
+                                    quarters.map(({ quarter, sessions }) => e('div', { key: quarter, className: 'relative' },
+                                        e('span', { className: 'absolute -left-[29px] top-1 w-3.5 h-3.5 rounded-full border-2 border-white shadow', style: { background: '#001489' } }),
+                                        e('div', { className: 'flex items-center gap-2 mb-2' },
+                                            e('span', { className: 'text-sm font-bold', style: { color: '#001489' } }, QUARTER_LABELS[quarter] || 'Undated'),
+                                            e('span', { className: 'text-xs text-gray-400' }, `(${sessions.length})`)
+                                        ),
+                                        e('div', { className: 'space-y-1.5' },
+                                            sessions.map((s, idx) => e('div', {
+                                                key: idx,
+                                                className: 'flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 text-xs bg-gray-50 rounded-lg px-3 py-2'
+                                            },
+                                                e('span', { className: 'text-gray-700 font-medium' }, s['Session Name'] || 'Untitled Session'),
+                                                e('div', { className: 'flex items-center gap-2 flex-shrink-0' },
+                                                    e('span', { className: `px-2 py-0.5 rounded-full text-[10px] font-semibold ${getLevelColor(s['Development Level'])}` }, s['Development Level'] || 'N/A'),
+                                                    e('span', { className: 'text-gray-400' }, formatDate(s.parsedDate))
+                                                )
+                                            ))
+                                        )
+                                    ))
+                                )
+                            ))
                         )
-                    )
                 ),
 
                 // Filter bar
@@ -1601,22 +1622,32 @@
                                             e('p', { className: "text-gray-600" }, e('span', { className: "font-semibold" }, "District:"), " ", results.profile.district),
                                             e('p', { className: "text-xs text-gray-400 mt-1" }, "Data last updated: " + DATA_LAST_UPDATED)
                                         ),
-                                        e('div', { className: "flex items-center gap-4" },
+                                        e('div', { className: "flex items-center gap-3" },
                                             pathwayStatus && e('button', {
                                                 onClick: () => setActiveTab('pathway'),
-                                                title: "View Pathway Progress",
-                                                className: "text-center px-4 py-2 bg-gradient-to-r from-yellow-50 to-orange-50 rounded-xl border border-yellow-200 hover:border-yellow-400 transition-colors cursor-pointer"
+                                                title: "View Pathway Progress (incl. Facilitator ARC)",
+                                                className: "text-center px-4 py-3 min-w-[90px] rounded-xl bg-wcg-yellow/10 hover:bg-wcg-yellow/20 transition-colors cursor-pointer"
                                             },
-                                                e('div', { className: "flex items-center gap-1" },
-                                                    Array.from({ length: pathwayStatus.totalSparks }).map((_, i) => e('span', { key: i, className: "text-xl" }, "⭐")),
-                                                    pathwayStatus.totalSparks === 0 ? e('span', { className: "text-xl text-gray-300" }, "☆") : null
+                                                e('div', { className: "flex items-center justify-center gap-1.5" },
+                                                    e('span', { className: "text-xl" }, "⭐"),
+                                                    e('span', { className: "text-2xl font-bold text-wcg-yellow" }, pathwayStatus.totalSparks)
                                                 ),
-                                                e('div', { className: "text-xs font-bold text-gray-700 mt-1" }, `${pathwayStatus.totalSparks} Spark${pathwayStatus.totalSparks !== 1 ? 's' : ''}`),
-                                                e('div', { className: "text-[10px] text-gray-400" }, "incl. Facilitator ARC")
+                                                e('div', { className: "text-xs text-gray-600 mt-1 font-medium" }, "Sparks")
+                                            ),
+                                            pathwayStatus && e('button', {
+                                                onClick: () => setModalOpen({ isOpen: true, type: 'dovetail' }),
+                                                title: "View Dovetail Essentials checklist",
+                                                className: "text-center px-4 py-3 min-w-[90px] rounded-xl bg-wcg-pink/10 hover:bg-wcg-pink/20 transition-colors cursor-pointer"
+                                            },
+                                                e('div', { className: "flex items-center justify-center gap-1.5" },
+                                                    e('span', { className: "text-xl" }, "💎"),
+                                                    e('span', { className: "text-2xl font-bold text-wcg-pink" }, pathwayStatus.dovetailCount)
+                                                ),
+                                                e('div', { className: "text-xs text-gray-600 mt-1 font-medium" }, "Dovetail")
                                             ),
                                             e('button', {
                                                 onClick: handleLogout,
-                                                className: "no-print text-sm text-red-600 hover:text-red-700 border border-red-200 rounded-lg px-3 py-2 hover:bg-red-50 flex items-center gap-2"
+                                                className: "no-print text-sm text-red-600 hover:text-red-700 border border-red-200 rounded-lg px-3 py-2 hover:bg-red-50 flex items-center gap-2 self-center"
                                             }, e('span', null, "🚪"), " Logout")
                                         )
                                     ),
@@ -1686,9 +1717,8 @@
 
                                     activeTab === 'history' ? e(HistoryTab, {
                                         profileName: results.profile.name,
-                                        filteredSessions, sessionsByYear, historyMetrics, filterOptions,
-                                        filters, setFilters, viewMode, setViewMode, exportToCSV,
-                                        onOpenChecklist: (type) => setModalOpen({ isOpen: true, type })
+                                        filteredSessions, sessionsByYear, filterOptions,
+                                        filters, setFilters, viewMode, setViewMode, exportToCSV
                                     }) : null
                                 ),
 
