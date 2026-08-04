@@ -1206,16 +1206,6 @@ useEffect(() => {
 
                                 </span>
 
-                                <span className="text-[11px] text-gray-500">
-
-                                    {getModeIcon(session.mode)}
-
-                                    {" "}
-
-                                    {session.mode}
-
-                                </span>
-
                             </div>
 
                         </div>
@@ -1306,23 +1296,19 @@ useEffect(() => {
 
                         <thead className="sticky top-0 bg-white border-b">
 
-                            <tr>
+    <tr>
 
-                                <th className="text-left px-6 py-3">
+        <th className="text-left px-6 py-3">
+            Teacher
+        </th>
 
-                                    Teacher
+        <th className="text-left px-6 py-3 w-56">
+            Date(s) Attended
+        </th>
 
-                                </th>
+    </tr>
 
-                                <th className="text-center px-6 py-3 w-32">
-
-                                    Attendance
-
-                                </th>
-
-                            </tr>
-
-                        </thead>
+</thead>
 
                         <tbody>
 
@@ -1348,15 +1334,13 @@ useEffect(() => {
 
                                     </td>
 
-                                    <td className="text-center">
+                                   <td className="px-6 py-3 text-sm text-gray-700">
 
-                                        {teacher.attendances.length > 1
+    {teacher.attendances
+        .map(att => formatDate(att.date))
+        .join(", ")}
 
-                                            ? teacher.attendances.length
-
-                                            : "✓"}
-
-                                    </td>
+</td>
 
                                 </tr>
 
