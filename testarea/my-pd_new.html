@@ -731,22 +731,24 @@
                     e('span', { className: "text-2xl" }, icon),
                     e('h4', { className: "font-bold text-gray-800" }, title)
                 ),
-                e('p', { className: "text-sm text-gray-600 mb-3" }, description),
-                (ctas && ctas.length > 0) ? e('div', { className: "flex flex-wrap gap-2 mb-3" },
-                    ctas.map((cta, idx) => e('a', {
-                        key: idx, href: cta.url, target: "_blank", rel: "noopener noreferrer",
-                        className: `inline-flex items-center gap-1.5 px-3 py-2 rounded-lg font-bold text-xs text-white transition-colors shadow ${cta.style === 'primary' ? 'bg-green-600 hover:bg-green-700' : 'bg-wcg-blue hover:bg-blue-800'}`
-                    }, cta.label))
-                ) : null,
-                (sessions && sessions.length > 0) ? e('div', { className: "space-y-1.5 mt-3" },
-                    sessions.slice(0, 3).map((s, idx) => e('button', {
-                        key: idx,
-                        onClick: () => onSessionClick(s),
-                        className: "block w-full text-left text-xs bg-white rounded-lg px-3 py-2 hover:bg-blue-50 border border-gray-200 transition-colors"
-                    },
-                        e('span', { className: "font-semibold text-wcg-blue" }, s.name), ' — ', s.date
-                    ))
-                ) : null
+                description ? e('ul', { className: "text-sm text-gray-600 mb-3 list-disc pl-5 space-y-1" },
+    description.split(/(?<=[.!?])\s+/).filter(Boolean).map((line, idx) => e('li', { key: idx }, line))
+) : null,
+(sessions && sessions.length > 0) ? e('div', { className: "space-y-1.5 mb-3" },
+    sessions.slice(0, 3).map((s, idx) => e('button', {
+        key: idx,
+        onClick: () => onSessionClick(s),
+        className: "block w-full text-left text-xs bg-white rounded-lg px-3 py-2 hover:bg-blue-50 border border-gray-200 transition-colors"
+    },
+        e('span', { className: "font-semibold text-wcg-blue" }, s.name), ' — ', s.date
+    ))
+) : null,
+(ctas && ctas.length > 0) ? e('div', { className: "pt-3 mt-3 border-t border-gray-200 flex flex-wrap gap-2" },
+    ctas.map((cta, idx) => e('a', {
+        key: idx, href: cta.url, target: "_blank", rel: "noopener noreferrer",
+        className: `inline-flex items-center gap-1.5 px-3 py-2 rounded-lg font-bold text-xs text-white transition-colors shadow ${cta.style === 'primary' ? 'bg-green-600 hover:bg-green-700' : 'bg-wcg-blue hover:bg-blue-800'}`
+    }, cta.label))
+) : null
             );
         }
 
@@ -1409,7 +1411,7 @@
                             time: row['Time'] || '',
                             venue: row['Venue'] || '',
                             link: row['Registration Link'] || row['Pre-Register'] || '',
-                            description: row['Session Description'] || '',
+                            description: row['Session Desciption'] || '',
                             level: row['Developmental Level'] || ''
                         }))
                         .sort((a, b) => parseDate(a.date) - parseDate(b.date))
