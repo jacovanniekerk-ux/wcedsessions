@@ -891,7 +891,7 @@
                 return Object.keys(years).sort((a, b) => b - a).map(year => ({
                     year,
                     total: Object.values(years[year]).reduce((sum, arr) => sum + arr.length, 0),
-                    quarters: Object.keys(years[year]).sort((a, b) => a - b).map(q => ({
+                    quarters: Object.keys(years[year]).sort((a, b) => b - a).map(q => ({
                         quarter: Number(q),
                         sessions: [...years[year][q]].sort((a, b) => (a.parsedDate || 0) - (b.parsedDate || 0))
                     }))
