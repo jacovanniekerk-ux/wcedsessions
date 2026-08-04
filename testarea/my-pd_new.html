@@ -274,7 +274,7 @@
         // Spark deepen leadership but do not add to the core pathway Sparks.
         const EDVANCE_ARC = {
             icon: '🎓',
-            title: 'Facilitator ARC',
+            title: 'Edvance ARC',
             subtitle: 'By Invitation',
             accentColor: '#672D82',
             lightColor: '#F3EBF7',
@@ -283,7 +283,7 @@
                 { id: 'elevate', name: 'Elevate', label: 'Step 2', spark: false },
                 { id: 'shiftspark', name: 'Shift and Spark', label: 'Step 3', spark: false }
             ],
-            description: 'A specialised developmental pathway for teachers with strong PD engagement. The Facilitator Think Tank is the entry point and earns a Spark. Elevate and Shift and Spark deepen leadership.'
+            description: 'The Facilitator ARC is a dedicated face-to-face developmental pathway for educators ready to lead. Beginning at the Facilitator Think Tank (earning your Spark), this journey nurtures digital wisdom and leadership through immersive workshops. It equips you with the vision and practical tools needed to serve as a Transformation Agent, driving sustainable digital transformation across your school community.'
         };
 
         // === UTILITIES ===
@@ -510,7 +510,7 @@
 
             return e('div', {
                 className: "text-white rounded-2xl p-6 shadow-md flex flex-col md:flex-row justify-between items-center gap-6",
-                style: { background: 'linear-gradient(135deg, #001489 0%, #1e1b4b 100%)', borderLeft: '6px solid #FFD700' }
+                style: { background: 'linear-gradient(135deg, #001489 0%, #C8126E 100%)' }
             },
                 e('div', { className: "flex items-center gap-4" },
                     e('div', { className: "text-5xl" }, EDVANCE_ARC.icon),
@@ -831,7 +831,7 @@
                 e('div', { className: "w-full bg-gray-200 rounded-full h-3 mb-6" },
                     e('div', { className: "h-3 rounded-full pathway-line-fill", style: { width: `${pathwayStatus.overallProgress}%` } })
                 ),
-                e('h4', { className: "text-base font-bold text-gray-800 mb-4" }, "Core Transformation Steps"),
+                e('h4', { className: "text-base font-bold text-gray-800 mb-4" }, "Adoption and Transformation Pathway"),
                 e('div', { className: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" },
                     MILESTONES.map((milestone, idx) => e(MilestoneCard, {
                         key: milestone.id,
