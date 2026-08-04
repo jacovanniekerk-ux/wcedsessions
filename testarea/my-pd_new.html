@@ -804,23 +804,22 @@
         }
 
         // === TAB BAR (mobile-friendly, horizontally scrollable, plain-text pill buttons) ===
-       function TabBar({ tabs, activeTab, onSelect }) {
-    return e('div', { className: "bg-gray-200/70 border border-gray-300/50 rounded-2xl p-1.5 no-print" },
-        e('div', { className: "flex gap-1 tab-scroll" },
+      function TabBar({ tabs, activeTab, onSelect }) {
+    return e('div', { className: "bg-[#001489] rounded-2xl shadow-lg p-2 no-print" },
+        e('div', { className: "flex gap-2 tab-scroll" },
             tabs.map(tab => e('button', {
                 key: tab.id,
                 onClick: () => onSelect(activeTab === tab.id ? null : tab.id),
-                className: `tab-btn flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm transition-all flex-shrink-0 ${activeTab === tab.id ? 'bg-[#001489] text-white shadow-md' : 'text-gray-600 hover:text-gray-900 hover:bg-white/60'}`
+                className: `tab-btn flex items-center gap-2 px-5 py-3 rounded-xl font-semibold text-sm transition-all flex-shrink-0 ${activeTab === tab.id ? 'bg-white text-[#001489] font-bold shadow' : 'text-white/80 hover:bg-white/10 hover:text-white'}`
             },
                 e('span', null, tab.label),
                 (tab.badge !== undefined && tab.badge !== null) ? e('span', {
-                    className: `ml-1 text-xs px-2 py-0.5 rounded-full font-bold ${activeTab === tab.id ? 'bg-white/20 text-white' : 'bg-gray-300 text-gray-700'}`
+                    className: `ml-1 text-xs px-2 py-0.5 rounded-full font-bold ${activeTab === tab.id ? 'bg-[#001489]/10 text-[#001489]' : 'bg-white/20 text-white'}`
                 }, tab.badge) : null
             ))
         )
     );
 }
-
         // === PATHWAY TAB ===
         function PathwayTab({ pathwayStatus, onMilestoneClick }) {
             return e('div', { className: "bg-white rounded-2xl shadow-lg p-6 animate-fade-in-up" },
@@ -1032,7 +1031,7 @@
                                                 e('h4', { className: 'font-semibold text-wcg-dark mb-3 line-clamp-2' }, session['Session Name'] || 'Untitled Session'),
                                                 e('div', { className: 'space-y-1 text-sm text-gray-600 mb-3' },
                                                     e('p', null, e('span', { className: 'font-medium' }, 'Facilitator:'), ' ' + (session['Facilitator'] || 'N/A')),
-                                                    e('p', null, e('span', { className: 'font-medium' }, 'District:'), ' ' + (session['Hosting District'] || 'N/A')),
+                                                    e('p', null, e('span', { className: 'font-medium' }, 'Hosting Unit:'), ' ' + (session['Hosting District'] || 'N/A')),
                                                     e('p', null, e('span', { className: 'font-medium' }, 'Mode:'), ' ' + (session['Delivery Mode'] || 'N/A'))
                                                 ),
                                                 session.isSpark && e('div', { className: 'mt-3 pt-3 border-t border-gray-200' },
@@ -1063,7 +1062,7 @@
                                             e('th', { className: 'px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase' }, 'Session Name'),
                                             e('th', { className: 'px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase' }, 'Level'),
                                             e('th', { className: 'px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase' }, 'Facilitator'),
-                                            e('th', { className: 'px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase' }, 'District'),
+                                            e('th', { className: 'px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase' }, 'Hosting Unit'),
                                             e('th', { className: 'px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase' }, 'Mode'),
                                             e('th', { className: 'px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase' }, 'Certificate')
                                         )
