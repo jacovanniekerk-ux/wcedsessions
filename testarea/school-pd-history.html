@@ -2,892 +2,1468 @@
 <html lang="en">
 
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>School PD Report - WCED Professional Development</title>
-  <link rel="icon" type="image/png" href="favicon.png" />
-
-  <!-- React + Babel (UMD) -->
-  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
-  <!-- Utilities -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-  <!-- Tailwind and Chart.js -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            'wcg-green': '#76B82A',
-            'wcg-yellow': '#FDB913',
-            'wcg-red': '#E30613',
-            'wcg-blue': '#001489',
-            'wcg-purple': '#672D82',
-            'wcg-pink': '#C8126E',
-            'wcg-dark': '#1a1a1a',
-            'wcg-gray': '#666666'
-          },
-          fontFamily: {
-            sans: ['Century Gothic', 'Arial', 'Helvetica', 'sans-serif']
-          }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>School PD Report - WCED Professional Development</title>
+    <link rel="icon" type="image/png" href="favicon.png">
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'wcg-green': '#76B82A',
+                        'wcg-yellow': '#FDB913',
+                        'wcg-red': '#E30613',
+                        'wcg-blue': '#001489',
+                        'wcg-purple': '#672D82',
+                        'wcg-pink': '#C8126E',
+                        'wcg-dark': '#1a1a1a',
+                        'wcg-gray': '#666666'
+                    },
+                    fontFamily: {
+                        'sans': ['Century Gothic', 'Arial', 'Helvetica', 'sans-serif']
+                    }
+                }
+            }
         }
-      }
-    };
-  </script>
+    </script>
+    <style>
+        @media print {
+            .no-print {
+                display: none !important;
+            }
 
-  <style>
-    @media print {
-      .no-print {
-        display: none !important;
-      }
+            body {
+                background: white !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
 
-      body {
-        background: white !important;
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-      }
+            .print-full-width {
+                max-width: 100% !important;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
 
-      .print-full-width {
-        max-width: 100% !important;
-        padding: 0 !important;
-        margin: 0 !important;
-      }
-
-      @page {
-        margin: 1cm;
-      }
-    }
-  </style>
+            @page {
+                margin: 1cm;
+            }
+        }
+    </style>
 </head>
 
 <body class="bg-gray-50">
-  <div id="root"></div>
+    <div id="root"></div>
 
-  <script type="text/babel">
-    const { useState, useEffect, useMemo, useRef } = React;
+    <script type="text/babel">
+        const { useState, useEffect, useMemo, useRef } = React;
 
-    // --------------------------
-    // SUPABASE CONFIG (publishable)
-    // --------------------------
-    const SUPABASE_URL = 'https://cftpufjzwpmhgzdcgpjb.supabase.co';
-    const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_b1H_5DJYLQSrr83T_dvz6A_2UAqOVg4';
-    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+        // ============================================================
+        // SUPABASE CONFIG — replace with your own project URL and key
+        // ============================================================
+        const SUPABASE_URL = 'https://cftpufjzwpmhgzdcgpjb.supabase.co';
+        const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_b1H_5DJYLQSrr83T_dvz6A_2UAqOVg4';
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
-    const ATTENDANCE_TABLE = 'attendance';
-    const SCHOOLS_TABLE = 'schools';
+        const ATTENDANCE_TABLE = 'attendance';
+        const SCHOOLS_TABLE = 'schools';
 
-    // Column maps
-    const COLUMN_MAP = {
-      'Timestamp': 'Timestamp',
-      'First Name': 'First Name',
-      'Surname': 'Surname',
-      'School': 'School',
-      'District': 'District',
-      'ID/Passport Number': 'ID/Passport Number',
-      'PERSAL Number': 'PERSAL Number',
-      'Session Name': 'Session Name',
-      'Development Level': 'Development Level',
-      'Facilitator': 'Facilitator',
-      'Delivery Mode': 'Delivery Mode',
-      'Hosting District': 'Hosting District'
-    };
-
-    const SCHOOL_COLUMN_MAP = {
-      'DataID': 'DataID',
-      'SchoolName': 'School_Name'
-    };
-
-    // Session lists
-    const SPARK_SESSIONS = [
-      'Adoption Strategy',
-      'Digital Skills Course',
-      'Facilitator Think Tank',
-      'Cyber Effect Ambassador Initiation Course'
-    ];
-
-    const DOVETAIL_SESSIONS = [
-      'ePedagogy: Building a Digital Lesson',
-      'Integrating digital resources from the ePortal',
-      'Google Fundamentals 1: Account and Google Chrome',
-      'Office Online Fundamentals',
-      'Improved Presentation Skills',
-      'Ease of Access with QR Codes and Bit.ly links',
-      'Teaching with Videos',
-      'Orientation to Google Forms',
-      'AI In Education: Work Smarter, not Harder',
-      'Introduction to Cyber Wellness Education'
-    ];
-
-    // Utility helpers
-    function parseTimestamp(timestamp) {
-      if (!timestamp) return null;
-      // Expecting "DD/MM/YYYY ..." or similar
-      try {
-        const datePart = String(timestamp).split(' ')[0];
-        const [day, month, year] = datePart.split('/');
-        if (!day || !month || !year) return null;
-        return new Date(Number(year), Number(month) - 1, Number(day));
-      } catch {
-        return null;
-      }
-    }
-
-    function formatDate(dateObj) {
-      if (!dateObj) return 'N/A';
-      const day = String(dateObj.getDate()).padStart(2, '0');
-      const month = String(dateObj.getMonth() + 1).padStart(2, '0');
-      const year = dateObj.getFullYear();
-      return `${day}/${month}/${year}`;
-    }
-
-    function getQuarter(date) {
-      if (!date) return null;
-      const month = date.getMonth();
-      return Math.floor(month / 3) + 1;
-    }
-
-    function getLevelColor(level) {
-      if (!level) return 'bg-gray-200 text-gray-800';
-      const normalized = level.toLowerCase().trim();
-      if (normalized === 'laying the foundation') return 'bg-wcg-green text-white';
-      if (normalized === 'i can do it') return 'bg-wcg-yellow text-black';
-      if (normalized === 'i can do it better') return 'bg-wcg-red text-white';
-      if (normalized === 'the summit') return 'bg-wcg-blue text-white';
-      return 'bg-gray-200 text-gray-800';
-    }
-
-    function isSpark(sessionName) {
-      return SPARK_SESSIONS.includes(String(sessionName || '').trim());
-    }
-
-    function isDovetail(sessionName) {
-      return DOVETAIL_SESSIONS.includes(String(sessionName || '').trim());
-    }
-
-    function getModeIcon(mode) {
-      if (!mode) return '📋';
-      const normalized = String(mode).trim().toLowerCase();
-      if (normalized === 'virtual') return '🖥️';
-      if (normalized === 'face-to-face' || normalized === 'f2f') return '🏢';
-      if (normalized === 'hybrid') return '🔄';
-      if (normalized === 'self-paced') return '📚';
-      return '📋';
-    }
-
-    function getURLParameter(name) {
-      const params = new URLSearchParams(window.location.search);
-      return params.get(name) || '';
-    }
-
-    // Map a raw attendance row to the record shape used by the app
-    function mapRowToRecord(raw) {
-      const record = {};
-      Object.keys(COLUMN_MAP).forEach(appKey => {
-        const colName = COLUMN_MAP[appKey];
-        record[appKey] = raw[colName] != null ? String(raw[colName]) : '';
-      });
-
-      // derived fields
-      const parsed = parseTimestamp(record['Timestamp']);
-      record.parsedDate = parsed;
-      record.year = parsed ? parsed.getFullYear() : null;
-      record.quarter = parsed ? getQuarter(parsed) : null;
-      record.isSpark = isSpark(record['Session Name']);
-      record.isDovetail = isDovetail(record['Session Name']);
-      return record;
-    }
-
-    // Resolve school DataID to name
-    async function resolveSchoolName(dataId) {
-      const { data, error } = await supabaseClient
-        .from(SCHOOLS_TABLE)
-        .select('*')
-        .eq(SCHOOL_COLUMN_MAP.DataID, dataId)
-        .limit(1);
-
-      if (error) throw error;
-      if (Array.isArray(data) && data.length > 0) {
-        return data[0][SCHOOL_COLUMN_MAP.SchoolName] || null;
-      }
-      return null;
-    }
-
-    // Fetch attendance rows for a school name
-    async function fetchAttendanceForSchool(schoolName) {
-      const { data, error } = await supabaseClient
-        .from(ATTENDANCE_TABLE)
-        .select('*')
-        .eq(COLUMN_MAP['School'], schoolName);
-
-      if (error) throw error;
-      return (data || []).map(mapRowToRecord).filter(r => r.parsedDate);
-    }
-
-    // *** UPDATE THIS WHEN YOU UPDATE THE CSV FILE ***
-    const DATA_LAST_UPDATED = '2026-06-05';
-
-    function App() {
-      const [loading, setLoading] = useState(true);
-      const [schoolName, setSchoolName] = useState('');
-      const [schoolData, setSchoolData] = useState([]);
-      const [filters, setFilters] = useState({
-        years: [],
-        level: '',
-        mode: '',
-        sessionLevel: '',
-        showSparks: false,
-        showDovetails: false
-      });
-      const [expandedTeachers, setExpandedTeachers] = useState(new Set());
-      const [teacherSort, setTeacherSort] = useState('name');
-      const [viewMode, setViewMode] = useState('teachers');
-      const [selectedSession, setSelectedSession] = useState(null);
-
-      // DataID manual entry state
-      const [dataIdInput, setDataIdInput] = useState('');
-      const [lookupError, setLookupError] = useState('');
-      const [checkingId, setCheckingId] = useState(false);
-
-      // Chart refs
-      const quarterChartRef = useRef(null);
-      const pieChartRef = useRef(null);
-      const quarterChartInstance = useRef(null);
-      const pieChartInstance = useRef(null);
-
-      // 1) Resolve DataID from URL on mount
-      useEffect(() => {
-        (async () => {
-          const dataId = getURLParameter('school');
-          if (!dataId) {
-            setLoading(false);
-            return;
-          }
-          try {
-            const resolved = await resolveSchoolName(dataId);
-            if (resolved) {
-              setSchoolName(resolved);
-              setLookupError('');
-              // loading remains true until attendance fetched
-            } else {
-              setLookupError('invalid');
-              setLoading(false);
-            }
-          } catch (err) {
-            console.error('Error resolving school ID:', err);
-            setLookupError('invalid');
-            setLoading(false);
-          }
-        })();
-      }, []);
-
-      // 2) Fetch attendance for resolved school
-      useEffect(() => {
-        if (!schoolName) return;
-        (async () => {
-          try {
-            const rows = await fetchAttendanceForSchool(schoolName);
-            const years = [...new Set(rows.map(r => r.year).filter(Boolean))].sort();
-            const currentYear = new Date().getFullYear();
-            const defaultYears = years.filter(y => y === currentYear || y === currentYear - 1);
-
-            // batch update
-            ReactDOM.unstable_batchedUpdates(() => {
-              setSchoolData(rows);
-              setFilters(prev => ({ ...prev, years: defaultYears }));
-              setLoading(false);
-            });
-          } catch (err) {
-            console.error('Error loading attendance for school:', err);
-            ReactDOM.unstable_batchedUpdates(() => {
-              setSchoolData([]);
-              setLoading(false);
-            });
-          }
-        })();
-      }, [schoolName]);
-
-      // Available years
-      const availableYears = useMemo(() => [...new Set(schoolData.map(r => r.year).filter(Boolean))].sort(), [schoolData]);
-
-      // Apply filters
-      const filteredData = useMemo(() => {
-        let filtered = schoolData;
-        if (filters.years.length > 0) filtered = filtered.filter(r => filters.years.includes(r.year));
-        if (filters.level) filtered = filtered.filter(r => (r['Development Level'] || '').toLowerCase().trim() === filters.level.toLowerCase().trim());
-        if (filters.mode) filtered = filtered.filter(r => (r['Delivery Mode'] || '').trim() === filters.mode);
-        if (filters.showSparks && !filters.showDovetails) filtered = filtered.filter(r => r.isSpark);
-        else if (filters.showDovetails && !filters.showSparks) filtered = filtered.filter(r => r.isDovetail);
-        else if (filters.showSparks && filters.showDovetails) filtered = filtered.filter(r => r.isSpark || r.isDovetail);
-        return filtered;
-      }, [schoolData, filters]);
-
-      // Scorecard metrics
-      const scorecardMetrics = useMemo(() => {
-        const uniqueTeachersCount = new Set(filteredData.map(r => `${r['First Name']} ${r['Surname']}`)).size;
-        const totalWorkshopsAttended = filteredData.length;
-        return { uniqueTeachersCount, totalWorkshopsAttended };
-      }, [filteredData]);
-
-      // Print table data (sorted)
-      const printTableData = useMemo(() => {
-        return [...filteredData].sort((a, b) => {
-          const aName = (a['First Name'] || '').toLowerCase();
-          const bName = (b['First Name'] || '').toLowerCase();
-          if (aName < bName) return -1;
-          if (aName > bName) return 1;
-          const aSur = (a['Surname'] || '').toLowerCase();
-          const bSur = (b['Surname'] || '').toLowerCase();
-          if (aSur < bSur) return -1;
-          if (aSur > bSur) return 1;
-          return (a.parsedDate || 0) - (b.parsedDate || 0);
-        });
-      }, [filteredData]);
-
-      // Filter options from data
-      const filterOptions = useMemo(() => {
-        const levels = [...new Set(schoolData.map(r => (r['Development Level'] || '').trim()).filter(Boolean))];
-        const modes = [...new Set(schoolData.map(r => (r['Delivery Mode'] || '').trim()).filter(Boolean))].sort();
-        return { levels, modes };
-      }, [schoolData]);
-
-      // Quarterly aggregation
-      const quarterlyData = useMemo(() => {
-        const map = {};
-        filteredData.forEach(record => {
-          if (!record.year || !record.quarter) return;
-          const key = `${record.year}-Q${record.quarter}`;
-          if (!map[key]) map[key] = { label: key, uniqueTeachers: new Set(), totalAttendances: 0 };
-          map[key].uniqueTeachers.add(`${record['First Name']} ${record['Surname']}`);
-          map[key].totalAttendances++;
-        });
-        return Object.keys(map).sort().map(k => ({ label: map[k].label, uniqueTeachers: map[k].uniqueTeachers.size, totalAttendances: map[k].totalAttendances }));
-      }, [filteredData]);
-
-      // Development level distribution
-      const levelDistribution = useMemo(() => {
-        const base = { 'Laying the Foundation': 0, 'I can do it': 0, 'I can do it better': 0, 'The Summit': 0 };
-        filteredData.forEach(r => {
-          const level = (r['Development Level'] || '').trim();
-          if (base.hasOwnProperty(level)) base[level]++;
-        });
-        return base;
-      }, [filteredData]);
-
-      // Group by teacher
-      const teacherData = useMemo(() => {
-        const map = {};
-        filteredData.forEach(record => {
-          const name = `${(record['First Name'] || '').trim()} ${(record['Surname'] || '').trim()}`.toUpperCase().trim() || 'UNKNOWN';
-          if (!map[name]) {
-            map[name] = {
-              name,
-              sessions: [],
-              levelCounts: { 'Laying the Foundation': 0, 'I can do it': 0, 'I can do it better': 0, 'The Summit': 0 },
-              uniqueSparks: new Set(),
-              uniqueDovetails: new Set()
-            };
-          }
-          map[name].sessions.push(record);
-          const level = (record['Development Level'] || '').trim();
-          if (map[name].levelCounts.hasOwnProperty(level)) map[name].levelCounts[level]++;
-          if (record.isSpark) map[name].uniqueSparks.add(record['Session Name']);
-          if (record.isDovetail) map[name].uniqueDovetails.add(record['Session Name']);
-        });
-
-        const list = Object.values(map).map(t => ({
-          ...t,
-          totalSessions: t.sessions.length,
-          sparkCount: t.uniqueSparks.size + (t.uniqueDovetails.size >= 5 ? 1 : 0),
-          dovetailCount: t.uniqueDovetails.size
-        }));
-
-        if (teacherSort === 'name') list.sort((a, b) => a.name.localeCompare(b.name));
-        else if (teacherSort === 'attendance') list.sort((a, b) => b.totalSessions - a.totalSessions);
-        else if (teacherSort === 'sparks') list.sort((a, b) => b.sparkCount - a.sparkCount);
-        else if (teacherSort === 'dovetails') list.sort((a, b) => b.dovetailCount - a.dovetailCount);
-
-        return list;
-      }, [filteredData, teacherSort]);
-
-      // Group by session
-      const sessionData = useMemo(() => {
-        const map = {};
-        filteredData.forEach(record => {
-          const sName = (record['Session Name'] || '').trim();
-          if (!sName) return;
-          if (!map[sName]) map[sName] = { name: sName, teacherAttendances: {}, level: record['Development Level'], mode: record['Delivery Mode'], isSpark: record.isSpark, isDovetail: record.isDovetail };
-          const teacherName = `${(record['First Name'] || '').trim()} ${(record['Surname'] || '').trim()}`.toUpperCase().trim() || 'UNKNOWN';
-          if (!map[sName].teacherAttendances[teacherName]) map[sName].teacherAttendances[teacherName] = [];
-          map[sName].teacherAttendances[teacherName].push({ date: record.parsedDate, hostingDistrict: record['Hosting District'], mode: record['Delivery Mode'] });
-        });
-
-        let list = Object.values(map).map(s => {
-          const attendanceList = Object.keys(s.teacherAttendances).sort().map(name => {
-            const sorted = s.teacherAttendances[name].sort((a, b) => (b.date || 0) - (a.date || 0));
-            return { teacher: name, attendances: sorted, mostRecentDate: sorted[0]?.date || null };
-          });
-          const totalAttendances = Object.values(s.teacherAttendances).reduce((sum, arr) => sum + arr.length, 0);
-          return { ...s, attendanceList, totalAttendances, uniqueTeachers: Object.keys(s.teacherAttendances).length };
-        });
-
-        if (filters.sessionLevel) {
-          list = list.filter(s => (s.level || '').toLowerCase().trim() === filters.sessionLevel.toLowerCase().trim());
-        }
-
-        return list.sort((a, b) => a.name.localeCompare(b.name));
-      }, [filteredData, filters.sessionLevel]);
-
-      // Ensure a session is selected when sessions change
-      useEffect(() => {
-        if (sessionData.length === 0) {
-          setSelectedSession(null);
-          return;
-        }
-        if (!selectedSession || !sessionData.some(s => s.name === selectedSession.name)) {
-          setSelectedSession(sessionData[0]);
-        }
-      }, [sessionData]);
-
-      // Charts
-      useEffect(() => {
-        if (!quarterChartRef.current || quarterlyData.length === 0) return;
-        if (quarterChartInstance.current) quarterChartInstance.current.destroy();
-
-        const ctx = quarterChartRef.current.getContext('2d');
-        quarterChartInstance.current = new Chart(ctx, {
-          type: 'bar',
-          data: {
-            labels: quarterlyData.map(d => d.label),
-            datasets: [
-              { label: 'Unique Teachers', data: quarterlyData.map(d => d.uniqueTeachers), backgroundColor: '#001489', borderColor: '#001489', borderWidth: 1 },
-              { label: 'Total Attendances', data: quarterlyData.map(d => d.totalAttendances), backgroundColor: '#76B82A', borderColor: '#76B82A', borderWidth: 1 }
-            ]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: { y: { beginAtZero: true, ticks: { precision: 0 } } },
-            plugins: { legend: { display: true, position: 'top' } }
-          }
-        });
-
-        return () => { if (quarterChartInstance.current) quarterChartInstance.current.destroy(); };
-      }, [quarterlyData]);
-
-      useEffect(() => {
-        if (!pieChartRef.current || Object.values(levelDistribution).every(v => v === 0)) return;
-        if (pieChartInstance.current) pieChartInstance.current.destroy();
-
-        const ctx = pieChartRef.current.getContext('2d');
-        pieChartInstance.current = new Chart(ctx, {
-          type: 'pie',
-          data: {
-            labels: ['Laying the Foundation', 'I can do it', 'I can do it better', 'The Summit'],
-            datasets: [{
-              data: [
-                levelDistribution['Laying the Foundation'],
-                levelDistribution['I can do it'],
-                levelDistribution['I can do it better'],
-                levelDistribution['The Summit']
-              ],
-              backgroundColor: ['#76B82A', '#FDB913', '#E30613', '#001489']
-            }]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { display: true, position: 'right' } }
-          },
-          plugins: [{
-            id: 'pieSliceNumbers',
-            afterDraw(chart) {
-              const { ctx } = chart;
-              chart.data.datasets.forEach((dataset, datasetIndex) => {
-                const meta = chart.getDatasetMeta(datasetIndex);
-                meta.data.forEach((element, index) => {
-                  const value = dataset.data[index];
-                  if (!value || value <= 0) return;
-                  const pos = element.tooltipPosition();
-                  ctx.save();
-                  ctx.fillStyle = '#FFFFFF';
-                  ctx.font = 'bold 13px sans-serif';
-                  ctx.textAlign = 'center';
-                  ctx.textBaseline = 'middle';
-                  ctx.fillText(String(value), pos.x, pos.y);
-                  ctx.restore();
-                });
-              });
-            }
-          }]
-        });
-
-        return () => { if (pieChartInstance.current) pieChartInstance.current.destroy(); };
-      }, [levelDistribution]);
-
-      // Toggle handlers
-      const toggleTeacher = (name) => {
-        setExpandedTeachers(prev => {
-          const next = new Set(prev);
-          if (next.has(name)) next.delete(name); else next.add(name);
-          return next;
-        });
-      };
-
-      const toggleYear = (year) => {
-        setFilters(prev => ({
-          ...prev,
-          years: prev.years.includes(year) ? prev.years.filter(y => y !== year) : [...prev.years, year].sort()
-        }));
-      };
-
-      if (loading) {
-        return (
-          <div className="min-h-screen flex items-center justify-center">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-wcg-blue mx-auto mb-4"></div>
-              <p className="text-gray-600">Loading attendance records...</p>
-            </div>
-          </div>
-        );
-      }
-
-      if (lookupError === 'invalid') {
-        return (
-          <div className="min-h-screen flex items-center justify-center bg-gray-50">
-            <div className="max-w-md mx-auto px-4">
-              <div className="bg-white rounded-lg shadow-md p-8 text-center">
-                <div className="text-red-500 mb-4">
-                  <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01M5.07 19h13.86c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.73 3z"></path>
-                  </svg>
-                </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">Invalid School ID</h3>
-                <p className="text-gray-600 mb-4">The school ID provided is not recognised. Please check the link you were given and try again.</p>
-                <button
-                  onClick={() => { setLookupError(''); setCheckingId(false); window.history.replaceState({}, '', window.location.pathname); }}
-                  className="px-6 py-2 bg-wcg-blue text-white rounded-lg hover:opacity-90 transition-colors font-medium"
-                >
-                  Enter School ID Manually
-                </button>
-              </div>
-            </div>
-          </div>
-        );
-      }
-
-      if (!schoolName) {
-        const handleDataIdSubmit = async (e) => {
-          e.preventDefault();
-          const trimmed = (dataIdInput || '').trim();
-          if (!trimmed || checkingId) return;
-          setCheckingId(true);
-          try {
-            const resolved = await resolveSchoolName(trimmed);
-            if (resolved) {
-              window.location.href = `${window.location.pathname}?school=${encodeURIComponent(trimmed)}`;
-            } else {
-              setLookupError('invalid');
-              setCheckingId(false);
-            }
-          } catch (err) {
-            console.error('Error resolving school ID:', err);
-            setLookupError('invalid');
-            setCheckingId(false);
-          }
+        // Same attendance columns as the individual PD history page
+        const COLUMN_MAP = {
+            'Timestamp': 'Timestamp',
+            'First Name': 'First Name',
+            'Surname': 'Surname',
+            'School': 'School',
+            'District': 'District',
+            'ID/Passport Number': 'ID/Passport Number',
+            'PERSAL Number': 'PERSAL Number',
+            'Session Name': 'Session Name',
+            'Development Level': 'Development Level',
+            'Facilitator': 'Facilitator',
+            'Delivery Mode': 'Delivery Mode',
+            'Hosting District': 'Hosting District'
         };
 
-        return (
-          <div className="min-h-screen flex items-center justify-center bg-gray-50">
-            <div className="max-w-md mx-auto px-4">
-              <div className="bg-white rounded-lg shadow-md p-8 text-center">
-                <img src="header.png" alt="WCED Header" className="h-14 mx-auto mb-6" />
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">School PD History</h3>
-                <p className="text-gray-600 mb-6">Please enter your unique School ID to view your school's Professional Development report.</p>
-                <form onSubmit={handleDataIdSubmit}>
-                  <input
-                    type="text"
-                    value={dataIdInput}
-                    onChange={(e) => setDataIdInput(e.target.value.toUpperCase())}
-                    placeholder="e.g. 91WCTMFSHY"
-                    maxLength={10}
-                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg text-center text-lg font-mono tracking-widest focus:border-wcg-blue focus:ring-2 focus:ring-wcg-blue mb-4"
-                    autoFocus
-                  />
-                  <button
-                    type="submit"
-                    disabled={checkingId}
-                    className={`w-full px-6 py-3 rounded-lg font-medium text-lg text-white transition-colors ${checkingId ? 'bg-gray-400 cursor-not-allowed' : 'bg-wcg-blue hover:opacity-90'}`}
-                  >
-                    {checkingId ? 'Checking…' : 'View Report'}
-                  </button>
-                </form>
-                <p className="text-xs text-gray-400 mt-4">Your unique School ID is a 10-character code provided by WCED.</p>
-              </div>
-            </div>
-          </div>
-        );
-      }
+        // Maps to the columns in the `schools` table
+        const SCHOOL_COLUMN_MAP = {
+            'DataID': 'DataID',
+            'SchoolName': 'School_Name'
+        };
 
-      if (schoolData.length === 0) {
-        return (
-          <div className="min-h-screen flex items-center justify-center bg-gray-50">
-            <div className="max-w-2xl mx-auto px-4">
-              <div className="bg-white rounded-lg shadow-md p-8 text-center">
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">No Data Found</h3>
-                <p className="text-gray-600">No attendance records found for <strong>{schoolName}</strong>.</p>
-              </div>
-            </div>
-          </div>
-        );
-      }
+        function mapRowToRecord(row) {
+            const record = {};
+            Object.keys(COLUMN_MAP).forEach(appKey => {
+                record[appKey] = row[COLUMN_MAP[appKey]] != null ? String(row[COLUMN_MAP[appKey]]) : '';
+            });
+            return record;
+        }
 
-      // Main screen
-      return (
-        <div className="min-h-screen bg-gray-50">
-          <header className="bg-white shadow-sm no-print">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-              <img src="header.png" alt="WCED Header" className="h-16 mx-auto" />
-            </div>
-          </header>
+        // Looks up a school's name from its DataID via the `schools` table.
+        // Returns null if no matching school is found.
+        async function resolveSchoolName(dataId) {
+            const { data: rows, error } = await supabaseClient
+                .from(SCHOOLS_TABLE)
+                .select('*')
+                .eq(SCHOOL_COLUMN_MAP.DataID, dataId)
+                .limit(1);
+            if (error) throw error;
+            if (rows && rows.length > 0) {
+                return rows[0][SCHOOL_COLUMN_MAP.SchoolName] || null;
+            }
+            return null;
+        }
 
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 print-full-width">
-            {/* Screen header */}
-            <div className="bg-white rounded-lg shadow-md p-6 mb-6 no-print">
-              <div className="flex justify-between items-center">
-                <div>
-                  <h1 className="text-3xl font-bold text-wcg-dark mb-2">{schoolName}</h1>
-                  <p className="text-gray-600">Professional Development Report</p>
-                  <p className="text-sm text-gray-500 mt-2">Report Generated: {new Date().toLocaleDateString('en-GB')}</p>
-                  <p className="text-xs text-gray-600 mt-2 max-w-3xl italic">
-                    <strong>Disclaimer:</strong> The information in this report is based on self-captured data which could lead to inaccurate data. We endeavour to ensure the data is as accurate as possible.
-                  </p>
-                </div>
-                <button onClick={() => window.print()} className="no-print px-4 py-2 bg-wcg-gray text-white rounded-lg hover:opacity-90 transition-colors">
-                  Print / PDF
-                </button>
-              </div>
-            </div>
+        // Fetches only the attendance rows belonging to a given school
+        async function fetchAttendanceForSchool(schoolName) {
+            const { data: rows, error } = await supabaseClient
+                .from(ATTENDANCE_TABLE)
+                .select('*')
+                .eq(COLUMN_MAP['School'], schoolName);
+            if (error) throw error;
+            return (rows || []).map(mapRowToRecord);
+        }
 
-            {/* Filters & Scorecards */}
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6 no-print">
-              <div className="lg:col-span-3 bg-white rounded-lg shadow-md p-6">
-                <h3 className="text-lg font-semibold text-wcg-dark mb-4">Filters</h3>
+        // *** UPDATE THIS DATE WHEN YOU UPDATE THE CSV FILE ***
+        const DATA_LAST_UPDATED = '2026-06-05'; // Format: YYYY-MM-DD
+        // *****************************************************
 
-                <div className="mb-4 flex gap-4 pb-4 border-b border-gray-200">
-                  <label className="flex items-center gap-2 cursor-pointer px-4 py-2 rounded-lg border-2 transition-colors hover:bg-gray-50"
-                    style={{ borderColor: filters.showSparks ? '#FDB913' : '#e5e7eb', backgroundColor: filters.showSparks ? 'rgba(253,185,19,0.08)' : 'white' }}>
-                    <input type="checkbox" checked={filters.showSparks}
-                      onChange={(e) => setFilters({ ...filters, showSparks: e.target.checked })}
-                      className="h-4 w-4 text-wcg-yellow border-gray-300 rounded focus:ring-wcg-yellow" />
-                    <span className="text-sm font-medium text-gray-700">⭐ Sparks Only</span>
-                  </label>
+        // Sparks and Dovetail definitions
+        const SPARK_SESSIONS = [
+            'Adoption Strategy',
+            'Digital Skills Course',
+            'Facilitator Think Tank',
+            'Cyber Effect Ambassador Initiation Course'
+        ];
 
-                  <label className="flex items-center gap-2 cursor-pointer px-4 py-2 rounded-lg border-2 transition-colors hover:bg-gray-50"
-                    style={{ borderColor: filters.showDovetails ? '#C8126E' : '#e5e7eb', backgroundColor: filters.showDovetails ? 'rgba(200,18,110,0.06)' : 'white' }}>
-                    <input type="checkbox" checked={filters.showDovetails}
-                      onChange={(e) => setFilters({ ...filters, showDovetails: e.target.checked })}
-                      className="h-4 w-4 text-wcg-pink border-gray-300 rounded focus:ring-wcg-pink" />
-                    <span className="text-sm font-medium text-gray-700">💎 Dovetail Essentials Only</span>
-                  </label>
-                </div>
+        const DOVETAIL_SESSIONS = [
+            'ePedagogy: Building a Digital Lesson',
+            'Integrating digital resources from the ePortal',
+            'Google Fundamentals 1: Account and Google Chrome',
+            'Office Online Fundamentals',
+            'Improved Presentation Skills',
+            'Ease of Access with QR Codes and Bit.ly links',
+            'Teaching with Videos',
+            'Orientation to Google Forms',
+            'AI In Education: Work Smarter, not Harder',
+            'Introduction to Cyber Wellness Education'
+        ];
 
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Years</label>
-                  <div className="flex flex-wrap gap-3">
-                    {availableYears.map(year => (
-                      <label key={year} className="flex items-center gap-2 cursor-pointer">
-                        <input type="checkbox" checked={filters.years.includes(year)} onChange={() => toggleYear(year)}
-                          className="h-4 w-4 text-wcg-blue border-gray-300 rounded focus:ring-wcg-blue" />
-                        <span className="text-sm text-gray-700">{year}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
+        // Utility functions
+        function parseTimestamp(timestamp) {
+            if (!timestamp) return null;
+            try {
+                const [datePart] = timestamp.split(' ');
+                const [day, month, year] = datePart.split('/');
+                return new Date(year, month - 1, day);
+            } catch {
+                return null;
+            }
+        }
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Development Level (All Data)</label>
-                    <select value={filters.level} onChange={(e) => setFilters({ ...filters, level: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wcg-blue text-sm">
-                      <option value="">All Levels</option>
-                      {filterOptions.levels.map(level => <option key={level} value={level}>{level}</option>)}
-                    </select>
-                  </div>
+        function formatDate(dateObj) {
+            if (!dateObj) return 'N/A';
+            const day = String(dateObj.getDate()).padStart(2, '0');
+            const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const year = dateObj.getFullYear();
+            return `${day}/${month}/${year}`;
+        }
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Delivery Mode</label>
-                    <select value={filters.mode} onChange={(e) => setFilters({ ...filters, mode: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wcg-blue text-sm">
-                      <option value="">All Modes</option>
-                      {filterOptions.modes.map(mode => <option key={mode} value={mode}>{mode}</option>)}
-                    </select>
-                  </div>
-                </div>
-              </div>
+        function getQuarter(date) {
+            if (!date) return null;
+            const month = date.getMonth();
+            return Math.floor(month / 3) + 1;
+        }
 
-              <div className="bg-white rounded-lg shadow-md p-6 flex flex-col justify-center gap-4">
-                <div className="text-center p-4 bg-gray-50 rounded-lg border border-gray-200 shadow-sm">
-                  <div className="text-4xl font-bold text-wcg-blue mb-1">{scorecardMetrics.uniqueTeachersCount}</div>
-                  <div className="text-sm text-gray-700 font-medium">Unique Teachers</div>
-                </div>
-                <div className="text-center p-4 bg-gray-50 rounded-lg border border-gray-200 shadow-sm">
-                  <div className="text-4xl font-bold text-wcg-green mb-1">{scorecardMetrics.totalWorkshopsAttended}</div>
-                  <div className="text-sm text-gray-700 font-medium">Workshops Attended</div>
-                </div>
-              </div>
-            </div>
+        function getLevelColor(level) {
+            if (!level) return 'bg-gray-200 text-gray-800';
+            const normalized = level.toLowerCase().trim();
+            if (normalized === 'laying the foundation') return 'bg-wcg-green text-white';
+            if (normalized === 'i can do it') return 'bg-wcg-yellow text-black';
+            if (normalized === 'i can do it better') return 'bg-wcg-red text-white';
+            if (normalized === 'the summit') return 'bg-wcg-blue text-white';
+            return 'bg-gray-200 text-gray-800';
+        }
 
-            {/* Charts */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6 no-print">
-              <div className="bg-white rounded-lg shadow-md p-6">
-                <h3 className="text-lg font-semibold text-wcg-dark mb-4">Quarterly Trends</h3>
-                <div className="h-64 relative">
-                  <canvas ref={quarterChartRef}></canvas>
-                </div>
-              </div>
+        function isSpark(sessionName) {
+            return SPARK_SESSIONS.includes(sessionName?.trim());
+        }
 
-              <div className="bg-white rounded-lg shadow-md p-6">
-                <h3 className="text-lg font-semibold text-wcg-dark mb-4">Development Level Distribution</h3>
-                <div className="h-64 relative">
-                  <canvas ref={pieChartRef}></canvas>
-                </div>
-              </div>
-            </div>
+        function isDovetail(sessionName) {
+            return DOVETAIL_SESSIONS.includes(sessionName?.trim());
+        }
 
-            {/* View toggle */}
-            <div className="bg-white rounded-lg shadow-md p-4 mb-6 no-print">
-              <div className="flex items-center justify-between">
-                <div className="flex gap-2">
-                  <button onClick={() => setViewMode('teachers')}
-                    className={`px-6 py-2 rounded-lg font-medium transition-colors ${viewMode === 'teachers' ? 'bg-wcg-blue text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
-                    Per Teacher ({teacherData.length})
-                  </button>
-                  <button onClick={() => setViewMode('sessions')}
-                    className={`px-6 py-2 rounded-lg font-medium transition-colors ${viewMode === 'sessions' ? 'bg-wcg-blue text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
-                    By Sessions ({sessionData.length})
-                  </button>
-                </div>
+        function getModeIcon(mode) {
+            if (!mode) return '📋';
+            const normalized = mode.trim().toLowerCase();
+            if (normalized === 'virtual') return '🖥️';
+            if (normalized === 'face-to-face') return '🏢';
+            if (normalized === 'hybrid') return '🔄';
+            if (normalized === 'self-paced') return '📚';
+            return '📋';
+        }
 
-                {viewMode === 'teachers' && (
-                  <div className="no-print flex items-center gap-2">
-                    <label className="text-sm font-medium text-gray-700 mr-2">Sort by:</label>
-                    <select value={teacherSort} onChange={e => setTeacherSort(e.target.value)} className="px-3 py-2 border border-gray-300 rounded">
-                      <option value="name">Name</option>
-                      <option value="attendance">Attendance</option>
-                      <option value="sparks">Sparks</option>
-                      <option value="dovetails">Dovetails</option>
-                    </select>
-                  </div>
-                )}
-              </div>
-            </div>
+        function getURLParameter(name) {
+            const params = new URLSearchParams(window.location.search);
+            return params.get(name);
+        }
 
-            {/* Main content: brief versions of teacher/session lists (kept simple for readability) */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-              {viewMode === 'teachers' ? (
-                <div className="lg:col-span-3 bg-white rounded-lg shadow-md p-6">
-                  <h3 className="text-lg font-semibold text-wcg-dark mb-4">Teachers ({teacherData.length})</h3>
-                  <div className="space-y-4">
-                    {teacherData.map(t => (
-                      <div key={t.name} className="border border-gray-200 rounded p-3">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <div className="font-medium">{t.name}</div>
-                            <div className="text-sm text-gray-500">Sessions: {t.totalSessions} — Sparks: {t.sparkCount} — Dovetails: {t.dovetailCount}</div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <button onClick={() => toggleTeacher(t.name)} className="px-3 py-1 bg-gray-100 rounded hover:bg-gray-200">
-                              {expandedTeachers.has(t.name) ? 'Hide' : 'Show'}
-                            </button>
-                          </div>
-                        </div>
-                        {expandedTeachers.has(t.name) && (
-                          <div className="mt-3 text-sm">
-                            <ul className="list-disc list-inside space-y-1">
-                              {t.sessions.slice(0, 20).map((s, i) => (
-                                <li key={i}>
-                                  {formatDate(s.parsedDate)} — {s['Session Name']} <span className="text-xs text-gray-500">({s['Delivery Mode']})</span>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <div className="lg:col-span-3 bg-white rounded-lg shadow-md p-6">
-                  <h3 className="text-lg font-semibold text-wcg-dark mb-4">Sessions ({sessionData.length})</h3>
-                  <div className="space-y-4">
-                    {sessionData.map(s => (
-                      <div key={s.name} className="border border-gray-200 rounded p-3">
-                        <div className="flex items-start justify-between gap-4">
-                          <div>
-                            <div className="font-medium">{s.name}</div>
-                            <div className="text-sm text-gray-500">Unique teachers: {s.uniqueTeachers} — Total attendances: {s.totalAttendances}</div>
-                          </div>
-                          <div className="text-sm text-gray-500">{s.isSpark ? '⭐ Spark' : s.isDovetail ? '💎 Dovetail' : ''}</div>
-                        </div>
-                        <div className="mt-3 text-sm">
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                            {s.attendanceList.slice(0, 10).map(a => (
-                              <div key={a.teacher} className="p-2 bg-gray-50 rounded">
-                                <div className="font-medium">{a.teacher}</div>
-                                <div className="text-xs text-gray-600">Most recent: {a.mostRecentDate ? formatDate(a.mostRecentDate) : 'N/A'}</div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
+        function App() {
+            const [loading, setLoading] = useState(true);
+            const [schoolName, setSchoolName] = useState('');
+            const [schoolData, setSchoolData] = useState([]);
+            const [filters, setFilters] = useState({
+                years: [],
+                level: '',
+                mode: '',
+                sessionLevel: '',
+                showSparks: false,
+                showDovetails: false
+            });
+            const [expandedTeachers, setExpandedTeachers] = useState(new Set());
+            const [teacherSort, setTeacherSort] = useState('name');
+            const [viewMode, setViewMode] = useState('teachers');
+            const [selectedSession, setSelectedSession] = useState(null);
 
-            {/* Print-only table (visible when printing) */}
-            <div className="bg-white rounded-lg shadow-md p-6 mb-6 print-full-width hidden print:block">
-              <h3 className="text-lg font-semibold text-wcg-dark mb-4">Attendance Records</h3>
-              <table className="w-full text-sm border-collapse">
-                <thead>
-                  <tr className="text-left">
-                    <th className="border-b py-2">Date</th>
-                    <th className="border-b py-2">Name</th>
-                    <th className="border-b py-2">Session</th>
-                    <th className="border-b py-2">Level</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {printTableData.map((r, i) => (
-                    <tr key={i}>
-                      <td className="py-1">{formatDate(r.parsedDate)}</td>
-                      <td className="py-1">{r['First Name']} {r['Surname']}</td>
-                      <td className="py-1">{r['Session Name']}</td>
-                      <td className="py-1">{r['Development Level']}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            // DataID security state
+            const [dataIdInput, setDataIdInput] = useState('');
+            const [lookupError, setLookupError] = useState('');
+            const [checkingId, setCheckingId] = useState(false);
 
-            <footer className="text-xs text-gray-500 mt-4">
-              Data last updated: {DATA_LAST_UPDATED}
-            </footer>
-          </div>
-        </div>
-      );
+            const quarterChartRef = useRef(null);
+            const pieChartRef = useRef(null);
+            const quarterChartInstance = useRef(null);
+            const pieChartInstance = useRef(null);
+
+            // Resolve DataID from the URL on mount (Supabase lookup, not the whole CSV)
+            useEffect(() => {
+                (async () => {
+                    const dataId = getURLParameter('school');
+                    if (!dataId) {
+                        setLoading(false);
+                        return;
+                    }
+                    try {
+                        const resolved = await resolveSchoolName(dataId);
+                        if (resolved) {
+                            setSchoolName(resolved);
+                            setLookupError('');
+                            // loading stays true; the attendance-fetch effect below clears it
+                        } else {
+                            setLookupError('invalid');
+                            setLoading(false);
+                        }
+                    } catch (err) {
+                        console.error('Error resolving school ID:', err);
+                        setLookupError('invalid');
+                        setLoading(false);
+                    }
+                })();
+            }, []);
+
+            // Fetch attendance rows for the resolved school (only that school's rows are ever sent to the browser)
+            useEffect(() => {
+                if (!schoolName) return;
+                (async () => {
+                    try {
+                        const rows = await fetchAttendanceForSchool(schoolName);
+                        const filtered = rows
+                            .map(record => ({
+                                ...record,
+                                parsedDate: parseTimestamp(record.Timestamp),
+                                year: parseTimestamp(record.Timestamp)?.getFullYear(),
+                                quarter: getQuarter(parseTimestamp(record.Timestamp)),
+                                isSpark: isSpark(record['Session Name']),
+                                isDovetail: isDovetail(record['Session Name'])
+                            }))
+                            .filter(record => record.parsedDate); // Only valid dates
+
+                        // Auto-select only current and previous year
+                        const currentYear = new Date().getFullYear();
+                        const previousYear = currentYear - 1;
+                        const years = [...new Set(filtered.map(r => r.year))].sort();
+                        const defaultYears = years.filter(y => y === currentYear || y === previousYear);
+
+                        ReactDOM.unstable_batchedUpdates(() => {
+                            setSchoolData(filtered);
+                            setFilters(prev => ({ ...prev, years: defaultYears }));
+                            setLoading(false);
+                        });
+                    } catch (err) {
+                        console.error('Error loading attendance for school:', err);
+                        ReactDOM.unstable_batchedUpdates(() => {
+                            setSchoolData([]);
+                            setLoading(false);
+                        });
+                    }
+                })();
+            }, [schoolName]);
+
+            // Get available years for checkboxes
+            const availableYears = useMemo(() => {
+                return [...new Set(schoolData.map(r => r.year))].sort();
+            }, [schoolData]);
+
+            // Apply filters
+            const filteredData = useMemo(() => {
+                let filtered = schoolData;
+
+                if (filters.years.length > 0) {
+                    filtered = filtered.filter(r => filters.years.includes(r.year));
+                }
+
+                if (filters.level) {
+                    filtered = filtered.filter(r =>
+                        r['Development Level']?.toLowerCase().trim() === filters.level.toLowerCase().trim()
+                    );
+                }
+
+                if (filters.mode) {
+                    filtered = filtered.filter(r => r['Delivery Mode']?.trim() === filters.mode);
+                }
+
+                // Apply Spark/Dovetail toggles
+                if (filters.showSparks && !filters.showDovetails) {
+                    filtered = filtered.filter(r => r.isSpark);
+                } else if (filters.showDovetails && !filters.showSparks) {
+                    filtered = filtered.filter(r => r.isDovetail);
+                } else if (filters.showSparks && filters.showDovetails) {
+                    filtered = filtered.filter(r => r.isSpark || r.isDovetail);
+                }
+
+                return filtered;
+            }, [schoolData, filters]);
+
+            // Scorecard Metrics
+            const scorecardMetrics = useMemo(() => {
+                const uniqueTeachersCount = new Set(filteredData.map(r => `${r['First Name']} ${r['Surname']}`)).size;
+                const totalWorkshopsAttended = filteredData.length;
+                return { uniqueTeachersCount, totalWorkshopsAttended };
+            }, [filteredData]);
+
+            // Prepare Data for the Print Table
+            const printTableData = useMemo(() => {
+                return [...filteredData].sort((a, b) => {
+                    const nameA = a['First Name']?.trim().toLowerCase() || '';
+                    const nameB = b['First Name']?.trim().toLowerCase() || '';
+                    if (nameA < nameB) return -1;
+                    if (nameA > nameB) return 1;
+
+                    const surnameA = a['Surname']?.trim().toLowerCase() || '';
+                    const surnameB = b['Surname']?.trim().toLowerCase() || '';
+                    if (surnameA < surnameB) return -1;
+                    if (surnameA > surnameB) return 1;
+
+                    return a.parsedDate - b.parsedDate;
+                });
+            }, [filteredData]);
+
+            // Get filter options
+            const filterOptions = useMemo(() => {
+                const levels = [...new Set(schoolData.map(r => r['Development Level']?.trim()).filter(Boolean))];
+                const modes = [...new Set(schoolData.map(r => r['Delivery Mode']?.trim()).filter(Boolean))].sort();
+                return { levels, modes };
+            }, [schoolData]);
+
+            // Calculate quarterly data
+            const quarterlyData = useMemo(() => {
+                const quarters = {};
+
+                filteredData.forEach(record => {
+                    const key = `${record.year}-Q${record.quarter}`;
+                    if (!quarters[key]) {
+                        quarters[key] = {
+                            label: key,
+                            uniqueTeachers: new Set(),
+                            totalAttendances: 0
+                        };
+                    }
+                    quarters[key].uniqueTeachers.add(`${record['First Name']} ${record['Surname']}`);
+                    quarters[key].totalAttendances++;
+                });
+
+                return Object.keys(quarters)
+                    .sort()
+                    .map(key => ({
+                        label: key,
+                        uniqueTeachers: quarters[key].uniqueTeachers.size,
+                        totalAttendances: quarters[key].totalAttendances
+                    }));
+            }, [filteredData]);
+
+            // Calculate level distribution
+            const levelDistribution = useMemo(() => {
+                const levels = {
+                    'Laying the Foundation': 0,
+                    'I can do it': 0,
+                    'I can do it better': 0,
+                    'The Summit': 0
+                };
+
+                filteredData.forEach(record => {
+                    const level = record['Development Level']?.trim();
+                    if (levels.hasOwnProperty(level)) {
+                        levels[level]++;
+                    }
+                });
+
+                return levels;
+            }, [filteredData]);
+
+            // Group by teachers
+            const teacherData = useMemo(() => {
+                const teachers = {};
+
+                filteredData.forEach(record => {
+                    const name = `${record['First Name']} ${record['Surname']}`.toUpperCase().trim();
+                    if (!teachers[name]) {
+                        teachers[name] = {
+                            name,
+                            sessions: [],
+                            levelCounts: {
+                                'Laying the Foundation': 0,
+                                'I can do it': 0,
+                                'I can do it better': 0,
+                                'The Summit': 0
+                            },
+                            uniqueSparks: new Set(),
+                            uniqueDovetails: new Set()
+                        };
+                    }
+
+                    teachers[name].sessions.push(record);
+                    const level = record['Development Level']?.trim();
+                    if (teachers[name].levelCounts.hasOwnProperty(level)) {
+                        teachers[name].levelCounts[level]++;
+                    }
+
+                    if (record.isSpark) {
+                        teachers[name].uniqueSparks.add(record['Session Name']);
+                    }
+                    if (record.isDovetail) {
+                        teachers[name].uniqueDovetails.add(record['Session Name']);
+                    }
+                });
+
+                const teacherList = Object.values(teachers)
+                    .map(t => ({
+                        ...t,
+                        totalSessions: t.sessions.length,
+                        sparkCount: t.uniqueSparks.size + (t.uniqueDovetails.size >= 5 ? 1 : 0),
+                        dovetailCount: t.uniqueDovetails.size
+                    }));
+
+                // Apply sorting
+                if (teacherSort === 'name') {
+                    teacherList.sort((a, b) => a.name.localeCompare(b.name));
+                } else if (teacherSort === 'attendance') {
+                    teacherList.sort((a, b) => b.totalSessions - a.totalSessions);
+                } else if (teacherSort === 'sparks') {
+                    teacherList.sort((a, b) => b.sparkCount - a.sparkCount);
+                } else if (teacherSort === 'dovetails') {
+                    teacherList.sort((a, b) => b.dovetailCount - a.dovetailCount);
+                }
+
+                return teacherList;
+            }, [filteredData, teacherSort]);
+
+            // Group by sessions
+            const sessionData = useMemo(() => {
+                const sessions = {};
+
+                filteredData.forEach(record => {
+                    const sessionName = record['Session Name']?.trim();
+                    if (!sessionName) return;
+
+                    if (!sessions[sessionName]) {
+                        sessions[sessionName] = {
+                            name: sessionName,
+                            teacherAttendances: {},
+                            level: record['Development Level'],
+                            mode: record['Delivery Mode'],
+                            isSpark: isSpark(sessionName),
+                            isDovetail: isDovetail(sessionName)
+                        };
+                    }
+
+                    const teacherName = `${record['First Name']} ${record['Surname']}`.toUpperCase().trim();
+
+                    // Track all attendances per teacher
+                    if (!sessions[sessionName].teacherAttendances[teacherName]) {
+                        sessions[sessionName].teacherAttendances[teacherName] = [];
+                    }
+
+                    sessions[sessionName].teacherAttendances[teacherName].push({
+                        date: record.parsedDate,
+                        hostingDistrict: record['Hosting District'],
+                        mode: record['Delivery Mode']
+                    });
+                });
+
+                let sessionList = Object.values(sessions)
+                    .map(s => {
+                        // Create attendance list with unique teachers (alphabetically sorted)
+                        const attendanceList = Object.keys(s.teacherAttendances)
+                            .sort() // Alphabetical sort
+                            .map(teacherName => {
+                                // Sort dates for this teacher (most recent first)
+                                const sortedDates = s.teacherAttendances[teacherName].sort((a, b) => b.date - a.date);
+                                return {
+                                    teacher: teacherName,
+                                    attendances: sortedDates,
+                                    mostRecentDate: sortedDates[0].date
+                                };
+                            });
+
+                        // Count total attendances (all records)
+                        const totalAttendances = Object.values(s.teacherAttendances).reduce((sum, arr) => sum + arr.length, 0);
+
+                        return {
+                            ...s,
+                            attendanceList: attendanceList,
+                            totalAttendances: totalAttendances,
+                            uniqueTeachers: Object.keys(s.teacherAttendances).length
+                        };
+                    });
+
+                // Apply session-level development level filter
+                if (filters.sessionLevel) {
+                    sessionList = sessionList.filter(s =>
+                        s.level?.toLowerCase().trim() === filters.sessionLevel.toLowerCase().trim()
+                    );
+                }
+
+                return sessionList.sort((a, b) => a.name.localeCompare(b.name));
+            }, [filteredData, filters.sessionLevel]);
+            useEffect(() => {
+
+    if (sessionData.length === 0) {
+        setSelectedSession(null);
+        return;
     }
 
-    ReactDOM.render(<App />, document.getElementById('root'));
-  </script>
+    if (
+        !selectedSession ||
+        !sessionData.some(s => s.name === selectedSession.name)
+    ) {
+        setSelectedSession(sessionData[0]);
+    }
+
+}, [sessionData]);
+            // Render quarterly bar chart
+useEffect(() => {
+    if (!quarterChartRef.current || quarterlyData.length === 0) return;
+
+    if (quarterChartInstance.current) {
+        quarterChartInstance.current.destroy();
+    }
+
+    const ctx = quarterChartRef.current.getContext('2d');
+    quarterChartInstance.current = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: quarterlyData.map(d => d.label),
+            datasets: [
+                {
+                    label: 'Unique Teachers',
+                    data: quarterlyData.map(d => d.uniqueTeachers),
+                    backgroundColor: '#001489',
+                    borderColor: '#001489', // Added missing comma here
+                    borderWidth: 1
+                },
+                {
+                    label: 'Total Attendances',
+                    data: quarterlyData.map(d => d.totalAttendances),
+                    backgroundColor: '#8FAD15', // WCG Green
+                    borderColor: '#8FAD15',
+                    borderWidth: 1
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: { precision: 0 }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top'
+                }
+            }
+        }
+    });
+
+    return () => {
+        if (quarterChartInstance.current) {
+            quarterChartInstance.current.destroy();
+        }
+    };
+}, [quarterlyData]);
+
+// Render pie chart
+useEffect(() => {
+    if (!pieChartRef.current || Object.values(levelDistribution).every(v => v === 0)) return;
+
+    if (pieChartInstance.current) {
+        pieChartInstance.current.destroy();
+    }
+
+    const ctx = pieChartRef.current.getContext('2d');
+    pieChartInstance.current = new Chart(ctx, {
+        type: 'pie',
+        data: {
+            labels: ['Laying the Foundation', 'I can do it', 'I can do it better', 'The Summit'],
+            datasets: [{
+                data: [
+                    levelDistribution['Laying the Foundation'],
+                    levelDistribution['I can do it'],
+                    levelDistribution['I can do it better'],
+                    levelDistribution['The Summit']
+                ],
+                backgroundColor: [
+                    '#8FAD15', // Updated to WCG Green
+                    '#FDB913',
+                    '#E30613',
+                    '#001489'  // WCG Blue
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'right'
+                }
+            }
+        },
+        // Custom plugin to render numerical session counts directly on slices
+        plugins: [{
+            id: 'pieSliceNumbers',
+            afterDraw(chart) {
+                const { ctx } = chart;
+                chart.data.datasets.forEach((dataset, datasetIndex) => {
+                    const meta = chart.getDatasetMeta(datasetIndex);
+                    meta.data.forEach((element, index) => {
+                        const value = dataset.data[index];
+                        if (value && value > 0) {
+                            const { x, y } = element.tooltipPosition();
+                            ctx.save();
+                            ctx.fillStyle = '#FFFFFF';
+                            ctx.font = 'bold 13px sans-serif';
+                            ctx.textAlign = 'center';
+                            ctx.textBaseline = 'middle';
+                            ctx.fillText(value, x, y);
+                            ctx.restore();
+                        }
+                    });
+                });
+            }
+        }]
+    });
+
+    return () => {
+        if (pieChartInstance.current) {
+            pieChartInstance.current.destroy();
+        }
+    };
+}, [levelDistribution]);
+
+            // Toggle handlers
+            const toggleTeacher = (name) => {
+                setExpandedTeachers(prev => {
+                    const next = new Set(prev);
+                    if (next.has(name)) {
+                        next.delete(name);
+                    } else {
+                        next.add(name);
+                    }
+                    return next;
+                });
+            };
+
+            const toggleYear = (year) => {
+                setFilters(prev => ({
+                    ...prev,
+                    years: prev.years.includes(year)
+                        ? prev.years.filter(y => y !== year)
+                        : [...prev.years, year].sort()
+                }));
+            };
+
+            if (loading) {
+                return (
+                    <div className="min-h-screen flex items-center justify-center">
+                        <div className="text-center">
+                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-wcg-blue mx-auto mb-4"></div>
+                            <p className="text-gray-600">Loading attendance records...</p>
+                        </div>
+                    </div>
+                );
+            }
+
+            // Show invalid DataID error
+            if (lookupError === 'invalid') {
+                return (
+                    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+                        <div className="max-w-md mx-auto px-4">
+                            <div className="bg-white rounded-lg shadow-md p-8 text-center">
+                                <div className="text-red-500 mb-4">
+                                    <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                    </svg>
+                                </div>
+                                <h3 className="text-xl font-semibold text-gray-900 mb-2">Invalid School ID</h3>
+                                <p className="text-gray-600 mb-4">
+                                    The school ID provided is not recognised. Please check the link you were given and try again.
+                                </p>
+                                <button
+                                    onClick={() => { setLookupError(''); setCheckingId(false); window.history.replaceState({}, '', window.location.pathname); }}
+                                    className="px-6 py-2 bg-wcg-blue text-white rounded-lg hover:opacity-90 transition-colors font-medium"
+                                >
+                                    Enter School ID Manually
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            if (!schoolName) {
+                const handleDataIdSubmit = async (e) => {
+                    e.preventDefault();
+                    const trimmed = dataIdInput.trim();
+                    if (!trimmed || checkingId) return;
+                    setCheckingId(true);
+                    try {
+                        const resolved = await resolveSchoolName(trimmed);
+                        if (resolved) {
+                            window.location.href = `${window.location.pathname}?school=${encodeURIComponent(trimmed)}`;
+                        } else {
+                            setLookupError('invalid');
+                            setCheckingId(false);
+                        }
+                    } catch (err) {
+                        console.error('Error resolving school ID:', err);
+                        setLookupError('invalid');
+                        setCheckingId(false);
+                    }
+                };
+
+                return (
+                    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+                        <div className="max-w-md mx-auto px-4">
+                            <div className="bg-white rounded-lg shadow-md p-8 text-center">
+                                <img src="header.png" alt="WCED Header" className="h-14 mx-auto mb-6" />
+                                <h3 className="text-xl font-semibold text-gray-900 mb-2">School PD History</h3>
+                                <p className="text-gray-600 mb-6">
+                                    Please enter your unique School ID to view your school's Professional Development report.
+                                </p>
+                                <form onSubmit={handleDataIdSubmit}>
+                                    <input
+                                        type="text"
+                                        value={dataIdInput}
+                                        onChange={(e) => setDataIdInput(e.target.value.toUpperCase())}
+                                        placeholder="e.g. 91WCTMFSHY"
+                                        maxLength={10}
+                                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg text-center text-lg font-mono tracking-widest focus:border-wcg-blue focus:ring-2 focus:ring-wcg-blue focus:outline-none mb-4"
+                                        autoFocus
+                                    />
+                                    <button
+                                        type="submit"
+                                        disabled={checkingId}
+                                        className={`w-full px-6 py-3 rounded-lg font-medium text-lg text-white transition-colors ${checkingId ? 'bg-gray-400 cursor-not-allowed' : 'bg-wcg-blue hover:opacity-90'}`}
+                                    >
+                                        {checkingId ? 'Checking…' : 'View Report'}
+                                    </button>
+                                </form>
+                                <p className="text-xs text-gray-400 mt-4">
+                                    Your unique School ID is a 10-character code provided by WCED.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            if (schoolData.length === 0) {
+                return (
+                    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+                        <div className="max-w-2xl mx-auto px-4">
+                            <div className="bg-white rounded-lg shadow-md p-8 text-center">
+                                <h3 className="text-xl font-semibold text-gray-900 mb-2">No Data Found</h3>
+                                <p className="text-gray-600">
+                                    No attendance records found for <strong>{schoolName}</strong>.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="min-h-screen bg-gray-50">
+                    <header className="bg-white shadow-sm no-print">
+                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+                            <img src="header.png" alt="WCED Header" className="h-16 mx-auto" />
+                        </div>
+                    </header>
+
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 print-full-width">
+                        
+                        {/* SCREEN HEADER */}
+                        <div className="bg-white rounded-lg shadow-md p-6 mb-6 no-print">
+                            <div className="flex justify-between items-center">
+                                <div>
+                                    <h1 className="text-3xl font-bold text-wcg-dark mb-2">{schoolName}</h1>
+                                    <p className="text-gray-600">Professional Development Report</p>
+                                    <p className="text-sm text-gray-500 mt-2">
+                                        Report Generated: {new Date().toLocaleDateString('en-GB')}
+                                    </p>
+                                    <p className="text-xs text-gray-600 mt-2 max-w-3xl italic">
+                                        <strong>Disclaimer:</strong> The information in this report is based on self-captured data which could lead to inaccurate data. We endeavour to ensure the data is as clean and accurate as we can. (Data last updated: {new Date(DATA_LAST_UPDATED).toLocaleDateString('en-GB')})
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={() => window.print()}
+                                    className="no-print px-4 py-2 bg-wcg-grey text-black rounded-lg hover:bg-wcg-blue text-white transition-colors"
+                                >
+                                    Print / PDF
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* FILTERS & SCORECARDS */}
+                        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6 no-print">
+                            {/* Filters Section */}
+                            <div className="lg:col-span-3 bg-white rounded-lg shadow-md p-6">
+                                <h3 className="text-lg font-semibold text-wcg-dark mb-4">Filters</h3>
+
+                                {/* Master Toggles */}
+                                <div className="mb-4 flex gap-4 pb-4 border-b border-gray-200">
+                                    <label className="flex items-center gap-2 cursor-pointer px-4 py-2 rounded-lg border-2 transition-colors hover:bg-gray-50"
+                                        style={{
+                                            borderColor: filters.showSparks ? '#FDB913' : '#e5e7eb',
+                                            backgroundColor: filters.showSparks ? 'rgba(253, 185, 19, 0.1)' : 'white'
+                                        }}>
+                                        <input
+                                            type="checkbox"
+                                            checked={filters.showSparks}
+                                            onChange={(e) => setFilters({ ...filters, showSparks: e.target.checked })}
+                                            className="h-4 w-4 text-wcg-yellow border-gray-300 rounded focus:ring-wcg-yellow"
+                                        />
+                                        <span className="text-sm font-medium text-gray-700">⭐ Sparks Only</span>
+                                    </label>
+                                    <label className="flex items-center gap-2 cursor-pointer px-4 py-2 rounded-lg border-2 transition-colors hover:bg-gray-50"
+                                        style={{
+                                            borderColor: filters.showDovetails ? '#C8126E' : '#e5e7eb',
+                                            backgroundColor: filters.showDovetails ? 'rgba(200, 18, 110, 0.1)' : 'white'
+                                        }}>
+                                        <input
+                                            type="checkbox"
+                                            checked={filters.showDovetails}
+                                            onChange={(e) => setFilters({ ...filters, showDovetails: e.target.checked })}
+                                            className="h-4 w-4 text-wcg-pink border-gray-300 rounded focus:ring-wcg-pink"
+                                        />
+                                        <span className="text-sm font-medium text-gray-700">💎 Dovetail Essentials Only</span>
+                                    </label>
+                                </div>
+
+                                {/* Year Selection */}
+                                <div className="mb-4">
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">Years</label>
+                                    <div className="flex flex-wrap gap-3">
+                                        {availableYears.map(year => (
+                                            <label key={year} className="flex items-center gap-2 cursor-pointer">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={filters.years.includes(year)}
+                                                    onChange={() => toggleYear(year)}
+                                                    className="h-4 w-4 text-wcg-blue border-gray-300 rounded focus:ring-wcg-blue"
+                                                />
+                                                <span className="text-sm text-gray-700">{year}</span>
+                                            </label>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {/* Development Level Filter */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Development Level (All Data)
+                                        </label>
+                                        <select
+                                            value={filters.level}
+                                            onChange={(e) => setFilters({ ...filters, level: e.target.value })}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wcg-blue text-sm"
+                                        >
+                                            <option value="">All Levels</option>
+                                            {filterOptions.levels.map(level => (
+                                                <option key={level} value={level}>{level}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    {/* Delivery Mode Filter */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Delivery Mode
+                                        </label>
+                                        <select
+                                            value={filters.mode}
+                                            onChange={(e) => setFilters({ ...filters, mode: e.target.value })}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wcg-blue text-sm"
+                                        >
+                                            <option value="">All Modes</option>
+                                            {filterOptions.modes.map(mode => (
+                                                <option key={mode} value={mode}>{mode}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Scorecards Section */}
+                            <div className="bg-white rounded-lg shadow-md p-6 flex flex-col justify-center gap-4">
+                                <div className="text-center p-4 bg-gray-50 rounded-lg border border-gray-200 shadow-sm">
+                                    <div className="text-4xl font-bold text-wcg-blue mb-1">{scorecardMetrics.uniqueTeachersCount}</div>
+                                    <div className="text-sm text-gray-700 font-medium">Unique Teachers</div>
+                                </div>
+                                <div className="text-center p-4 bg-gray-50 rounded-lg border border-gray-200 shadow-sm">
+                                    <div className="text-4xl font-bold text-wcg-green mb-1">{scorecardMetrics.totalWorkshopsAttended}</div>
+                                    <div className="text-sm text-gray-700 font-medium">Workshops Attended</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Charts */}
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6 no-print">
+                            {/* Quarterly Trends */}
+                            <div className="bg-white rounded-lg shadow-md p-6">
+                                <h3 className="text-lg font-semibold text-wcg-dark mb-4">Quarterly Trends</h3>
+                                <div className="h-64 relative">
+                                    <canvas ref={quarterChartRef}></canvas>
+                                </div>
+                            </div>
+
+                            {/* Development Level Distribution */}
+                            <div className="bg-white rounded-lg shadow-md p-6">
+                                <h3 className="text-lg font-semibold text-wcg-dark mb-4">Development Level Distribution</h3>
+                                <div className="h-64 relative">
+                                    <canvas ref={pieChartRef}></canvas>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* View Toggle */}
+                        <div className="bg-white rounded-lg shadow-md p-4 mb-6 no-print">
+                            <div className="flex items-center justify-between">
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={() => setViewMode('teachers')}
+                                        className={`px-6 py-2 rounded-lg font-medium transition-colors ${viewMode === 'teachers'
+                                            ? 'bg-wcg-blue text-white'
+                                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                            }`}
+                                    >
+                                        Per Teacher ({teacherData.length})
+                                    </button>
+                                    <button
+                                        onClick={() => setViewMode('sessions')}
+                                        className={`px-6 py-2 rounded-lg font-medium transition-colors ${viewMode === 'sessions'
+                                            ? 'bg-wcg-blue text-white'
+                                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                            }`}
+                                    >
+                                        By Sessions ({sessionData.length})
+                                    </button>
+                                </div>
+
+                                {/* Sort dropdown for teachers view */}
+                                {viewMode === 'teachers' && (
+                                    <div className="no-print">
+                                        <label className="text-sm font-medium text-gray-700 mr-2">Sort by:</label>
+                                        <select
+                                            value={teacherSort}
+                                            onChange={(e) => setTeacherSort(e.target.value)}
+                                            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wcg-blue text-sm"
+                                        >
+                                            <option value="name">Name (A-Z)</option>
+                                            <option value="attendance">Attendance (High-Low)</option>
+                                            <option value="sparks">Sparks (High-Low)</option>
+                                            <option value="dovetails">Dovetail (High-Low)</option>
+                                        </select>
+                                    </div>
+                                )}
+
+                                {/* Session level filter for sessions view */}
+                                {viewMode === 'sessions' && (
+                                    <div className="no-print">
+                                        <label className="text-sm font-medium text-gray-700 mr-2">Session Level:</label>
+                                        <select
+                                            value={filters.sessionLevel}
+                                            onChange={(e) => setFilters({ ...filters, sessionLevel: e.target.value })}
+                                            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wcg-blue text-sm"
+                                        >
+                                            <option value="">All Levels</option>
+                                            {filterOptions.levels.map(level => (
+                                                <option key={level} value={level}>{level}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Teacher Attendance */}
+                        {viewMode === 'teachers' && (
+                            <div className="bg-white rounded-lg shadow-md p-6 mb-6 no-print">
+                                <h3 className="text-lg font-semibold text-wcg-dark mb-4">Teacher Attendance</h3>
+                                <div className="space-y-2">
+                                    {teacherData.map(teacher => (
+                                        <div key={teacher.name} className="border border-gray-200 rounded-lg">
+                                            <div
+                                                onClick={() => toggleTeacher(teacher.name)}
+                                                className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50"
+                                            >
+                                                <div className="flex items-center gap-3">
+                                                    <span className="text-wcg-blue">
+                                                        {expandedTeachers.has(teacher.name) ? '▼' : '▶'}
+                                                    </span>
+                                                    <div>
+                                                        <div className="font-semibold text-wcg-dark">{teacher.name}</div>
+                                                        <div className="text-sm text-gray-600">
+                                                            {teacher.totalSessions} sessions
+                                                            {teacher.sparkCount > 0 && <span className="ml-3 text-wcg-yellow">⭐ {teacher.sparkCount} Sparks</span>}
+                                                            {teacher.dovetailCount > 0 && <span className="ml-3 text-wcg-pink">💎 {teacher.dovetailCount} Dovetail</span>}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="flex gap-2">
+                                                    <span className={`px-2 py-1 rounded text-xs ${teacher.levelCounts['Laying the Foundation'] > 0 ? 'bg-wcg-green text-white' : 'bg-gray-200 text-gray-500'}`}>
+                                                        {teacher.levelCounts['Laying the Foundation']}
+                                                    </span>
+                                                    <span className={`px-2 py-1 rounded text-xs ${teacher.levelCounts['I can do it'] > 0 ? 'bg-wcg-yellow text-black' : 'bg-gray-200 text-gray-500'}`}>
+                                                        {teacher.levelCounts['I can do it']}
+                                                    </span>
+                                                    <span className={`px-2 py-1 rounded text-xs ${teacher.levelCounts['I can do it better'] > 0 ? 'bg-wcg-red text-white' : 'bg-gray-200 text-gray-500'}`}>
+                                                        {teacher.levelCounts['I can do it better']}
+                                                    </span>
+                                                    <span className={`px-2 py-1 rounded text-xs ${teacher.levelCounts['The Summit'] > 0 ? 'bg-wcg-blue text-white' : 'bg-gray-200 text-gray-500'}`}>
+                                                        {teacher.levelCounts['The Summit']}
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            {expandedTeachers.has(teacher.name) && (
+                                                <div className="px-4 pb-4 pt-2 bg-gray-50 border-t">
+                                                    <div className="space-y-2">
+                                                        {teacher.sessions
+                                                            .sort((a, b) => b.parsedDate - a.parsedDate)
+                                                            .map((session, idx) => (
+                                                                <div
+                                                                    key={idx}
+                                                                    className={`flex justify-between items-center text-sm py-2 px-3 rounded border-b last:border-0 ${session.isSpark ? 'border-l-4 border-l-wcg-yellow bg-wcg-yellow bg-opacity-5' :
+                                                                        session.isDovetail ? 'border-l-4 border-l-wcg-pink bg-wcg-pink bg-opacity-5' :
+                                                                            'border-gray-200'
+                                                                        }`}
+                                                                >
+                                                                    <div className="flex-1">
+                                                                        <div className="font-medium text-gray-900">
+                                                                            {session.isSpark && <span className="mr-2">⭐</span>}
+                                                                            {session.isDovetail && <span className="mr-2">💎</span>}
+                                                                            {session['Session Name']}
+                                                                        </div>
+                                                                        <div className="text-gray-500 text-xs mt-1">
+                                                                            {formatDate(session.parsedDate)} • {session['Delivery Mode']}
+                                                                        </div>
+                                                                    </div>
+                                                                    <span className={`px-2 py-1 rounded text-xs font-semibold ${getLevelColor(session['Development Level'])}`}>
+                                                                        {session['Development Level']}
+                                                                    </span>
+                                                                </div>
+                                                            ))}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                       {/* Session Attendance */}
+{viewMode === 'sessions' && (
+
+<div className="bg-white rounded-lg shadow-md overflow-hidden no-print">
+
+    <div className="grid grid-cols-12 h-[700px]">
+
+        {/* =======================================
+                LEFT : SESSION LIST
+        ======================================== */}
+
+        <div className="col-span-4 border-r border-gray-200 overflow-y-auto">
+
+            <div className="sticky top-0 bg-white border-b px-4 py-3 z-10">
+
+                <div className="font-semibold text-wcg-dark">
+
+                    Sessions ({sessionData.length})
+
+                </div>
+
+                <div className="text-xs text-gray-500 mt-1">
+
+                    Select a session to view participants.
+
+                </div>
+
+            </div>
+
+            {sessionData.map(session => (
+
+                <button
+
+                    key={session.name}
+
+                    onClick={() => setSelectedSession(session)}
+
+                    className={`
+
+                        w-full text-left px-4 py-3 border-b transition
+
+                        ${selectedSession?.name === session.name
+
+                            ? "bg-blue-50 border-l-4 border-l-wcg-blue"
+
+                            : "hover:bg-gray-50"
+
+                        }
+
+                    `}
+
+                >
+
+                    <div className="flex items-start gap-3">
+
+                        <div className="text-lg">
+
+                            {session.isSpark
+                                ? "⭐"
+                                : session.isDovetail
+                                    ? "💎"
+                                    : "•"}
+
+                        </div>
+
+                        <div className="flex-1">
+
+                            <div className="font-semibold text-sm text-gray-900">
+
+                                {session.name}
+
+                            </div>
+
+                            <div className="text-xs text-gray-500 mt-1">
+
+                                {session.totalAttendances} attendances
+
+                                {" • "}
+
+                                {session.uniqueTeachers} teachers
+
+                            </div>
+
+                            <div className="mt-2 flex flex-wrap gap-2">
+
+                                <span
+
+                                    className={`
+
+                                        px-2 py-0.5 rounded text-[10px] font-semibold
+
+                                        ${getLevelColor(session.level)}
+
+                                    `}
+
+                                >
+
+                                    {session.level}
+
+                                </span>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </button>
+
+            ))}
+
+        </div>
+
+        {/* =======================================
+                RIGHT : DETAILS
+        ======================================== */}
+
+        <div className="col-span-8 flex flex-col">
+
+            {!selectedSession ? (
+
+                <div className="flex-1 flex items-center justify-center text-gray-400">
+
+                    Select a session.
+
+                </div>
+
+            ) : (
+
+            <>
+
+                <div className="bg-gray-50 border-b p-6">
+
+                    <div className="flex items-center gap-2">
+
+                        {selectedSession.isSpark && <span>⭐</span>}
+
+                        {selectedSession.isDovetail && <span>💎</span>}
+
+                        <h2 className="text-2xl font-bold">
+
+                            {selectedSession.name}
+
+                        </h2>
+
+                    </div>
+
+                    <div className="mt-4 flex gap-4">
+
+                        <div className="bg-white border rounded-lg px-4 py-2">
+
+                            <div className="text-xl font-bold text-wcg-blue">
+
+                                {selectedSession.totalAttendances}
+
+                            </div>
+
+                            <div className="text-xs uppercase text-gray-500">
+
+                                Attendances
+
+                            </div>
+
+                        </div>
+
+                        <div className="bg-white border rounded-lg px-4 py-2">
+
+                            <div className="text-xl font-bold text-wcg-green">
+
+                                {selectedSession.uniqueTeachers}
+
+                            </div>
+
+                            <div className="text-xs uppercase text-gray-500">
+
+                                Teachers
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <div className="overflow-y-auto flex-1">
+
+                    <table className="w-full">
+
+                        <thead className="sticky top-0 bg-white border-b">
+
+    <tr>
+
+        <th className="text-left px-6 py-3">
+            Teacher
+        </th>
+
+        <th className="text-left px-6 py-3 w-56">
+            Date(s) Attended
+        </th>
+
+    </tr>
+
+</thead>
+
+                        <tbody>
+
+                            {selectedSession.attendanceList.map((teacher, index) => (
+
+                                <tr
+
+                                    key={teacher.teacher}
+
+                                    className={`
+
+                                        border-b
+
+                                        ${index % 2 === 0 ? "bg-white" : "bg-gray-50"}
+
+                                    `}
+
+                                >
+
+                                    <td className="px-6 py-3 font-medium">
+
+                                        {teacher.teacher}
+
+                                    </td>
+
+                                   <td className="px-6 py-3 text-sm text-gray-700">
+
+    {teacher.attendances
+        .map(att => formatDate(att.date))
+        .join(", ")}
+
+</td>
+
+                                </tr>
+
+                            ))}
+
+                        </tbody>
+
+                    </table>
+                </div>
+            </>
+            )}
+        </div>
+    </div>
+</div>
+)}
+
+                        {/* ------------------------------------------------------------- */}
+                        {/* PRINT ONLY VIEW */}
+                        {/* ------------------------------------------------------------- */}
+                        <div className="hidden print:block w-full">
+                            {/* 1. Header & Disclaimer */}
+                            <div className="text-center mb-8">
+                                <img src="header.png" alt="WCED Header" className="h-16 mx-auto mb-4" />
+                                <h1 className="text-2xl font-bold text-wcg-dark mb-1">{schoolName}</h1>
+                                <p className="text-sm text-gray-600 mb-2">Report Generated: {new Date().toLocaleDateString('en-GB')}</p>
+                                <p className="text-xs text-gray-600 max-w-3xl mx-auto italic">
+                                    Disclaimer: The information in this report is based on self-captured data which could lead to inaccurate data. We endeavour to ensure the data is as clean and accurate as we can. (Data last updated: {new Date(DATA_LAST_UPDATED).toLocaleDateString('en-GB')})
+                                </p>
+                            </div>
+
+                            {/* 2. Quarterly Trends Table & Scorecards */}
+                            <div className="flex gap-6 mb-8 w-full">
+                                <div className="flex-1">
+                                    <h3 className="text-base font-bold text-wcg-dark mb-2">Quarterly Trends</h3>
+                                    <table className="w-full text-sm border-collapse border border-gray-300">
+                                        <thead>
+                                            <tr className="bg-gray-100">
+                                                <th className="border border-gray-300 px-3 py-1.5 text-left">Quarter</th>
+                                                <th className="border border-gray-300 px-3 py-1.5 text-center">Unique Teachers</th>
+                                                <th className="border border-gray-300 px-3 py-1.5 text-center">Total Attendances</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {quarterlyData.map(d => (
+                                                <tr key={d.label}>
+                                                    <td className="border border-gray-300 px-3 py-1.5">{d.label}</td>
+                                                    <td className="border border-gray-300 px-3 py-1.5 text-center">{d.uniqueTeachers}</td>
+                                                    <td className="border border-gray-300 px-3 py-1.5 text-center">{d.totalAttendances}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div className="w-48 flex flex-col gap-4 justify-center">
+                                    <div className="text-center p-3 border border-gray-300 bg-gray-50 rounded">
+                                        <div className="text-2xl font-bold text-wcg-dark">{scorecardMetrics.uniqueTeachersCount}</div>
+                                        <div className="text-xs font-semibold uppercase text-gray-600">Unique Teachers</div>
+                                    </div>
+                                    <div className="text-center p-3 border border-gray-300 bg-gray-50 rounded">
+                                        <div className="text-2xl font-bold text-wcg-dark">{scorecardMetrics.totalWorkshopsAttended}</div>
+                                        <div className="text-xs font-semibold uppercase text-gray-600">Workshops Attended</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* 3. Simplified Attendance List Table */}
+                            <h3 className="text-base font-bold text-wcg-dark mb-2">Detailed Attendance Record</h3>
+                            <table className="w-full text-sm border-collapse border border-gray-400">
+                                <thead>
+                                    <tr className="bg-gray-200">
+                                        <th className="border border-gray-400 px-2 py-1.5 text-left font-semibold">Name</th>
+                                        <th className="border border-gray-400 px-2 py-1.5 text-left font-semibold">Surname</th>
+                                        <th className="border border-gray-400 px-2 py-1.5 text-left font-semibold w-24">Date</th>
+                                        <th className="border border-gray-400 px-2 py-1.5 text-left font-semibold">Session Name</th>
+                                        <th className="border border-gray-400 px-2 py-1.5 text-left font-semibold w-32">Mode</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {printTableData.map((row, idx) => {
+                                        // Highlight Dovetail (yellow) and Spark (pink) based on instructions
+                                        let rowColor = "";
+                                        if (row.isDovetail) rowColor = "bg-pink-100";
+                                        else if (row.isSpark) rowColor = "bg-yellow-100";
+
+                                        return (
+                                            <tr key={idx} className={rowColor}>
+                                                <td className="border border-gray-400 px-2 py-1">{row['First Name']}</td>
+                                                <td className="border border-gray-400 px-2 py-1">{row['Surname']}</td>
+                                                <td className="border border-gray-400 px-2 py-1">{formatDate(row.parsedDate)}</td>
+                                                <td className="border border-gray-400 px-2 py-1">{row['Session Name']}</td>
+                                                <td className="border border-gray-400 px-2 py-1">{row['Delivery Mode']}</td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                            {/* Table Legend / Key */}
+                            <div className="mt-3 text-xs text-gray-700 space-y-2">
+                                <div className="flex items-center gap-2">
+                                    <span className="inline-block w-4 h-4 bg-pink-100 border border-gray-400 rounded"></span>
+                                    <span>
+                                        Highlighted sessions are <strong>Dovetail Essentials</strong> sessions.{" "}
+                                            <a href="https://jacovanniekerk-ux.github.io/wcedsessions/dovetail-essentials.html" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline hover:text-blue-800">
+                                            Find out More</a>
+                                        </span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <span className="inline-block w-4 h-4 bg-yellow-100 border border-gray-400 rounded"></span>
+                                    <span>
+                                        Highlighted sessions are sessions that award a <strong>Spark</strong>.{" "}
+                                        <a href="https://jacovanniekerk-ux.github.io/wcedsessions/pathway.html" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline hover:text-blue-800">
+                                        Find out More</a>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.render(<App />, document.getElementById('root'));
+    </script>
 </body>
 
 </html>
