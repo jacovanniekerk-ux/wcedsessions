@@ -718,7 +718,7 @@
         }
 
         // === SUGGESTION CARD ===
-        function SuggestionCard({ icon, title, description, type, sessions, ctas, onSessionClick }) {
+        function SuggestionCard({ icon, title, description, remainingList, remainingMore, type, sessions, ctas, onSessionClick }) {
             const typeStyles = {
                 action: 'border-l-4 border-wcg-blue',
                 progress: 'border-l-4 border-wcg-yellow',
@@ -731,18 +731,23 @@
                     e('span', { className: "text-2xl" }, icon),
                     e('h4', { className: "font-bold text-gray-800" }, title)
                 ),
-                description ? e('ul', { className: "text-sm text-gray-600 mb-3 list-disc pl-5 space-y-1" },
-    description.split(/(?<=[.!?])\s+/).filter(Boolean).map((line, idx) => e('li', { key: idx }, line))
-) : null,
-(sessions && sessions.length > 0) ? e('div', { className: "space-y-1.5 mb-3" },
-    sessions.slice(0, 3).map((s, idx) => e('button', {
-        key: idx,
-        onClick: () => onSessionClick(s),
-        className: "block w-full text-left text-xs bg-white rounded-lg px-3 py-2 hover:bg-blue-50 border border-gray-200 transition-colors"
-    },
-        e('span', { className: "font-semibold text-wcg-blue" }, s.name), ' — ', s.date
-    ))
-) : null,
+                description ? e('p', { className: "text-sm text-gray-600 mb-2 whitespace-pre-line" }, description) : null,
+                (remainingList && remainingList.length > 0) ? e('ul', { className: "text-sm text-gray-600 mb-3 list-disc pl-5 space-y-1" },
+                    remainingList.map((name, idx) => e('li', { key: idx }, name)),
+                    remainingMore > 0 ? e('li', { key: 'more' }, `+${remainingMore} more`) : null
+                ) : null,
+                (sessions && sessions.length > 0) ? e('div', { className: "mb-3" },
+                    e('p', { className: "text-xs font-bold text-gray-500 uppercase mb-1.5" }, "Upcoming Sessions"),
+                    e('div', { className: "space-y-1.5" },
+                        sessions.slice(0, 3).map((s, idx) => e('button', {
+                            key: idx,
+                            onClick: () => onSessionClick(s),
+                            className: "block w-full text-left text-xs bg-white rounded-lg px-3 py-2 hover:bg-blue-50 border border-gray-200 transition-colors"
+                        },
+                            e('span', { className: "font-semibold text-wcg-blue" }, s.name), ' — ', s.date
+                        ))
+                    )
+                ) : null,
 (ctas && ctas.length > 0) ? e('div', { className: "pt-3 mt-3 border-t border-gray-200 flex flex-wrap gap-2" },
     ctas.map((cta, idx) => e('a', {
         key: idx, href: cta.url, target: "_blank", rel: "noopener noreferrer",
@@ -1390,7 +1395,7 @@
                 if (!hasAdoption) {
                     items.push({
                         icon: '🧭', title: 'Start Your Journey: ICT Adoption Strategy',
-                        description: 'The ICT Adoption Strategy is a foundational 24-hour self-paced course. It takes in cohorts twice a year — keep an eye on the eTPD multi link for when the next cohort opens.',
+                        description: 'This 12-week, self-paced online course is the starting line for any educator looking to reimagine their approach to technology. Whether you are validating what you already know, picking up new skills, or shifting your mindset, the course offers a broad perspective on the digital landscape and the vision of the Transformation Agenda.\n\nRegardless of your current tech skill level, this foundational step helps you confidently integrate ICT to transform your classroom. By completing the course, you will earn your first Spark—igniting your ongoing pathway as a Transformation Agent.',
                         type: 'action', ctas: [getAvailabilityCTA('adoption')].filter(Boolean)
                     });
                 }
@@ -1422,19 +1427,23 @@
                     if (dovetailCount === 0) {
                         items.push({
                             icon: '🧰', title: 'Build Practical Skills: Dovetail Essentials',
-                            description: 'Choose from 10 focused micro-learning sessions (60-120 min each) to build practical digital skills. Complete 5 or more to earn a bonus Spark! Sessions run regularly across districts.',
+                            description: 'Choose from 10 focused micro-learning sessions (90-120 min each) to build practical digital skills. Complete 5 or more to earn a bonus Spark! Sessions run regularly across districts.',
                             type: 'action', sessions: upcomingDovetailSessions, ctas: [dovetailInfoCta]
                         });
-                    } else if (!hasDovetailSpark) {
+                   } else if (!hasDovetailSpark) {
                         items.push({
                             icon: '🧰', title: `Keep Going: ${dovetailCount}/10 Dovetail Essentials Done`,
-                            description: `You've completed ${dovetailCount} session${dovetailCount > 1 ? 's' : ''}. Complete ${5 - dovetailCount > 0 ? `${5 - dovetailCount} more to earn your bonus Spark, or ` : ''}try these remaining sessions: ${remainingDovetails.slice(0, 3).join(', ')}${remainingDovetails.length > 3 ? '...' : ''}.`,
+                            description: `You've completed ${dovetailCount} session${dovetailCount > 1 ? 's' : ''}. ${5 - dovetailCount > 0 ? `Complete ${5 - dovetailCount} more to earn your bonus Spark, or try these remaining sessions:` : 'Try these remaining sessions:'}`,
+                            remainingList: remainingDovetails.slice(0, 3),
+                            remainingMore: Math.max(0, remainingDovetails.length - 3),
                             type: 'progress', sessions: upcomingDovetailSessions, ctas: [dovetailInfoCta]
                         });
                     } else {
                         items.push({
-                            icon: '🧰', title: `Dovetail Bonus Spark Earned! (${dovetailCount}/10 Complete)`,
-                            description: `Great progress! You've earned your Dovetail bonus Spark. ${remainingDovetails.length > 0 ? `Continue strengthening your skills with the remaining sessions: ${remainingDovetails.slice(0, 3).join(', ')}${remainingDovetails.length > 3 ? '...' : ''}.` : 'All 10 sessions complete!'}`,
+                            icon: '🧰', title: `Dovetail Essentials Spark Earned! (${dovetailCount}/10 Complete)`,
+                            description: `Great progress! You've earned your Dovetail Spark for completing at least half of the pathway. ${remainingDovetails.length > 0 ? 'Continue strengthening your skills with the remaining sessions:' : 'All 10 sessions complete!'}`,
+                            remainingList: remainingDovetails.length > 0 ? remainingDovetails.slice(0, 3) : undefined,
+                            remainingMore: remainingDovetails.length > 0 ? Math.max(0, remainingDovetails.length - 3) : undefined,
                             type: 'celebration', sessions: remainingDovetails.length > 0 ? upcomingDovetailSessions : undefined, ctas: remainingDovetails.length > 0 ? [dovetailInfoCta] : undefined
                         });
                     }
