@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>In-Session Attendance - WCED Professional Development</title>
+    <link rel="icon" type="image/png" href="favicon.png">
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'wcg-green': '#76B82A',
+                        'wcg-yellow': '#FDB913',
+                        'wcg-red': '#E30613',
+                        'wcg-blue': '#001489',
+                        'wcg-purple': '#672D82',
+                        'wcg-pink': '#C8126E',
+                        'wcg-dark': '#1a1a1a',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade-in-up { animation: fadeInUp 0.25s ease-out; }
+    </style>
+</head>
+
+<body class="bg-gray-50 min-h-screen">
+    <div id="root"></div>
+
+    <script>
+        const { useState, useEffect, useMemo, useRef } = React;
+        const e = React.createElement;
+
+        // ============================================================
+        // SUPABASE CONFIG — same project as the My PD app
+        // ============================================================
+        const SUPABASE_URL = 'https://cftpufjzwpmhgzdcgpjb.supabase.co';
+        const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_b1H_5DJYLQSrr83T_dvz6A_2UAqOVg4';
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+
+        // ------------------------------------------------------------
+        // ADJUST THESE to match your actual Supabase schools table.
+        // This is the only piece of real backend wiring in this
+        // prototype — everything else (submitting attendance) is
+        // stubbed out on purpose until this screen is signed off.
+        // ------------------------------------------------------------
+        const SCHOOLS_TABLE_NAME = 'schools';
+        const SCHOOL_NAME_COLUMN = 'School Name';
+
+        // ============================================================
+        // LOCAL "DEVICE PROFILE" STORAGE
+        // Not authentication — just remembers who last used this
+        // device so they don't have to retype their details every
+        // session. Supports more than one saved profile per device.
+        // ============================================================
+        const PROFILES_KEY = 'iat_profiles';
+        const ACTIVE_PROFILE_KEY = 'iat_active_profile_id';
+
+        function loadProfiles() {
+            try {
+                const raw = localStorage.getItem(PROFILES_KEY);
+                return raw ? JSON.parse(raw) : [];
+            } catch (err) {
+                console.error('Could not read saved profiles', err);
+                return [];
+            }
+        }
+
+        function saveProfiles(profiles) {
+            try {
+                localStorage.setItem(PROFILES_KEY, JSON.stringify(profiles));
+            } catch (err) {
+                console.error('Could not save profiles', err);
+            }
+        }
+
+        function getActiveProfileId() {
+            return localStorage.getItem(ACTIVE_PROFILE_KEY);
+        }
+
+        function setActiveProfileId(id) {
+            localStorage.setItem(ACTIVE_PROFILE_KEY, id);
+        }
+
+        // ============================================================
+        // Small reusable bits
+        // ============================================================
+        function TextField({ label, value, onChange, placeholder, type = 'text', required = false }) {
+            return e('div', { className: 'mb-4' },
+                e('label', { className: 'block text-sm font-semibold text-gray-700 mb-1' }, label, required ? e('span', { className: 'text-wcg-red' }, ' *') : null),
+                e('input', {
+                    type, value, placeholder,
+                    onChange: (ev) => onChange(ev.target.value),
+                    className: 'w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-wcg-blue focus:outline-none text-sm'
+                })
+            );
+        }
+
+        function SchoolSelect({ schools, loading, error, value, onChange }) {
+            const [query, setQuery] = useState('');
+            const [open, setOpen] = useState(false);
+            const wrapperRef = useRef(null);
+
+            useEffect(() => {
+                function handleClickOutside(ev) {
+                    if (wrapperRef.current && !wrapperRef.current.contains(ev.target)) setOpen(false);
+                }
+                document.addEventListener('mousedown', handleClickOutside);
+                return () => document.removeEventListener('mousedown', handleClickOutside);
+            }, []);
+
+            const filtered = useMemo(() => {
+                if (!query) return schools.slice(0, 50);
+                return schools.filter(s => s.toLowerCase().includes(query.toLowerCase())).slice(0, 50);
+            }, [schools, query]);
+
+            return e('div', { className: 'mb-4 relative', ref: wrapperRef },
+                e('label', { className: 'block text-sm font-semibold text-gray-700 mb-1' }, 'School', e('span', { className: 'text-wcg-red' }, ' *')),
+                e('input', {
+                    type: 'text',
+                    value: open ? query : (value || ''),
+                    placeholder: loading ? 'Loading schools…' : 'Start typing to search…',
+                    disabled: loading || !!error,
+                    onFocus: () => { setQuery(''); setOpen(true); },
+                    onChange: (ev) => setQuery(ev.target.value),
+                    className: 'w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-wcg-blue focus:outline-none text-sm disabled:bg-gray-100'
+                }),
+                error ? e('p', { className: 'text-xs text-wcg-red mt-1' }, error) : null,
+                open && !loading && !error ? e('div', { className: 'absolute z-10 mt-1 w-full max-h-56 overflow-y-auto bg-white border-2 border-gray-200 rounded-xl shadow-lg' },
+                    filtered.length === 0
+                        ? e('div', { className: 'px-4 py-3 text-sm text-gray-400' }, 'No matching schools')
+                        : filtered.map((s, idx) => e('button', {
+                            key: idx, type: 'button',
+                            onClick: () => { onChange(s); setOpen(false); },
+                            className: 'block w-full text-left px-4 py-2.5 text-sm hover:bg-blue-50 border-b border-gray-100 last:border-b-0'
+                        }, s))
+                ) : null
+            );
+        }
+
+        // ============================================================
+        // Profile setup / edit form (name, ID/PERSAL, school)
+        // ============================================================
+        function ProfileForm({ schools, schoolsLoading, schoolsError, initial, onSave, onCancel }) {
+            const [name, setName] = useState(initial?.name || '');
+            const [idNumber, setIdNumber] = useState(initial?.idNumber || '');
+            const [school, setSchool] = useState(initial?.school || '');
+
+            const canSave = name.trim() && idNumber.trim() && school.trim();
+
+            return e('div', { className: 'bg-white rounded-2xl shadow-lg p-6 sm:p-8 max-w-md w-full animate-fade-in-up' },
+                e('h2', { className: 'text-xl font-bold text-wcg-dark mb-1' }, initial ? 'Edit Profile' : 'Set Up Your Profile'),
+                e('p', { className: 'text-sm text-gray-500 mb-6' }, "We'll remember these details on this device so you don't have to retype them every session."),
+                e(TextField, { label: 'Full Name', value: name, onChange: setName, placeholder: 'e.g. Jane Adams', required: true }),
+                e(TextField, { label: 'ID / PERSAL Number', value: idNumber, onChange: setIdNumber, placeholder: 'e.g. 8501015800083', required: true }),
+                e(SchoolSelect, { schools, loading: schoolsLoading, error: schoolsError, value: school, onChange: setSchool }),
+                e('div', { className: 'flex gap-3 mt-6' },
+                    onCancel ? e('button', {
+                        onClick: onCancel,
+                        className: 'flex-1 px-4 py-3 rounded-xl font-semibold text-sm border-2 border-gray-200 text-gray-600 hover:border-gray-300 transition-colors'
+                    }, 'Cancel') : null,
+                    e('button', {
+                        disabled: !canSave,
+                        onClick: () => onSave({ id: initial?.id || `p_${Date.now()}`, name: name.trim(), idNumber: idNumber.trim(), school: school.trim() }),
+                        className: `flex-1 px-4 py-3 rounded-xl font-semibold text-sm text-white transition-colors shadow ${canSave ? 'bg-wcg-blue hover:bg-blue-800' : 'bg-gray-300 cursor-not-allowed'}`
+                    }, 'Save Profile')
+                )
+            );
+        }
+
+        // ============================================================
+        // Profile switcher — pick between saved profiles, or add new
+        // ============================================================
+        function ProfileSwitcher({ profiles, onSelect, onAddNew, onDelete, onCancel }) {
+            return e('div', { className: 'bg-white rounded-2xl shadow-lg p-6 sm:p-8 max-w-md w-full animate-fade-in-up' },
+                e('h2', { className: 'text-xl font-bold text-wcg-dark mb-1' }, 'Switch Profile'),
+                e('p', { className: 'text-sm text-gray-500 mb-6' }, 'Select a saved profile for this device, or add a new one.'),
+                e('div', { className: 'space-y-2 mb-4' },
+                    profiles.map(p => e('div', {
+                        key: p.id,
+                        className: 'flex items-center gap-3 border-2 border-gray-200 rounded-xl px-4 py-3 hover:border-wcg-blue transition-colors'
+                    },
+                        e('button', { onClick: () => onSelect(p.id), className: 'flex-1 text-left' },
+                            e('div', { className: 'font-semibold text-sm text-wcg-dark' }, p.name),
+                            e('div', { className: 'text-xs text-gray-500' }, `${p.idNumber} · ${p.school}`)
+                        ),
+                        e('button', {
+                            onClick: () => onDelete(p.id),
+                            title: 'Remove this profile from the device',
+                            className: 'text-gray-400 hover:text-wcg-red text-xs font-semibold px-2 py-1'
+                        }, 'Remove')
+                    ))
+                ),
+                e('button', {
+                    onClick: onAddNew,
+                    className: 'w-full px-4 py-3 rounded-xl font-semibold text-sm border-2 border-dashed border-gray-300 text-gray-500 hover:border-wcg-blue hover:text-wcg-blue transition-colors mb-3'
+                }, '+ Add New Profile'),
+                onCancel ? e('button', {
+                    onClick: onCancel,
+                    className: 'w-full px-4 py-2 text-xs text-gray-400 hover:text-gray-600'
+                }, 'Cancel') : null
+            );
+        }
+
+        // ============================================================
+        // Welcome screen — active profile + Session ID Key capture
+        // ============================================================
+        function WelcomeScreen({ profile, onSwitchProfile }) {
+            const [sessionKey, setSessionKey] = useState('');
+            const [submitted, setSubmitted] = useState(false);
+
+            const handleSubmit = () => {
+                // PROTOTYPE STUB — no write functionality yet.
+                // This is where the Session ID Key gets validated and
+                // the attendance record gets written (to Supabase,
+                // and from there synced to the Google Sheet).
+                console.log('Would submit attendance:', { profile, sessionKey });
+                setSubmitted(true);
+            };
+
+            return e('div', { className: 'bg-white rounded-2xl shadow-lg p-6 sm:p-8 max-w-md w-full animate-fade-in-up' },
+                e('div', { className: 'text-center mb-6' },
+                    e('div', { className: 'w-14 h-14 rounded-full bg-wcg-blue text-white flex items-center justify-center text-2xl font-bold mx-auto mb-3' },
+                        (profile.name || '?').trim().charAt(0).toUpperCase()
+                    ),
+                    e('h2', { className: 'text-xl font-bold text-wcg-dark' }, `Welcome back, ${profile.name}`),
+                    e('p', { className: 'text-sm text-gray-500 mt-1' }, `${profile.idNumber} · ${profile.school}`),
+                    e('button', {
+                        onClick: onSwitchProfile,
+                        className: 'text-xs font-semibold text-wcg-blue hover:underline mt-2'
+                    }, 'Not you? Switch profile')
+                ),
+                submitted
+                    ? e('div', { className: 'text-center bg-green-50 border-2 border-green-200 rounded-xl p-5' },
+                        e('div', { className: 'text-3xl mb-2' }, '✅'),
+                        e('p', { className: 'text-sm font-semibold text-green-800' }, 'Attendance captured (prototype only — not yet saved anywhere).'),
+                        e('button', {
+                            onClick: () => { setSubmitted(false); setSessionKey(''); },
+                            className: 'text-xs font-semibold text-wcg-blue hover:underline mt-3'
+                        }, 'Capture another session')
+                    )
+                    : e(React.Fragment, null,
+                        e(TextField, {
+                            label: 'Session ID Key', value: sessionKey, onChange: setSessionKey,
+                            placeholder: 'e.g. DTE-0472', required: true
+                        }),
+                        e('button', {
+                            disabled: !sessionKey.trim(),
+                            onClick: handleSubmit,
+                            className: `w-full px-4 py-3 rounded-xl font-bold text-sm text-white transition-colors shadow ${sessionKey.trim() ? 'bg-wcg-green hover:bg-green-700' : 'bg-gray-300 cursor-not-allowed'}`
+                        }, 'Capture Attendance')
+                    )
+            );
+        }
+
+        // ============================================================
+        // Root app
+        // ============================================================
+        function App() {
+            // 'deviceCheck' | 'sharedForm' | 'profileSetup' | 'profileSwitch' | 'welcome'
+            const [screen, setScreen] = useState('deviceCheck');
+            const [profiles, setProfiles] = useState(() => loadProfiles());
+            const [activeProfile, setActiveProfileState] = useState(null);
+            const [editingExisting, setEditingExisting] = useState(false);
+
+            const [schools, setSchools] = useState([]);
+            const [schoolsLoading, setSchoolsLoading] = useState(true);
+            const [schoolsError, setSchoolsError] = useState(null);
+
+            useEffect(() => {
+                async function fetchSchools() {
+                    setSchoolsLoading(true);
+                    setSchoolsError(null);
+                    try {
+                        const { data, error } = await supabaseClient
+                            .from(SCHOOLS_TABLE_NAME)
+                            .select(SCHOOL_NAME_COLUMN);
+                        if (error) throw error;
+                        const names = (data || [])
+                            .map(row => row[SCHOOL_NAME_COLUMN])
+                            .filter(Boolean)
+                            .sort((a, b) => a.localeCompare(b));
+                        setSchools(names);
+                    } catch (err) {
+                        console.error('Error fetching schools from Supabase:', err);
+                        setSchoolsError('Could not load school list. You can still type your school below once this is connected.');
+                    } finally {
+                        setSchoolsLoading(false);
+                    }
+                }
+                fetchSchools();
+            }, []);
+
+            const chooseDevice = (isOwn) => {
+                if (!isOwn) {
+                    setScreen('sharedForm');
+                    return;
+                }
+                const currentProfiles = loadProfiles();
+                if (currentProfiles.length === 0) {
+                    setEditingExisting(false);
+                    setScreen('profileSetup');
+                    return;
+                }
+                const activeId = getActiveProfileId();
+                const found = currentProfiles.find(p => p.id === activeId) || currentProfiles[0];
+                setActiveProfileState(found);
+                setScreen('welcome');
+            };
+
+            const handleSaveProfile = (profile) => {
+                const current = loadProfiles();
+                const withoutThis = current.filter(p => p.id !== profile.id);
+                const updated = [...withoutThis, profile];
+                saveProfiles(updated);
+                setProfiles(updated);
+                setActiveProfileId(profile.id);
+                setActiveProfileState(profile);
+                setScreen('welcome');
+            };
+
+            const handleSelectProfile = (id) => {
+                const current = loadProfiles();
+                const found = current.find(p => p.id === id);
+                if (!found) return;
+                setActiveProfileId(id);
+                setActiveProfileState(found);
+                setScreen('welcome');
+            };
+
+            const handleDeleteProfile = (id) => {
+                const current = loadProfiles().filter(p => p.id !== id);
+                saveProfiles(current);
+                setProfiles(current);
+                if (current.length === 0) {
+                    setScreen('profileSetup');
+                }
+            };
+
+            return e('div', { className: 'min-h-screen flex flex-col' },
+                e('header', { className: 'bg-white shadow-sm' },
+                    e('div', { className: 'max-w-5xl mx-auto px-4 sm:px-6 py-4 flex items-center gap-3' },
+                        e('img', { src: 'header.png', alt: 'WCED Header', className: 'h-10 sm:h-12', onError: (ev) => { ev.target.style.display = 'none'; } }),
+                        e('span', { className: 'font-bold text-wcg-dark text-sm sm:text-base' }, 'In-Session Attendance')
+                    )
+                ),
+                e('div', { className: 'flex-1 flex items-center justify-center px-4 py-10' },
+
+                    screen === 'deviceCheck' ? e('div', { className: 'bg-white rounded-2xl shadow-lg p-6 sm:p-8 max-w-md w-full text-center animate-fade-in-up' },
+                        e('h2', { className: 'text-xl font-bold text-wcg-dark mb-2' }, 'Is this your device?'),
+                        e('p', { className: 'text-sm text-gray-500 mb-6' }, "So we know whether to remember your details for next time."),
+                        e('div', { className: 'grid grid-cols-1 sm:grid-cols-2 gap-3' },
+                            e('button', {
+                                onClick: () => chooseDevice(true),
+                                className: 'px-4 py-4 rounded-xl font-bold text-sm bg-wcg-blue text-white hover:bg-blue-800 transition-colors shadow'
+                            }, '📱 This is my device'),
+                            e('button', {
+                                onClick: () => chooseDevice(false),
+                                className: 'px-4 py-4 rounded-xl font-bold text-sm border-2 border-gray-200 text-gray-700 hover:border-wcg-blue transition-colors'
+                            }, '🖥️ Shared device')
+                        )
+                    ) : null,
+
+                    screen === 'sharedForm' ? e('div', { className: 'bg-white rounded-2xl shadow-lg p-6 sm:p-8 max-w-md w-full animate-fade-in-up' },
+                        e('h2', { className: 'text-xl font-bold text-wcg-dark mb-1' }, 'Capture Attendance'),
+                        e('p', { className: 'text-sm text-gray-500 mb-6' }, "Shared device — please complete your details for this session."),
+                        e(ProfileFormFieldsInline, {
+                            schools, schoolsLoading, schoolsError,
+                            onBack: () => setScreen('deviceCheck')
+                        })
+                    ) : null,
+
+                    screen === 'profileSetup' ? e(ProfileForm, {
+                        schools, schoolsLoading, schoolsError,
+                        initial: editingExisting ? activeProfile : null,
+                        onSave: handleSaveProfile,
+                        onCancel: profiles.length > 0 ? () => setScreen(activeProfile ? 'welcome' : 'profileSwitch') : null
+                    }) : null,
+
+                    screen === 'profileSwitch' ? e(ProfileSwitcher, {
+                        profiles,
+                        onSelect: handleSelectProfile,
+                        onAddNew: () => { setEditingExisting(false); setScreen('profileSetup'); },
+                        onDelete: handleDeleteProfile,
+                        onCancel: activeProfile ? () => setScreen('welcome') : null
+                    }) : null,
+
+                    screen === 'welcome' && activeProfile ? e(WelcomeScreen, {
+                        profile: activeProfile,
+                        onSwitchProfile: () => setScreen('profileSwitch')
+                    }) : null
+                )
+            );
+        }
+
+        // A lightweight inline version of the profile fields for the
+        // "shared device" path — captures the same info but never
+        // saves it to this device, and also asks for the Session ID Key
+        // directly since there's no separate Welcome screen for this path.
+        function ProfileFormFieldsInline({ schools, schoolsLoading, schoolsError, onBack }) {
+            const [name, setName] = useState('');
+            const [idNumber, setIdNumber] = useState('');
+            const [school, setSchool] = useState('');
+            const [sessionKey, setSessionKey] = useState('');
+            const [submitted, setSubmitted] = useState(false);
+
+            const canSave = name.trim() && idNumber.trim() && school.trim() && sessionKey.trim();
+
+            if (submitted) {
+                return e('div', { className: 'text-center bg-green-50 border-2 border-green-200 rounded-xl p-5' },
+                    e('div', { className: 'text-3xl mb-2' }, '✅'),
+                    e('p', { className: 'text-sm font-semibold text-green-800' }, 'Attendance captured (prototype only — not yet saved anywhere).'),
+                    e('button', { onClick: onBack, className: 'text-xs font-semibold text-wcg-blue hover:underline mt-3' }, 'Done')
+                );
+            }
+
+            return e(React.Fragment, null,
+                e(TextField, { label: 'Full Name', value: name, onChange: setName, required: true }),
+                e(TextField, { label: 'ID / PERSAL Number', value: idNumber, onChange: setIdNumber, required: true }),
+                e(SchoolSelect, { schools, loading: schoolsLoading, error: schoolsError, value: school, onChange: setSchool }),
+                e(TextField, { label: 'Session ID Key', value: sessionKey, onChange: setSessionKey, placeholder: 'e.g. DTE-0472', required: true }),
+                e('div', { className: 'flex gap-3 mt-2' },
+                    e('button', {
+                        onClick: onBack,
+                        className: 'flex-1 px-4 py-3 rounded-xl font-semibold text-sm border-2 border-gray-200 text-gray-600 hover:border-gray-300 transition-colors'
+                    }, 'Back'),
+                    e('button', {
+                        disabled: !canSave,
+                        onClick: () => {
+                            console.log('Would submit attendance (shared device):', { name, idNumber, school, sessionKey });
+                            setSubmitted(true);
+                        },
+                        className: `flex-1 px-4 py-3 rounded-xl font-bold text-sm text-white transition-colors shadow ${canSave ? 'bg-wcg-green hover:bg-green-700' : 'bg-gray-300 cursor-not-allowed'}`
+                    }, 'Capture Attendance')
+                )
+            );
+        }
+
+        ReactDOM.createRoot(document.getElementById('root')).render(e(App));
+    </script>
+</body>
+
+</html>
