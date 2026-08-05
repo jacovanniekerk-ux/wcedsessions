@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My PD - WCED Professional Development</title>
+    <title>WCED eLearning Professional Development</title>
     <link rel="icon" type="image/png" href="favicon.png">
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -1458,7 +1458,7 @@
                 if (pathwayStatus.hasAdoption && !hasDigitalSkills) {
                     items.push({
                         icon: '📖', title: 'Next: Digital Skills Course',
-                        description: 'Having completed the Adoption Strategy, you may be invited to attend the Digital Skills Course — a 4-week hybrid immersion. Look out for your invitation!',
+                        description: 'This four-week hybrid course helps educators shift from simply using technology to understanding how students learn with it. By adopting a learner-centred perspective, participants gain the digital wisdom needed to transform technical skills ("what" and "how") into thoughtful pedagogical decisions ("when" and "why").\n\nAs the next step in your learning pathway, this district-hosted course builds directly on your completed milestones. Because cohorts are offered by invitation only each term, join the waitlist today to signal your interest for the upcoming session.',
                         type: 'invitation', ctas: [getAvailabilityCTA('digitalskills')].filter(Boolean)
                     });
                 }
@@ -1466,16 +1466,16 @@
                 if (hasDigitalSkills && !hasCyberEffect) {
                     items.push({
                         icon: '🌐', title: 'Next: Cyber Effect Ambassador Course',
-                        description: 'The Cyber Effect Ambassador Initiation Course focuses on ethical digital responsibility — keep an eye out for your invitation to the next cohort.',
+                        description: 'Deepen your impact by exploring the ethical, emotional, and behavioural dimensions of technology use. By mastering the 4P Affective Transformation Model—People, Practices, Pedagogy, and Platforms—you will gain the tools to embed cyber wellness, psychological safety, and human-centred design into your educational environment.\n\nAs the next step in your learning pathway, this course empowers you to champion a positive, reflective digital culture across your community.',
                         type: 'invitation', ctas: [getAvailabilityCTA('cybereffect')].filter(Boolean)
                     });
                 }
 
-                if (!pathwayStatus.hasThinkTank && totalSessions >= 15) {
+                if (!pathwayStatus.hasThinkTank && totalSessions >= 15 && (hasDigitalSkills || hasCyberEffect || pathwayStatus.hasAdoption)) {
                     items.push({
-                        icon: '💡', title: 'Facilitator Think Tank',
-                        description: `Your strong PD engagement (${totalSessions} sessions) puts you on the path to being considered for the Facilitator Think Tank — the entry point to the Facilitator ARC. This is by invitation and targets teachers with high engagement.`,
-                        type: 'info'
+                        icon: '💡', title: 'Start the Edvance ARC',
+                        description: `Your strong PD engagement (${totalSessions} sessions) puts you on the path to being considered for the Facilitator Think Tank — the entry point to the Edvance ARC.\n\nThe Edvance ARC is a face-to-face leadership pathway for educators ready to guide digital growth. Through immersive workshops, it equips you with the vision and practical tools to lead sustainable transformation across your school community.`,
+                        type: 'invitation' ctas: [{ label: 'Contact your eAdvisory Team', url: 'https://wcedeportal.co.za/meet-the-team', style: 'secondary' }]
                     });
                 }
 
