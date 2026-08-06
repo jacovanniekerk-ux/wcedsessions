@@ -15,10 +15,11 @@
             theme: {
                 extend: {
                     colors: {
-                        'wcg-green': '#76B82A',
+                        'wcg-green': '#8FAD15',
                         'wcg-yellow': '#FDB913',
                         'wcg-red': '#E30613',
                         'wcg-blue': '#001489',
+                        'wcg-brightblue': '#007DBA',
                         'wcg-purple': '#672D82',
                         'wcg-pink': '#C8126E',
                         'wcg-dark': '#1a1a1a',
@@ -31,6 +32,7 @@
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
         .animate-fade-in-up { animation: fadeInUp 0.25s ease-out; }
+        .wcg-top-accent { background: linear-gradient(90deg, #007DBA 0%, #8FAD15 100%); }
     </style>
 </head>
 
@@ -56,7 +58,31 @@
         // ------------------------------------------------------------
         const SCHOOLS_TABLE_NAME = 'schools';
         const SCHOOL_NAME_COLUMN = 'School_Name';
-        const DISTRICT_COLUMN = 'Education_District';
+        const DISTRICT_COLUMN = 'District';
+
+        // Supabase/PostgREST caps a single request at a fixed number of
+        // rows (commonly 1000) regardless of table size. With ~1,600
+        // WCED schools in total, a single unpaged select silently
+        // dropped everything past that cap — which is why schools later
+        // in the alphabet (e.g. "Worcester Gymnasium", "Zwelethemba")
+        // were missing from some districts. This pages through the
+        // table with .range() until every row has been fetched.
+        async function fetchAllRows(table, columns, pageSize = 1000) {
+            let all = [];
+            let from = 0;
+            while (true) {
+                const { data, error } = await supabaseClient
+                    .from(table)
+                    .select(columns)
+                    .range(from, from + pageSize - 1);
+                if (error) throw error;
+                if (!data || data.length === 0) break;
+                all = all.concat(data);
+                if (data.length < pageSize) break;
+                from += pageSize;
+            }
+            return all;
+        }
 
         // ============================================================
         // Static field option lists (HR / POPIA requirements)
@@ -71,21 +97,21 @@
         // adjust the labels below if a different meaning was intended.
         const SECTOR_OPTIONS = ['Education', 'Public'];
         const DESIGNATION_OPTIONS = [
+            'Teacher',
+            'Senior Education Specialist (SES)',
+            'Assistant Director (ASD)',
+            'Departmental Head',
+            'Principal',
+            'Deputy Principal',
+            'None of the above',
             'Admin Clerk',
-    'Admin Officer',
-    'Assistant Director (ASD)',
-    'Chief Education Specialist (CES)',
-    'Departmental Head',
-    'Deputy Chief Education Specialist (DCES)',
-    'Deputy Director (DD)',
-    'Deputy Principal',
-    'Director (DIR)',
-    'Principal',
-    'Senior Education Specialist (SES)',
-    'Social Worker',
-    'Teacher',
-    'Teacher Assistant',
-    'None of the above'
+            'Teacher Assistant',
+            'Admin Officer',
+            'Deputy Chief Education Specialist (DCES)',
+            'Chief Education Specialist (CES)',
+            'Deputy Director (DD)',
+            'Social Worker',
+            'Director (DIR)'
         ];
         const STATIC_DISTRICT_OPTIONS = ['Head Office', 'Not Applicable'];
         const NON_SCHOOL_OPTIONS = ['Not Applicable', 'School not in list'];
@@ -160,21 +186,37 @@
             return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((value || '').trim());
         }
 
+        function isValidPersal(value) {
+            // Optional field, but when provided it must be exactly 8 digits.
+            return !value || /^\d{8}$/.test(value);
+        }
+
+        // Returns a map of fieldKey -> error message (only for invalid/empty
+        // required fields). Used both to gate saving and to drive the
+        // subtle red-outline validation cues once a save has been attempted.
+        function getFieldErrors(f) {
+            const errors = {};
+            if (!f.surname.trim()) errors.surname = 'Surname is required';
+            if (!f.firstName.trim()) errors.firstName = 'First name is required';
+            if (!isValidEmail(f.email)) errors.email = 'Enter a valid email address';
+            if (!f.race) errors.race = 'Please select an option';
+            if (f.race === 'Other' && !f.raceOther.trim()) errors.raceOther = 'Please specify';
+            if (!f.gender) errors.gender = 'Please select an option';
+            if (!f.disability) errors.disability = 'Please select an option';
+            if (!f.district) errors.district = 'Please select a district';
+            if (!f.school) errors.school = 'Please select a school';
+            if (!f.officeType) errors.officeType = 'Please select an option';
+            if (!f.designation) errors.designation = 'Please select an option';
+            if (!f.sector) errors.sector = 'Please select an option';
+            if (!isValidPersal(f.persal)) errors.persal = 'PERSAL number must be exactly 8 digits';
+            if (isValidPersal(f.persal) && !f.persal.trim() && !f.idNumber.trim()) {
+                errors.idNumber = 'Provide a PERSAL number or an ID/Passport number';
+            }
+            return errors;
+        }
+
         function isProfileComplete(f) {
-            return !!(
-                f.surname.trim() &&
-                f.firstName.trim() &&
-                isValidEmail(f.email) &&
-                f.race && (f.race !== 'Other' || f.raceOther.trim()) &&
-                f.gender &&
-                f.disability &&
-                f.district &&
-                f.school &&
-                f.officeType &&
-                f.designation &&
-                f.sector &&
-                (f.persal.trim() || f.idNumber.trim())
-            );
+            return Object.keys(getFieldErrors(f)).length === 0;
         }
 
         function buildProfileRecord(f, existingId) {
@@ -205,40 +247,46 @@
         // ============================================================
         // Small reusable bits
         // ============================================================
-        function TextField({ label, value, onChange, placeholder, type = 'text', required = false, helperText }) {
-            return e('div', { className: 'mb-4' },
-                e('label', { className: 'block text-sm font-semibold text-gray-700 mb-1' }, label, required ? e('span', { className: 'text-wcg-red' }, ' *') : null),
+        function TextField({ label, value, onChange, placeholder, type = 'text', required = false, helperText, error, maxLength, inputMode }) {
+            const hasError = !!error;
+            return e('div', { className: 'mb-5' },
+                e('label', { className: 'block text-base font-semibold text-gray-700 mb-1.5' }, label, required ? e('span', { className: 'text-wcg-red' }, ' *') : null),
                 e('input', {
-                    type, value, placeholder,
+                    type, value, placeholder, maxLength, inputMode,
                     onChange: (ev) => onChange(ev.target.value),
-                    className: 'w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-wcg-blue focus:outline-none text-sm'
+                    className: `w-full px-4 py-3.5 rounded-xl border-2 focus:outline-none text-base transition-colors ${hasError ? 'border-wcg-red focus:border-wcg-red' : 'border-gray-200 focus:border-wcg-brightblue'}`
                 }),
-                helperText ? e('p', { className: 'text-xs text-gray-400 mt-1' }, helperText) : null
+                hasError
+                    ? e('p', { className: 'text-sm text-wcg-red mt-1.5 font-medium' }, error)
+                    : (helperText ? e('p', { className: 'text-sm text-gray-400 mt-1.5' }, helperText) : null)
             );
         }
 
-        function SelectField({ label, value, onChange, options, required = false, placeholder = 'Select…', disabled = false, helperText }) {
-            return e('div', { className: 'mb-4' },
-                e('label', { className: 'block text-sm font-semibold text-gray-700 mb-1' }, label, required ? e('span', { className: 'text-wcg-red' }, ' *') : null),
+        function SelectField({ label, value, onChange, options, required = false, placeholder = 'Select…', disabled = false, helperText, error }) {
+            const hasError = !!error;
+            return e('div', { className: 'mb-5' },
+                e('label', { className: 'block text-base font-semibold text-gray-700 mb-1.5' }, label, required ? e('span', { className: 'text-wcg-red' }, ' *') : null),
                 e('select', {
                     value, disabled,
                     onChange: (ev) => onChange(ev.target.value),
-                    className: 'w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-wcg-blue focus:outline-none text-sm bg-white disabled:bg-gray-100'
+                    className: `w-full px-4 py-3.5 rounded-xl border-2 focus:outline-none text-base bg-white transition-colors disabled:bg-gray-100 ${hasError ? 'border-wcg-red focus:border-wcg-red' : 'border-gray-200 focus:border-wcg-brightblue'}`
                 },
                     e('option', { value: '' }, placeholder),
                     options.map(opt => e('option', { key: opt, value: opt }, opt))
                 ),
-                helperText ? e('p', { className: 'text-xs text-gray-400 mt-1' }, helperText) : null
+                hasError
+                    ? e('p', { className: 'text-sm text-wcg-red mt-1.5 font-medium' }, error)
+                    : (helperText ? e('p', { className: 'text-sm text-gray-400 mt-1.5' }, helperText) : null)
             );
         }
 
         function SectionHeading({ children }) {
-            return e('h3', { className: 'text-xs font-bold uppercase tracking-wide text-wcg-blue mt-2 mb-3 pb-1 border-b border-gray-100' }, children);
+            return e('h3', { className: 'text-sm font-bold uppercase tracking-wide text-wcg-brightblue mt-3 mb-4 pb-1.5 border-b-2 border-gray-100' }, children);
         }
 
         // Generic type-to-search select, used for the School field (which
         // can have hundreds of entries once the district is chosen).
-        function SearchableSelect({ label, options, loading, error, value, onChange, required = false, placeholder = 'Start typing to search…', disabledMessage = 'No options available' }) {
+        function SearchableSelect({ label, options, loading, error, value, onChange, required = false, placeholder = 'Start typing to search…', disabledMessage = 'No options available', validationError }) {
             const [query, setQuery] = useState('');
             const [open, setOpen] = useState(false);
             const wrapperRef = useRef(null);
@@ -252,14 +300,15 @@
             }, []);
 
             const filtered = useMemo(() => {
-                if (!query) return options.slice(0, 50);
-                return options.filter(o => o.toLowerCase().includes(query.toLowerCase())).slice(0, 50);
+                if (!query) return options.slice(0, 100);
+                return options.filter(o => o.toLowerCase().includes(query.toLowerCase())).slice(0, 100);
             }, [options, query]);
 
             const disabled = loading || !!error || options.length === 0;
+            const hasValidationError = !!validationError;
 
-            return e('div', { className: 'mb-4 relative', ref: wrapperRef },
-                e('label', { className: 'block text-sm font-semibold text-gray-700 mb-1' }, label, required ? e('span', { className: 'text-wcg-red' }, ' *') : null),
+            return e('div', { className: 'mb-5 relative', ref: wrapperRef },
+                e('label', { className: 'block text-base font-semibold text-gray-700 mb-1.5' }, label, required ? e('span', { className: 'text-wcg-red' }, ' *') : null),
                 e('input', {
                     type: 'text',
                     value: open ? query : (value || ''),
@@ -267,16 +316,17 @@
                     disabled,
                     onFocus: () => { setQuery(''); setOpen(true); },
                     onChange: (ev) => setQuery(ev.target.value),
-                    className: 'w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-wcg-blue focus:outline-none text-sm disabled:bg-gray-100'
+                    className: `w-full px-4 py-3.5 rounded-xl border-2 focus:outline-none text-base disabled:bg-gray-100 transition-colors ${hasValidationError ? 'border-wcg-red focus:border-wcg-red' : 'border-gray-200 focus:border-wcg-brightblue'}`
                 }),
-                error ? e('p', { className: 'text-xs text-wcg-red mt-1' }, error) : null,
+                error ? e('p', { className: 'text-sm text-wcg-red mt-1.5' }, error)
+                    : (hasValidationError ? e('p', { className: 'text-sm text-wcg-red mt-1.5 font-medium' }, validationError) : null),
                 open && !disabled ? e('div', { className: 'absolute z-10 mt-1 w-full max-h-56 overflow-y-auto bg-white border-2 border-gray-200 rounded-xl shadow-lg' },
                     filtered.length === 0
-                        ? e('div', { className: 'px-4 py-3 text-sm text-gray-400' }, 'No matching options')
+                        ? e('div', { className: 'px-4 py-3 text-base text-gray-400' }, 'No matching options')
                         : filtered.map((o, idx) => e('button', {
                             key: idx, type: 'button',
                             onClick: () => { onChange(o); setOpen(false); },
-                            className: 'block w-full text-left px-4 py-2.5 text-sm hover:bg-blue-50 border-b border-gray-100 last:border-b-0'
+                            className: 'block w-full text-left px-4 py-2.5 text-base hover:bg-blue-50 border-b border-gray-100 last:border-b-0'
                         }, o))
                 ) : null
             );
@@ -285,13 +335,13 @@
         // Required consent + acknowledgement, shown whenever a Session ID
         // Key is being captured — this is not part of the stored profile.
         function AcknowledgementConsent({ checked, onChange }) {
-            return e('div', { className: 'border-2 border-gray-200 rounded-xl p-4 mb-4 bg-gray-50' },
+            return e('div', { className: 'border-2 border-gray-200 rounded-xl p-4 mb-5 bg-gray-50' },
                 e('label', { className: 'flex items-start gap-3 cursor-pointer' },
                     e('input', {
                         type: 'checkbox', checked, onChange: (ev) => onChange(ev.target.checked),
-                        className: 'mt-1 h-4 w-4', required: true
+                        className: 'mt-1 h-5 w-5 accent-wcg-brightblue', required: true
                     }),
-                    e('div', { className: 'text-xs text-gray-600 space-y-1.5' },
+                    e('div', { className: 'text-sm text-gray-600 space-y-1.5' },
                         e('p', null, 'I acknowledge that I am present at the session I complete this form for.'),
                         e('p', null, 'I willingly participate in the training provided by WCED eLearning and give consent for information provided to be used according to the POPIA Disclaimer on this page. I confirm that my information is accurate.')
                     )
@@ -303,7 +353,7 @@
         // notice remains visible on the form at all times.
         function PopiaFooter() {
             return e('div', { className: 'max-w-lg w-full mx-auto mt-6 px-2 text-center' },
-                e('p', { className: 'text-[11px] leading-relaxed text-gray-400' },
+                e('p', { className: 'text-xs leading-relaxed text-gray-400' },
                     'POPIA Disclaimer: Training provided by WCED eLearning Directorate collects and processes personal and special information as stipulated in the Protection of Personal Information Notice available ',
                     e('a', { href: POPIA_URL, target: '_blank', rel: 'noopener noreferrer', className: 'underline hover:text-gray-600' }, 'here'),
                     '.'
@@ -311,12 +361,19 @@
             );
         }
 
+        // Small colour accent strip used at the top of each card.
+        function TopAccent() {
+            return e('div', { className: 'h-1.5 rounded-full wcg-top-accent mb-5 -mt-1' });
+        }
+
         // ============================================================
         // The full set of profile fields, shared by:
         //  - the device profile setup / edit form
         //  - the shared-device (no saved profile) capture form
         // ============================================================
-        function ProfileFieldsForm({ fields, updateField, schools, schoolsLoading, schoolsError, districtOptions }) {
+        function ProfileFieldsForm({ fields, updateField, schools, schoolsLoading, schoolsError, districtOptions, errors }) {
+            const fieldErrors = errors || {};
+
             const schoolOptions = useMemo(() => {
                 if (!fields.district) return [];
                 if (fields.district === 'Head Office' || fields.district === 'Not Applicable') {
@@ -330,43 +387,52 @@
                 return ['District Officials', ...inDistrict, 'School not in list'];
             }, [fields.district, schools]);
 
+            const handlePersalChange = (v) => updateField('persal', v.replace(/\D/g, '').slice(0, 8));
+
             return e(React.Fragment, null,
                 e(SectionHeading, null, 'Personal details'),
                 e('div', { className: 'grid grid-cols-1 sm:grid-cols-2 gap-x-4' },
-                    e(TextField, { label: 'Surname', value: fields.surname, onChange: v => updateField('surname', v), required: true, placeholder: 'e.g. ADAMS' }),
-                    e(TextField, { label: 'First Name', value: fields.firstName, onChange: v => updateField('firstName', v), required: true, placeholder: 'e.g. JANE' })
+                    e(TextField, { label: 'Surname', value: fields.surname, onChange: v => updateField('surname', v), required: true, placeholder: 'e.g. ADAMS', error: fieldErrors.surname }),
+                    e(TextField, { label: 'First Name', value: fields.firstName, onChange: v => updateField('firstName', v), required: true, placeholder: 'e.g. JANE', error: fieldErrors.firstName })
                 ),
-                e(TextField, { label: 'Email Address', value: fields.email, onChange: v => updateField('email', v), type: 'email', required: true, placeholder: 'name@example.com' }),
-                e(SelectField, { label: 'Race (HR requirement)', value: fields.race, onChange: v => updateField('race', v), options: RACE_OPTIONS, required: true }),
-                fields.race === 'Other' ? e(TextField, { label: 'Please specify race', value: fields.raceOther, onChange: v => updateField('raceOther', v), required: true }) : null,
+                e(TextField, { label: 'Email Address', value: fields.email, onChange: v => updateField('email', v), type: 'email', required: true, placeholder: 'name@example.com', error: fieldErrors.email }),
+                e(SelectField, { label: 'Race (HR requirement)', value: fields.race, onChange: v => updateField('race', v), options: RACE_OPTIONS, required: true, error: fieldErrors.race }),
+                fields.race === 'Other' ? e(TextField, { label: 'Please specify race', value: fields.raceOther, onChange: v => updateField('raceOther', v), required: true, error: fieldErrors.raceOther }) : null,
                 e('div', { className: 'grid grid-cols-1 sm:grid-cols-2 gap-x-4' },
-                    e(SelectField, { label: 'Gender (HR requirement)', value: fields.gender, onChange: v => updateField('gender', v), options: GENDER_OPTIONS, required: true }),
-                    e(SelectField, { label: 'Disability (HR requirement)', value: fields.disability, onChange: v => updateField('disability', v), options: DISABILITY_OPTIONS, required: true })
+                    e(SelectField, { label: 'Gender (HR requirement)', value: fields.gender, onChange: v => updateField('gender', v), options: GENDER_OPTIONS, required: true, error: fieldErrors.gender }),
+                    e(SelectField, { label: 'Disability (HR requirement)', value: fields.disability, onChange: v => updateField('disability', v), options: DISABILITY_OPTIONS, required: true, error: fieldErrors.disability })
                 ),
 
                 e(SectionHeading, null, 'Employment details'),
                 e(SelectField, {
                     label: 'District', value: fields.district, onChange: v => updateField('district', v),
                     options: districtOptions, required: true,
-                    placeholder: schoolsLoading ? 'Loading districts…' : 'Select district…'
+                    placeholder: schoolsLoading ? 'Loading districts…' : 'Select district…',
+                    error: fieldErrors.district
                 }),
                 e(SearchableSelect, {
                     label: 'School', options: schoolOptions, loading: schoolsLoading, error: schoolsError,
                     value: fields.school, onChange: v => updateField('school', v), required: true,
-                    disabledMessage: fields.district ? 'No schools found for this district' : 'Select a district first'
+                    disabledMessage: fields.district ? 'No schools found for this district' : 'Select a district first',
+                    validationError: fieldErrors.school
                 }),
-                e(SelectField, { label: 'Office / School based', value: fields.officeType, onChange: v => updateField('officeType', v), options: OFFICE_TYPE_OPTIONS, required: true }),
-                e(SelectField, { label: 'Designation', value: fields.designation, onChange: v => updateField('designation', v), options: DESIGNATION_OPTIONS, required: true }),
-                e(SelectField, { label: 'Education / Public', value: fields.sector, onChange: v => updateField('sector', v), options: SECTOR_OPTIONS, required: true }),
+                e(SelectField, { label: 'Office / School based', value: fields.officeType, onChange: v => updateField('officeType', v), options: OFFICE_TYPE_OPTIONS, required: true, error: fieldErrors.officeType }),
+                e(SelectField, { label: 'Designation', value: fields.designation, onChange: v => updateField('designation', v), options: DESIGNATION_OPTIONS, required: true, error: fieldErrors.designation }),
+                e(SelectField, { label: 'Education / Public', value: fields.sector, onChange: v => updateField('sector', v), options: SECTOR_OPTIONS, required: true, error: fieldErrors.sector }),
 
                 e(SectionHeading, null, 'Identification'),
                 e(TextField, { label: 'SACE Number', value: fields.sace, onChange: v => updateField('sace', v), placeholder: 'Optional, but recommended' }),
-                e(TextField, { label: 'PERSAL Number', value: fields.persal, onChange: v => updateField('persal', v), placeholder: 'If you have one, please provide it' }),
+                e(TextField, {
+                    label: 'PERSAL Number', value: fields.persal, onChange: handlePersalChange,
+                    placeholder: '8 digit number', inputMode: 'numeric', maxLength: 8,
+                    error: fieldErrors.persal, helperText: fieldErrors.persal ? undefined : 'If you have one, please provide it — 8 digits, numbers only'
+                }),
                 e(TextField, {
                     label: 'ID / Passport Number', value: fields.idNumber, onChange: v => updateField('idNumber', v),
-                    required: !fields.persal.trim(), placeholder: 'Required if you do not have a PERSAL number'
+                    required: !fields.persal.trim(), placeholder: 'Required if you do not have a PERSAL number',
+                    error: fieldErrors.idNumber
                 }),
-                e('p', { className: 'text-xs text-gray-400 -mt-2 mb-4' }, 'Attendance records are grouped by PERSAL number first, and by ID/Passport number where no PERSAL number is provided.')
+                e('p', { className: 'text-sm text-gray-400 -mt-3 mb-4' }, 'Attendance records are grouped by PERSAL number first, and by ID/Passport number where no PERSAL number is provided.')
             );
         }
 
@@ -375,22 +441,33 @@
         // ============================================================
         function ProfileForm({ schools, schoolsLoading, schoolsError, districtOptions, initial, onSave, onCancel }) {
             const [fields, setFields] = useState(() => fieldsFromProfile(initial));
+            const [attempted, setAttempted] = useState(false);
             const updateField = (key, value) => setFields(prev => ({ ...prev, [key]: value, ...(key === 'district' ? { school: '' } : {}) }));
-            const canSave = isProfileComplete(fields);
+            const errors = getFieldErrors(fields);
+            const canSave = Object.keys(errors).length === 0;
 
-            return e('div', { className: 'bg-white rounded-2xl shadow-lg p-6 sm:p-8 max-w-lg w-full animate-fade-in-up' },
-                e('h2', { className: 'text-xl font-bold text-wcg-dark mb-1' }, initial ? 'View / Edit Profile' : 'Set Up Your Profile'),
-                e('p', { className: 'text-sm text-gray-500 mb-6' }, "These details are stored on this device only, so you don't need to retype them every session."),
-                e(ProfileFieldsForm, { fields, updateField, schools, schoolsLoading, schoolsError, districtOptions }),
+            const handleSaveClick = () => {
+                if (canSave) {
+                    onSave(buildProfileRecord(fields, initial?.id));
+                } else {
+                    setAttempted(true);
+                }
+            };
+
+            return e('div', { className: 'bg-white rounded-2xl shadow-lg p-7 sm:p-9 max-w-lg w-full animate-fade-in-up' },
+                e(TopAccent),
+                e('h2', { className: 'text-2xl font-bold text-wcg-dark mb-1' }, initial ? 'View / Edit Profile' : 'Set Up Your Profile'),
+                e('p', { className: 'text-base text-gray-500 mb-6' }, "These details are stored on this device only, so you don't need to retype them every session."),
+                e(ProfileFieldsForm, { fields, updateField, schools, schoolsLoading, schoolsError, districtOptions, errors: attempted ? errors : {} }),
+                attempted && !canSave ? e('p', { className: 'text-sm text-wcg-red font-medium mb-4' }, 'Please complete the highlighted fields before saving.') : null,
                 e('div', { className: 'flex gap-3 mt-6' },
                     onCancel ? e('button', {
                         onClick: onCancel,
-                        className: 'flex-1 px-4 py-3 rounded-xl font-semibold text-sm border-2 border-gray-200 text-gray-600 hover:border-gray-300 transition-colors'
+                        className: 'flex-1 px-4 py-3.5 rounded-xl font-semibold text-base border-2 border-gray-200 text-gray-600 hover:border-gray-300 transition-colors'
                     }, 'Cancel') : null,
                     e('button', {
-                        disabled: !canSave,
-                        onClick: () => onSave(buildProfileRecord(fields, initial?.id)),
-                        className: `flex-1 px-4 py-3 rounded-xl font-semibold text-sm text-white transition-colors shadow ${canSave ? 'bg-wcg-blue hover:bg-blue-800' : 'bg-gray-300 cursor-not-allowed'}`
+                        onClick: handleSaveClick,
+                        className: `flex-1 px-4 py-3.5 rounded-xl font-semibold text-base text-white transition-colors shadow ${canSave ? 'bg-wcg-brightblue hover:bg-wcg-blue' : 'bg-gray-300 hover:bg-gray-400'}`
                     }, 'Save Profile')
                 )
             );
@@ -400,32 +477,33 @@
         // Profile switcher — pick between saved profiles, or add new
         // ============================================================
         function ProfileSwitcher({ profiles, onSelect, onAddNew, onDelete, onCancel }) {
-            return e('div', { className: 'bg-white rounded-2xl shadow-lg p-6 sm:p-8 max-w-md w-full animate-fade-in-up' },
-                e('h2', { className: 'text-xl font-bold text-wcg-dark mb-1' }, 'Switch Profile'),
-                e('p', { className: 'text-sm text-gray-500 mb-6' }, 'Select a saved profile for this device, or add a new one.'),
+            return e('div', { className: 'bg-white rounded-2xl shadow-lg p-7 sm:p-9 max-w-md w-full animate-fade-in-up' },
+                e(TopAccent),
+                e('h2', { className: 'text-2xl font-bold text-wcg-dark mb-1' }, 'Switch Profile'),
+                e('p', { className: 'text-base text-gray-500 mb-6' }, 'Select a saved profile for this device, or add a new one.'),
                 e('div', { className: 'space-y-2 mb-4' },
                     profiles.map(p => e('div', {
                         key: p.id,
-                        className: 'flex items-center gap-3 border-2 border-gray-200 rounded-xl px-4 py-3 hover:border-wcg-blue transition-colors'
+                        className: 'flex items-center gap-3 border-2 border-gray-200 rounded-xl px-4 py-3.5 hover:border-wcg-brightblue transition-colors'
                     },
                         e('button', { onClick: () => onSelect(p.id), className: 'flex-1 text-left' },
-                            e('div', { className: 'font-semibold text-sm text-wcg-dark' }, fullNameOf(p)),
-                            e('div', { className: 'text-xs text-gray-500' }, `${p.persal ? 'PERSAL ' + p.persal : 'ID ' + p.idNumber} · ${p.school}`)
+                            e('div', { className: 'font-semibold text-base text-wcg-dark' }, fullNameOf(p)),
+                            e('div', { className: 'text-sm text-gray-500' }, `${p.persal ? 'PERSAL ' + p.persal : 'ID ' + p.idNumber} · ${p.school}`)
                         ),
                         e('button', {
                             onClick: () => onDelete(p.id),
                             title: 'Remove this profile from the device',
-                            className: 'text-gray-400 hover:text-wcg-red text-xs font-semibold px-2 py-1'
+                            className: 'text-gray-400 hover:text-wcg-red text-sm font-semibold px-2 py-1'
                         }, 'Remove')
                     ))
                 ),
                 e('button', {
                     onClick: onAddNew,
-                    className: 'w-full px-4 py-3 rounded-xl font-semibold text-sm border-2 border-dashed border-gray-300 text-gray-500 hover:border-wcg-blue hover:text-wcg-blue transition-colors mb-3'
+                    className: 'w-full px-4 py-3.5 rounded-xl font-semibold text-base border-2 border-dashed border-gray-300 text-gray-500 hover:border-wcg-brightblue hover:text-wcg-brightblue transition-colors mb-3'
                 }, '+ Add New Profile'),
                 onCancel ? e('button', {
                     onClick: onCancel,
-                    className: 'w-full px-4 py-2 text-xs text-gray-400 hover:text-gray-600'
+                    className: 'w-full px-4 py-2 text-sm text-gray-400 hover:text-gray-600'
                 }, 'Cancel') : null
             );
         }
@@ -450,24 +528,25 @@
                 setSubmitted(true);
             };
 
-            return e('div', { className: 'bg-white rounded-2xl shadow-lg p-6 sm:p-8 max-w-md w-full animate-fade-in-up' },
+            return e('div', { className: 'bg-white rounded-2xl shadow-lg p-7 sm:p-9 max-w-md w-full animate-fade-in-up' },
+                e(TopAccent),
                 e('div', { className: 'text-center mb-6' },
-                    e('div', { className: 'w-14 h-14 rounded-full bg-wcg-blue text-white flex items-center justify-center text-2xl font-bold mx-auto mb-3' },
+                    e('div', { className: 'w-16 h-16 rounded-full bg-wcg-brightblue text-white flex items-center justify-center text-3xl font-bold mx-auto mb-3' },
                         (fullName || '?').charAt(0)
                     ),
-                    e('h2', { className: 'text-xl font-bold text-wcg-dark' }, `Welcome back, ${fullName}`),
-                    e('p', { className: 'text-sm text-gray-500 mt-1' }, `${idLine} · ${profile.school}`),
+                    e('h2', { className: 'text-2xl font-bold text-wcg-dark' }, `Welcome back, ${fullName}`),
+                    e('p', { className: 'text-base text-gray-500 mt-1' }, `${idLine} · ${profile.school}`),
                     e('div', { className: 'flex items-center justify-center gap-4 mt-3' },
-                        e('button', { onClick: onEditProfile, className: 'text-xs font-semibold text-wcg-blue hover:underline' }, 'View / edit profile'),
-                        e('button', { onClick: onLogout, className: 'text-xs font-semibold text-gray-400 hover:underline' }, 'Log out')
+                        e('button', { onClick: onEditProfile, className: 'text-sm font-semibold text-wcg-brightblue hover:underline' }, 'View / edit profile'),
+                        e('button', { onClick: onLogout, className: 'text-sm font-semibold text-gray-400 hover:underline' }, 'Log out')
                     )
                 ),
                 submitted
                     ? e('div', { className: 'text-center bg-green-50 border-2 border-green-200 rounded-xl p-5' },
-                        e('p', { className: 'text-sm font-semibold text-green-800' }, 'Attendance captured (prototype only — not yet saved anywhere).'),
+                        e('p', { className: 'text-base font-semibold text-green-800' }, 'Attendance captured (prototype only — not yet saved anywhere).'),
                         e('button', {
                             onClick: () => { setSubmitted(false); setSessionKey(''); setAcknowledged(false); },
-                            className: 'text-xs font-semibold text-wcg-blue hover:underline mt-3'
+                            className: 'text-sm font-semibold text-wcg-brightblue hover:underline mt-3'
                         }, 'Capture another session')
                     )
                     : e(React.Fragment, null,
@@ -479,7 +558,7 @@
                         e('button', {
                             disabled: !canSubmit,
                             onClick: handleSubmit,
-                            className: `w-full px-4 py-3 rounded-xl font-bold text-sm text-white transition-colors shadow ${canSubmit ? 'bg-wcg-green hover:bg-green-700' : 'bg-gray-300 cursor-not-allowed'}`
+                            className: `w-full px-4 py-3.5 rounded-xl font-bold text-base text-white transition-colors shadow ${canSubmit ? 'bg-wcg-green hover:brightness-95' : 'bg-gray-300 cursor-not-allowed'}`
                         }, 'Capture Attendance')
                     )
             );
@@ -491,36 +570,43 @@
         // ============================================================
         function SharedDeviceCapture({ schools, schoolsLoading, schoolsError, districtOptions, onBack }) {
             const [fields, setFields] = useState(() => emptyFields());
+            const [attempted, setAttempted] = useState(false);
             const updateField = (key, value) => setFields(prev => ({ ...prev, [key]: value, ...(key === 'district' ? { school: '' } : {}) }));
             const [sessionKey, setSessionKey] = useState('');
             const [acknowledged, setAcknowledged] = useState(false);
             const [submitted, setSubmitted] = useState(false);
 
-            const canSubmit = isProfileComplete(fields) && sessionKey.trim() && acknowledged;
+            const errors = getFieldErrors(fields);
+            const profileOk = Object.keys(errors).length === 0;
+            const canSubmit = profileOk && sessionKey.trim() && acknowledged;
 
             if (submitted) {
                 return e('div', { className: 'text-center bg-green-50 border-2 border-green-200 rounded-xl p-5' },
-                    e('p', { className: 'text-sm font-semibold text-green-800' }, 'Attendance captured (prototype only — not yet saved anywhere).'),
-                    e('button', { onClick: onBack, className: 'text-xs font-semibold text-wcg-blue hover:underline mt-3' }, 'Done')
+                    e('p', { className: 'text-base font-semibold text-green-800' }, 'Attendance captured (prototype only — not yet saved anywhere).'),
+                    e('button', { onClick: onBack, className: 'text-sm font-semibold text-wcg-brightblue hover:underline mt-3' }, 'Done')
                 );
             }
 
+            const handleSubmitClick = () => {
+                if (!profileOk) { setAttempted(true); return; }
+                if (!sessionKey.trim() || !acknowledged) { setAttempted(true); return; }
+                console.log('Would submit attendance (shared device):', { ...buildProfileRecord(fields), sessionKey, acknowledged });
+                setSubmitted(true);
+            };
+
             return e(React.Fragment, null,
-                e(ProfileFieldsForm, { fields, updateField, schools, schoolsLoading, schoolsError, districtOptions }),
-                e(TextField, { label: 'Session ID Key', value: sessionKey, onChange: setSessionKey, placeholder: 'e.g. DTE-0472', required: true }),
+                e(ProfileFieldsForm, { fields, updateField, schools, schoolsLoading, schoolsError, districtOptions, errors: attempted ? errors : {} }),
+                e(TextField, { label: 'Session ID Key', value: sessionKey, onChange: setSessionKey, placeholder: 'e.g. DTE-0472', required: true, error: attempted && !sessionKey.trim() ? 'Session ID Key is required' : null }),
                 e(AcknowledgementConsent, { checked: acknowledged, onChange: setAcknowledged }),
+                attempted && !canSubmit ? e('p', { className: 'text-sm text-wcg-red font-medium mb-4' }, 'Please complete the highlighted fields before capturing attendance.') : null,
                 e('div', { className: 'flex gap-3 mt-2' },
                     e('button', {
                         onClick: onBack,
-                        className: 'flex-1 px-4 py-3 rounded-xl font-semibold text-sm border-2 border-gray-200 text-gray-600 hover:border-gray-300 transition-colors'
+                        className: 'flex-1 px-4 py-3.5 rounded-xl font-semibold text-base border-2 border-gray-200 text-gray-600 hover:border-gray-300 transition-colors'
                     }, 'Back'),
                     e('button', {
-                        disabled: !canSubmit,
-                        onClick: () => {
-                            console.log('Would submit attendance (shared device):', { ...buildProfileRecord(fields), sessionKey, acknowledged });
-                            setSubmitted(true);
-                        },
-                        className: `flex-1 px-4 py-3 rounded-xl font-bold text-sm text-white transition-colors shadow ${canSubmit ? 'bg-wcg-green hover:bg-green-700' : 'bg-gray-300 cursor-not-allowed'}`
+                        onClick: handleSubmitClick,
+                        className: `flex-1 px-4 py-3.5 rounded-xl font-bold text-base text-white transition-colors shadow ${canSubmit ? 'bg-wcg-green hover:brightness-95' : 'bg-gray-300 hover:bg-gray-400'}`
                     }, 'Capture Attendance')
                 )
             );
@@ -545,14 +631,11 @@
                     setSchoolsLoading(true);
                     setSchoolsError(null);
                     try {
-                        const { data, error } = await supabaseClient
-                            .from(SCHOOLS_TABLE_NAME)
-                            .select(`${SCHOOL_NAME_COLUMN}, ${DISTRICT_COLUMN}`);
-                        if (error) throw error;
-                        const rows = (data || [])
+                        const rows = await fetchAllRows(SCHOOLS_TABLE_NAME, `${SCHOOL_NAME_COLUMN}, ${DISTRICT_COLUMN}`);
+                        const cleaned = rows
                             .map(row => ({ name: row[SCHOOL_NAME_COLUMN], district: row[DISTRICT_COLUMN] }))
                             .filter(row => !!row.name);
-                        setSchools(rows);
+                        setSchools(cleaned);
                     } catch (err) {
                         console.error('Error fetching schools from Supabase:', err);
                         setSchoolsError('Could not load the school list. You can still complete this once the connection is set up.');
@@ -628,32 +711,34 @@
             };
 
             return e('div', { className: 'min-h-screen flex flex-col' },
-                e('header', { className: 'bg-white shadow-sm' },
+                e('header', { className: 'bg-white shadow-sm border-b-4 border-wcg-brightblue' },
                     e('div', { className: 'max-w-5xl mx-auto px-4 sm:px-6 py-4 flex items-center gap-3' },
                         e('img', { src: 'header.png', alt: 'WCED Header', className: 'h-10 sm:h-12', onError: (ev) => { ev.target.style.display = 'none'; } }),
-                        e('span', { className: 'font-bold text-wcg-dark text-sm sm:text-base' }, 'In-Session Attendance')
+                        e('span', { className: 'font-bold text-wcg-dark text-base sm:text-lg' }, 'In-Session Attendance')
                     )
                 ),
                 e('div', { className: 'flex-1 flex flex-col items-center justify-center px-4 py-10' },
 
-                    screen === 'deviceCheck' ? e('div', { className: 'bg-white rounded-2xl shadow-lg p-6 sm:p-8 max-w-md w-full text-center animate-fade-in-up' },
-                        e('h2', { className: 'text-xl font-bold text-wcg-dark mb-2' }, 'Is this your device?'),
-                        e('p', { className: 'text-sm text-gray-500 mb-6' }, "So we know whether to remember your details for next time."),
+                    screen === 'deviceCheck' ? e('div', { className: 'bg-white rounded-2xl shadow-lg p-7 sm:p-9 max-w-md w-full text-center animate-fade-in-up' },
+                        e(TopAccent),
+                        e('h2', { className: 'text-2xl font-bold text-wcg-dark mb-2' }, 'Is this your device?'),
+                        e('p', { className: 'text-base text-gray-500 mb-6' }, "So we know whether to remember your details for next time."),
                         e('div', { className: 'grid grid-cols-1 sm:grid-cols-2 gap-3' },
                             e('button', {
                                 onClick: () => chooseDevice(true),
-                                className: 'px-4 py-4 rounded-xl font-bold text-sm bg-wcg-blue text-white hover:bg-blue-800 transition-colors shadow'
+                                className: 'px-4 py-4 rounded-xl font-bold text-base bg-wcg-brightblue text-white hover:bg-wcg-blue transition-colors shadow'
                             }, 'This is my device'),
                             e('button', {
                                 onClick: () => chooseDevice(false),
-                                className: 'px-4 py-4 rounded-xl font-bold text-sm border-2 border-gray-200 text-gray-700 hover:border-wcg-blue transition-colors'
+                                className: 'px-4 py-4 rounded-xl font-bold text-base border-2 border-gray-200 text-gray-700 hover:border-wcg-brightblue transition-colors'
                             }, 'Shared device')
                         )
                     ) : null,
 
-                    screen === 'sharedForm' ? e('div', { className: 'bg-white rounded-2xl shadow-lg p-6 sm:p-8 max-w-lg w-full animate-fade-in-up' },
-                        e('h2', { className: 'text-xl font-bold text-wcg-dark mb-1' }, 'Capture Attendance'),
-                        e('p', { className: 'text-sm text-gray-500 mb-6' }, "Shared device — please complete your details for this session."),
+                    screen === 'sharedForm' ? e('div', { className: 'bg-white rounded-2xl shadow-lg p-7 sm:p-9 max-w-lg w-full animate-fade-in-up' },
+                        e(TopAccent),
+                        e('h2', { className: 'text-2xl font-bold text-wcg-dark mb-1' }, 'Capture Attendance'),
+                        e('p', { className: 'text-base text-gray-500 mb-6' }, "Shared device — please complete your details for this session."),
                         e(SharedDeviceCapture, {
                             schools, schoolsLoading, schoolsError, districtOptions,
                             onBack: () => setScreen('deviceCheck')
