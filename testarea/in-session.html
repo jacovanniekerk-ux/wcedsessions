@@ -56,6 +56,40 @@
         // ------------------------------------------------------------
         const SCHOOLS_TABLE_NAME = 'schools';
         const SCHOOL_NAME_COLUMN = 'School_Name';
+        const DISTRICT_COLUMN = 'District';
+
+        // ============================================================
+        // Static field option lists (HR / POPIA requirements)
+        // ============================================================
+        const RACE_OPTIONS = ['African', 'Coloured', 'Indian', 'White', 'Other'];
+        const GENDER_OPTIONS = ['Male', 'Female'];
+        const DISABILITY_OPTIONS = ['Yes', 'No'];
+        const OFFICE_TYPE_OPTIONS = ['School-based', 'Office-based', 'Other'];
+        // NOTE: the brief listed this field as "Education / Public" with no
+        // option wording given. Implemented as a sector choice between
+        // Education Department staff and (other) Public Service staff —
+        // adjust the labels below if a different meaning was intended.
+        const SECTOR_OPTIONS = ['Education', 'Public'];
+        const DESIGNATION_OPTIONS = [
+            'Teacher',
+            'Senior Education Specialist (SES)',
+            'Assistant Director (ASD)',
+            'Departmental Head',
+            'Principal',
+            'Deputy Principal',
+            'None of the above',
+            'Admin Clerk',
+            'Teacher Assistant',
+            'Admin Officer',
+            'Deputy Chief Education Specialist (DCES)',
+            'Chief Education Specialist (CES)',
+            'Deputy Director (DD)',
+            'Social Worker',
+            'Director (DIR)'
+        ];
+        const STATIC_DISTRICT_OPTIONS = ['Head Office', 'Not Applicable'];
+        const NON_SCHOOL_OPTIONS = ['Not Applicable', 'School not in list'];
+        const POPIA_URL = 'https://qrgo.page.link/svhMU';
 
         // ============================================================
         // LOCAL "DEVICE PROFILE" STORAGE
@@ -92,21 +126,119 @@
             localStorage.setItem(ACTIVE_PROFILE_KEY, id);
         }
 
+        function clearActiveProfileId() {
+            localStorage.removeItem(ACTIVE_PROFILE_KEY);
+        }
+
+        // ============================================================
+        // Profile field helpers
+        // ============================================================
+        function emptyFields() {
+            return {
+                surname: '', firstName: '', email: '',
+                race: '', raceOther: '',
+                gender: '', disability: '',
+                district: '', school: '',
+                officeType: '', designation: '', sector: '',
+                sace: '', persal: '', idNumber: ''
+            };
+        }
+
+        function fieldsFromProfile(p) {
+            if (!p) return emptyFields();
+            return {
+                surname: p.surname || '', firstName: p.firstName || '', email: p.email || '',
+                race: p.race || '', raceOther: p.raceOther || '',
+                gender: p.gender || '', disability: p.disability || '',
+                district: p.district || '', school: p.school || '',
+                officeType: p.officeType || '', designation: p.designation || '', sector: p.sector || '',
+                sace: p.sace || '', persal: p.persal || '', idNumber: p.idNumber || ''
+            };
+        }
+
+        function isValidEmail(value) {
+            return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((value || '').trim());
+        }
+
+        function isProfileComplete(f) {
+            return !!(
+                f.surname.trim() &&
+                f.firstName.trim() &&
+                isValidEmail(f.email) &&
+                f.race && (f.race !== 'Other' || f.raceOther.trim()) &&
+                f.gender &&
+                f.disability &&
+                f.district &&
+                f.school &&
+                f.officeType &&
+                f.designation &&
+                f.sector &&
+                (f.persal.trim() || f.idNumber.trim())
+            );
+        }
+
+        function buildProfileRecord(f, existingId) {
+            return {
+                id: existingId || `p_${Date.now()}`,
+                surname: f.surname.trim().toUpperCase(),
+                firstName: f.firstName.trim().toUpperCase(),
+                email: f.email.trim(),
+                race: f.race,
+                raceOther: f.race === 'Other' ? f.raceOther.trim() : '',
+                gender: f.gender,
+                disability: f.disability,
+                district: f.district,
+                school: f.school,
+                officeType: f.officeType,
+                designation: f.designation,
+                sector: f.sector,
+                sace: f.sace.trim(),
+                persal: f.persal.trim(),
+                idNumber: f.idNumber.trim()
+            };
+        }
+
+        function fullNameOf(p) {
+            return `${p.firstName || ''} ${p.surname || ''}`.trim();
+        }
+
         // ============================================================
         // Small reusable bits
         // ============================================================
-        function TextField({ label, value, onChange, placeholder, type = 'text', required = false }) {
+        function TextField({ label, value, onChange, placeholder, type = 'text', required = false, helperText }) {
             return e('div', { className: 'mb-4' },
                 e('label', { className: 'block text-sm font-semibold text-gray-700 mb-1' }, label, required ? e('span', { className: 'text-wcg-red' }, ' *') : null),
                 e('input', {
                     type, value, placeholder,
                     onChange: (ev) => onChange(ev.target.value),
                     className: 'w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-wcg-blue focus:outline-none text-sm'
-                })
+                }),
+                helperText ? e('p', { className: 'text-xs text-gray-400 mt-1' }, helperText) : null
             );
         }
 
-        function SchoolSelect({ schools, loading, error, value, onChange }) {
+        function SelectField({ label, value, onChange, options, required = false, placeholder = 'Select…', disabled = false, helperText }) {
+            return e('div', { className: 'mb-4' },
+                e('label', { className: 'block text-sm font-semibold text-gray-700 mb-1' }, label, required ? e('span', { className: 'text-wcg-red' }, ' *') : null),
+                e('select', {
+                    value, disabled,
+                    onChange: (ev) => onChange(ev.target.value),
+                    className: 'w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-wcg-blue focus:outline-none text-sm bg-white disabled:bg-gray-100'
+                },
+                    e('option', { value: '' }, placeholder),
+                    options.map(opt => e('option', { key: opt, value: opt }, opt))
+                ),
+                helperText ? e('p', { className: 'text-xs text-gray-400 mt-1' }, helperText) : null
+            );
+        }
+
+        function SectionHeading({ children }) {
+            return e('h3', { className: 'text-xs font-bold uppercase tracking-wide text-wcg-blue mt-2 mb-3 pb-1 border-b border-gray-100' }, children);
+        }
+
+        // Generic type-to-search select, used for the School field (which
+        // can have hundreds of entries once the district is chosen).
+        function SearchableSelect({ label, options, loading, error, value, onChange, required = false, placeholder = 'Start typing to search…', disabledMessage = 'No options available' }) {
             const [query, setQuery] = useState('');
             const [open, setOpen] = useState(false);
             const wrapperRef = useRef(null);
@@ -120,50 +252,136 @@
             }, []);
 
             const filtered = useMemo(() => {
-                if (!query) return schools.slice(0, 50);
-                return schools.filter(s => s.toLowerCase().includes(query.toLowerCase())).slice(0, 50);
-            }, [schools, query]);
+                if (!query) return options.slice(0, 50);
+                return options.filter(o => o.toLowerCase().includes(query.toLowerCase())).slice(0, 50);
+            }, [options, query]);
+
+            const disabled = loading || !!error || options.length === 0;
 
             return e('div', { className: 'mb-4 relative', ref: wrapperRef },
-                e('label', { className: 'block text-sm font-semibold text-gray-700 mb-1' }, 'School', e('span', { className: 'text-wcg-red' }, ' *')),
+                e('label', { className: 'block text-sm font-semibold text-gray-700 mb-1' }, label, required ? e('span', { className: 'text-wcg-red' }, ' *') : null),
                 e('input', {
                     type: 'text',
                     value: open ? query : (value || ''),
-                    placeholder: loading ? 'Loading schools…' : 'Start typing to search…',
-                    disabled: loading || !!error,
+                    placeholder: loading ? 'Loading…' : (disabled ? disabledMessage : placeholder),
+                    disabled,
                     onFocus: () => { setQuery(''); setOpen(true); },
                     onChange: (ev) => setQuery(ev.target.value),
                     className: 'w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-wcg-blue focus:outline-none text-sm disabled:bg-gray-100'
                 }),
                 error ? e('p', { className: 'text-xs text-wcg-red mt-1' }, error) : null,
-                open && !loading && !error ? e('div', { className: 'absolute z-10 mt-1 w-full max-h-56 overflow-y-auto bg-white border-2 border-gray-200 rounded-xl shadow-lg' },
+                open && !disabled ? e('div', { className: 'absolute z-10 mt-1 w-full max-h-56 overflow-y-auto bg-white border-2 border-gray-200 rounded-xl shadow-lg' },
                     filtered.length === 0
-                        ? e('div', { className: 'px-4 py-3 text-sm text-gray-400' }, 'No matching schools')
-                        : filtered.map((s, idx) => e('button', {
+                        ? e('div', { className: 'px-4 py-3 text-sm text-gray-400' }, 'No matching options')
+                        : filtered.map((o, idx) => e('button', {
                             key: idx, type: 'button',
-                            onClick: () => { onChange(s); setOpen(false); },
+                            onClick: () => { onChange(o); setOpen(false); },
                             className: 'block w-full text-left px-4 py-2.5 text-sm hover:bg-blue-50 border-b border-gray-100 last:border-b-0'
-                        }, s))
+                        }, o))
                 ) : null
             );
         }
 
-        // ============================================================
-        // Profile setup / edit form (name, ID/PERSAL, school)
-        // ============================================================
-        function ProfileForm({ schools, schoolsLoading, schoolsError, initial, onSave, onCancel }) {
-            const [name, setName] = useState(initial?.name || '');
-            const [idNumber, setIdNumber] = useState(initial?.idNumber || '');
-            const [school, setSchool] = useState(initial?.school || '');
+        // Required consent + acknowledgement, shown whenever a Session ID
+        // Key is being captured — this is not part of the stored profile.
+        function AcknowledgementConsent({ checked, onChange }) {
+            return e('div', { className: 'border-2 border-gray-200 rounded-xl p-4 mb-4 bg-gray-50' },
+                e('label', { className: 'flex items-start gap-3 cursor-pointer' },
+                    e('input', {
+                        type: 'checkbox', checked, onChange: (ev) => onChange(ev.target.checked),
+                        className: 'mt-1 h-4 w-4', required: true
+                    }),
+                    e('div', { className: 'text-xs text-gray-600 space-y-1.5' },
+                        e('p', null, 'I acknowledge that I am present at the session I complete this form for.'),
+                        e('p', null, 'I willingly participate in the training provided by WCED eLearning and give consent for information provided to be used according to the POPIA Disclaimer on this page. I confirm that my information is accurate.')
+                    )
+                )
+            );
+        }
 
-            const canSave = name.trim() && idNumber.trim() && school.trim();
+        // Shown on every screen, per the POPIA requirement that this
+        // notice remains visible on the form at all times.
+        function PopiaFooter() {
+            return e('div', { className: 'max-w-lg w-full mx-auto mt-6 px-2 text-center' },
+                e('p', { className: 'text-[11px] leading-relaxed text-gray-400' },
+                    'POPIA Disclaimer: Training provided by WCED eLearning Directorate collects and processes personal and special information as stipulated in the Protection of Personal Information Notice available ',
+                    e('a', { href: POPIA_URL, target: '_blank', rel: 'noopener noreferrer', className: 'underline hover:text-gray-600' }, 'here'),
+                    '.'
+                )
+            );
+        }
 
-            return e('div', { className: 'bg-white rounded-2xl shadow-lg p-6 sm:p-8 max-w-md w-full animate-fade-in-up' },
-                e('h2', { className: 'text-xl font-bold text-wcg-dark mb-1' }, initial ? 'Edit Profile' : 'Set Up Your Profile'),
-                e('p', { className: 'text-sm text-gray-500 mb-6' }, "We'll remember these details on this device so you don't have to retype them every session."),
-                e(TextField, { label: 'Full Name', value: name, onChange: setName, placeholder: 'e.g. Jane Adams', required: true }),
-                e(TextField, { label: 'ID / PERSAL Number', value: idNumber, onChange: setIdNumber, placeholder: 'e.g. 8501015800083', required: true }),
-                e(SchoolSelect, { schools, loading: schoolsLoading, error: schoolsError, value: school, onChange: setSchool }),
+        // ============================================================
+        // The full set of profile fields, shared by:
+        //  - the device profile setup / edit form
+        //  - the shared-device (no saved profile) capture form
+        // ============================================================
+        function ProfileFieldsForm({ fields, updateField, schools, schoolsLoading, schoolsError, districtOptions }) {
+            const schoolOptions = useMemo(() => {
+                if (!fields.district) return [];
+                if (fields.district === 'Head Office' || fields.district === 'Not Applicable') {
+                    return NON_SCHOOL_OPTIONS;
+                }
+                const inDistrict = schools
+                    .filter(s => s.district === fields.district)
+                    .map(s => s.name)
+                    .filter(Boolean)
+                    .sort((a, b) => a.localeCompare(b));
+                return ['District Officials', ...inDistrict, 'School not in list'];
+            }, [fields.district, schools]);
+
+            return e(React.Fragment, null,
+                e(SectionHeading, null, 'Personal details'),
+                e('div', { className: 'grid grid-cols-1 sm:grid-cols-2 gap-x-4' },
+                    e(TextField, { label: 'Surname', value: fields.surname, onChange: v => updateField('surname', v), required: true, placeholder: 'e.g. ADAMS' }),
+                    e(TextField, { label: 'First Name', value: fields.firstName, onChange: v => updateField('firstName', v), required: true, placeholder: 'e.g. JANE' })
+                ),
+                e(TextField, { label: 'Email Address', value: fields.email, onChange: v => updateField('email', v), type: 'email', required: true, placeholder: 'name@example.com' }),
+                e(SelectField, { label: 'Race (HR requirement)', value: fields.race, onChange: v => updateField('race', v), options: RACE_OPTIONS, required: true }),
+                fields.race === 'Other' ? e(TextField, { label: 'Please specify race', value: fields.raceOther, onChange: v => updateField('raceOther', v), required: true }) : null,
+                e('div', { className: 'grid grid-cols-1 sm:grid-cols-2 gap-x-4' },
+                    e(SelectField, { label: 'Gender (HR requirement)', value: fields.gender, onChange: v => updateField('gender', v), options: GENDER_OPTIONS, required: true }),
+                    e(SelectField, { label: 'Disability (HR requirement)', value: fields.disability, onChange: v => updateField('disability', v), options: DISABILITY_OPTIONS, required: true })
+                ),
+
+                e(SectionHeading, null, 'Employment details'),
+                e(SelectField, {
+                    label: 'District', value: fields.district, onChange: v => updateField('district', v),
+                    options: districtOptions, required: true,
+                    placeholder: schoolsLoading ? 'Loading districts…' : 'Select district…'
+                }),
+                e(SearchableSelect, {
+                    label: 'School', options: schoolOptions, loading: schoolsLoading, error: schoolsError,
+                    value: fields.school, onChange: v => updateField('school', v), required: true,
+                    disabledMessage: fields.district ? 'No schools found for this district' : 'Select a district first'
+                }),
+                e(SelectField, { label: 'Office / School based', value: fields.officeType, onChange: v => updateField('officeType', v), options: OFFICE_TYPE_OPTIONS, required: true }),
+                e(SelectField, { label: 'Designation', value: fields.designation, onChange: v => updateField('designation', v), options: DESIGNATION_OPTIONS, required: true }),
+                e(SelectField, { label: 'Education / Public', value: fields.sector, onChange: v => updateField('sector', v), options: SECTOR_OPTIONS, required: true }),
+
+                e(SectionHeading, null, 'Identification'),
+                e(TextField, { label: 'SACE Number', value: fields.sace, onChange: v => updateField('sace', v), placeholder: 'Optional, but recommended' }),
+                e(TextField, { label: 'PERSAL Number', value: fields.persal, onChange: v => updateField('persal', v), placeholder: 'If you have one, please provide it' }),
+                e(TextField, {
+                    label: 'ID / Passport Number', value: fields.idNumber, onChange: v => updateField('idNumber', v),
+                    required: !fields.persal.trim(), placeholder: 'Required if you do not have a PERSAL number'
+                }),
+                e('p', { className: 'text-xs text-gray-400 -mt-2 mb-4' }, 'Attendance records are grouped by PERSAL number first, and by ID/Passport number where no PERSAL number is provided.')
+            );
+        }
+
+        // ============================================================
+        // Profile setup / edit form (device profile)
+        // ============================================================
+        function ProfileForm({ schools, schoolsLoading, schoolsError, districtOptions, initial, onSave, onCancel }) {
+            const [fields, setFields] = useState(() => fieldsFromProfile(initial));
+            const updateField = (key, value) => setFields(prev => ({ ...prev, [key]: value, ...(key === 'district' ? { school: '' } : {}) }));
+            const canSave = isProfileComplete(fields);
+
+            return e('div', { className: 'bg-white rounded-2xl shadow-lg p-6 sm:p-8 max-w-lg w-full animate-fade-in-up' },
+                e('h2', { className: 'text-xl font-bold text-wcg-dark mb-1' }, initial ? 'View / Edit Profile' : 'Set Up Your Profile'),
+                e('p', { className: 'text-sm text-gray-500 mb-6' }, "These details are stored on this device only, so you don't need to retype them every session."),
+                e(ProfileFieldsForm, { fields, updateField, schools, schoolsLoading, schoolsError, districtOptions }),
                 e('div', { className: 'flex gap-3 mt-6' },
                     onCancel ? e('button', {
                         onClick: onCancel,
@@ -171,7 +389,7 @@
                     }, 'Cancel') : null,
                     e('button', {
                         disabled: !canSave,
-                        onClick: () => onSave({ id: initial?.id || `p_${Date.now()}`, name: name.trim(), idNumber: idNumber.trim(), school: school.trim() }),
+                        onClick: () => onSave(buildProfileRecord(fields, initial?.id)),
                         className: `flex-1 px-4 py-3 rounded-xl font-semibold text-sm text-white transition-colors shadow ${canSave ? 'bg-wcg-blue hover:bg-blue-800' : 'bg-gray-300 cursor-not-allowed'}`
                     }, 'Save Profile')
                 )
@@ -191,8 +409,8 @@
                         className: 'flex items-center gap-3 border-2 border-gray-200 rounded-xl px-4 py-3 hover:border-wcg-blue transition-colors'
                     },
                         e('button', { onClick: () => onSelect(p.id), className: 'flex-1 text-left' },
-                            e('div', { className: 'font-semibold text-sm text-wcg-dark' }, p.name),
-                            e('div', { className: 'text-xs text-gray-500' }, `${p.idNumber} · ${p.school}`)
+                            e('div', { className: 'font-semibold text-sm text-wcg-dark' }, fullNameOf(p)),
+                            e('div', { className: 'text-xs text-gray-500' }, `${p.persal ? 'PERSAL ' + p.persal : 'ID ' + p.idNumber} · ${p.school}`)
                         ),
                         e('button', {
                             onClick: () => onDelete(p.id),
@@ -215,37 +433,40 @@
         // ============================================================
         // Welcome screen — active profile + Session ID Key capture
         // ============================================================
-        function WelcomeScreen({ profile, onSwitchProfile }) {
+        function WelcomeScreen({ profile, onEditProfile, onLogout }) {
             const [sessionKey, setSessionKey] = useState('');
+            const [acknowledged, setAcknowledged] = useState(false);
             const [submitted, setSubmitted] = useState(false);
+            const fullName = fullNameOf(profile);
+            const idLine = profile.persal ? `PERSAL ${profile.persal}` : `ID ${profile.idNumber}`;
+            const canSubmit = sessionKey.trim() && acknowledged;
 
             const handleSubmit = () => {
                 // PROTOTYPE STUB — no write functionality yet.
                 // This is where the Session ID Key gets validated and
                 // the attendance record gets written (to Supabase,
                 // and from there synced to the Google Sheet).
-                console.log('Would submit attendance:', { profile, sessionKey });
+                console.log('Would submit attendance:', { profile, sessionKey, acknowledged });
                 setSubmitted(true);
             };
 
             return e('div', { className: 'bg-white rounded-2xl shadow-lg p-6 sm:p-8 max-w-md w-full animate-fade-in-up' },
                 e('div', { className: 'text-center mb-6' },
                     e('div', { className: 'w-14 h-14 rounded-full bg-wcg-blue text-white flex items-center justify-center text-2xl font-bold mx-auto mb-3' },
-                        (profile.name || '?').trim().charAt(0).toUpperCase()
+                        (fullName || '?').charAt(0)
                     ),
-                    e('h2', { className: 'text-xl font-bold text-wcg-dark' }, `Welcome back, ${profile.name}`),
-                    e('p', { className: 'text-sm text-gray-500 mt-1' }, `${profile.idNumber} · ${profile.school}`),
-                    e('button', {
-                        onClick: onSwitchProfile,
-                        className: 'text-xs font-semibold text-wcg-blue hover:underline mt-2'
-                    }, 'Not you? Switch profile')
+                    e('h2', { className: 'text-xl font-bold text-wcg-dark' }, `Welcome back, ${fullName}`),
+                    e('p', { className: 'text-sm text-gray-500 mt-1' }, `${idLine} · ${profile.school}`),
+                    e('div', { className: 'flex items-center justify-center gap-4 mt-3' },
+                        e('button', { onClick: onEditProfile, className: 'text-xs font-semibold text-wcg-blue hover:underline' }, 'View / edit profile'),
+                        e('button', { onClick: onLogout, className: 'text-xs font-semibold text-gray-400 hover:underline' }, 'Log out')
+                    )
                 ),
                 submitted
                     ? e('div', { className: 'text-center bg-green-50 border-2 border-green-200 rounded-xl p-5' },
-                        e('div', { className: 'text-3xl mb-2' }, '✅'),
                         e('p', { className: 'text-sm font-semibold text-green-800' }, 'Attendance captured (prototype only — not yet saved anywhere).'),
                         e('button', {
-                            onClick: () => { setSubmitted(false); setSessionKey(''); },
+                            onClick: () => { setSubmitted(false); setSessionKey(''); setAcknowledged(false); },
                             className: 'text-xs font-semibold text-wcg-blue hover:underline mt-3'
                         }, 'Capture another session')
                     )
@@ -254,12 +475,54 @@
                             label: 'Session ID Key', value: sessionKey, onChange: setSessionKey,
                             placeholder: 'e.g. DTE-0472', required: true
                         }),
+                        e(AcknowledgementConsent, { checked: acknowledged, onChange: setAcknowledged }),
                         e('button', {
-                            disabled: !sessionKey.trim(),
+                            disabled: !canSubmit,
                             onClick: handleSubmit,
-                            className: `w-full px-4 py-3 rounded-xl font-bold text-sm text-white transition-colors shadow ${sessionKey.trim() ? 'bg-wcg-green hover:bg-green-700' : 'bg-gray-300 cursor-not-allowed'}`
+                            className: `w-full px-4 py-3 rounded-xl font-bold text-sm text-white transition-colors shadow ${canSubmit ? 'bg-wcg-green hover:bg-green-700' : 'bg-gray-300 cursor-not-allowed'}`
                         }, 'Capture Attendance')
                     )
+            );
+        }
+
+        // ============================================================
+        // Shared-device capture — full profile fields collected fresh
+        // each time, never saved to this device, plus Session ID Key.
+        // ============================================================
+        function SharedDeviceCapture({ schools, schoolsLoading, schoolsError, districtOptions, onBack }) {
+            const [fields, setFields] = useState(() => emptyFields());
+            const updateField = (key, value) => setFields(prev => ({ ...prev, [key]: value, ...(key === 'district' ? { school: '' } : {}) }));
+            const [sessionKey, setSessionKey] = useState('');
+            const [acknowledged, setAcknowledged] = useState(false);
+            const [submitted, setSubmitted] = useState(false);
+
+            const canSubmit = isProfileComplete(fields) && sessionKey.trim() && acknowledged;
+
+            if (submitted) {
+                return e('div', { className: 'text-center bg-green-50 border-2 border-green-200 rounded-xl p-5' },
+                    e('p', { className: 'text-sm font-semibold text-green-800' }, 'Attendance captured (prototype only — not yet saved anywhere).'),
+                    e('button', { onClick: onBack, className: 'text-xs font-semibold text-wcg-blue hover:underline mt-3' }, 'Done')
+                );
+            }
+
+            return e(React.Fragment, null,
+                e(ProfileFieldsForm, { fields, updateField, schools, schoolsLoading, schoolsError, districtOptions }),
+                e(TextField, { label: 'Session ID Key', value: sessionKey, onChange: setSessionKey, placeholder: 'e.g. DTE-0472', required: true }),
+                e(AcknowledgementConsent, { checked: acknowledged, onChange: setAcknowledged }),
+                e('div', { className: 'flex gap-3 mt-2' },
+                    e('button', {
+                        onClick: onBack,
+                        className: 'flex-1 px-4 py-3 rounded-xl font-semibold text-sm border-2 border-gray-200 text-gray-600 hover:border-gray-300 transition-colors'
+                    }, 'Back'),
+                    e('button', {
+                        disabled: !canSubmit,
+                        onClick: () => {
+                            console.log('Would submit attendance (shared device):', { ...buildProfileRecord(fields), sessionKey, acknowledged });
+                            setSubmitted(true);
+                        },
+                        className: `flex-1 px-4 py-3 rounded-xl font-bold text-sm text-white transition-colors shadow ${canSubmit ? 'bg-wcg-green hover:bg-green-700' : 'bg-gray-300 cursor-not-allowed'}`
+                    }, 'Capture Attendance')
+                )
             );
         }
 
@@ -284,22 +547,27 @@
                     try {
                         const { data, error } = await supabaseClient
                             .from(SCHOOLS_TABLE_NAME)
-                            .select(SCHOOL_NAME_COLUMN);
+                            .select(`${SCHOOL_NAME_COLUMN}, ${DISTRICT_COLUMN}`);
                         if (error) throw error;
-                        const names = (data || [])
-                            .map(row => row[SCHOOL_NAME_COLUMN])
-                            .filter(Boolean)
-                            .sort((a, b) => a.localeCompare(b));
-                        setSchools(names);
+                        const rows = (data || [])
+                            .map(row => ({ name: row[SCHOOL_NAME_COLUMN], district: row[DISTRICT_COLUMN] }))
+                            .filter(row => !!row.name);
+                        setSchools(rows);
                     } catch (err) {
                         console.error('Error fetching schools from Supabase:', err);
-                        setSchoolsError('Could not load school list. You can still type your school below once this is connected.');
+                        setSchoolsError('Could not load the school list. You can still complete this once the connection is set up.');
                     } finally {
                         setSchoolsLoading(false);
                     }
                 }
                 fetchSchools();
             }, []);
+
+            const districtOptions = useMemo(() => {
+                const real = Array.from(new Set(schools.map(s => s.district).filter(Boolean)))
+                    .sort((a, b) => a.localeCompare(b));
+                return [...real, ...STATIC_DISTRICT_OPTIONS];
+            }, [schools]);
 
             const chooseDevice = (isOwn) => {
                 if (!isOwn) {
@@ -342,9 +610,21 @@
                 const current = loadProfiles().filter(p => p.id !== id);
                 saveProfiles(current);
                 setProfiles(current);
+                if (id === activeProfile?.id) setActiveProfileState(null);
                 if (current.length === 0) {
                     setScreen('profileSetup');
                 }
+            };
+
+            const handleEditProfile = () => {
+                setEditingExisting(true);
+                setScreen('profileSetup');
+            };
+
+            const handleLogout = () => {
+                clearActiveProfileId();
+                setActiveProfileState(null);
+                setScreen('profileSwitch');
             };
 
             return e('div', { className: 'min-h-screen flex flex-col' },
@@ -354,7 +634,7 @@
                         e('span', { className: 'font-bold text-wcg-dark text-sm sm:text-base' }, 'In-Session Attendance')
                     )
                 ),
-                e('div', { className: 'flex-1 flex items-center justify-center px-4 py-10' },
+                e('div', { className: 'flex-1 flex flex-col items-center justify-center px-4 py-10' },
 
                     screen === 'deviceCheck' ? e('div', { className: 'bg-white rounded-2xl shadow-lg p-6 sm:p-8 max-w-md w-full text-center animate-fade-in-up' },
                         e('h2', { className: 'text-xl font-bold text-wcg-dark mb-2' }, 'Is this your device?'),
@@ -363,25 +643,25 @@
                             e('button', {
                                 onClick: () => chooseDevice(true),
                                 className: 'px-4 py-4 rounded-xl font-bold text-sm bg-wcg-blue text-white hover:bg-blue-800 transition-colors shadow'
-                            }, '📱 This is my device'),
+                            }, 'This is my device'),
                             e('button', {
                                 onClick: () => chooseDevice(false),
                                 className: 'px-4 py-4 rounded-xl font-bold text-sm border-2 border-gray-200 text-gray-700 hover:border-wcg-blue transition-colors'
-                            }, '🖥️ Shared device')
+                            }, 'Shared device')
                         )
                     ) : null,
 
-                    screen === 'sharedForm' ? e('div', { className: 'bg-white rounded-2xl shadow-lg p-6 sm:p-8 max-w-md w-full animate-fade-in-up' },
+                    screen === 'sharedForm' ? e('div', { className: 'bg-white rounded-2xl shadow-lg p-6 sm:p-8 max-w-lg w-full animate-fade-in-up' },
                         e('h2', { className: 'text-xl font-bold text-wcg-dark mb-1' }, 'Capture Attendance'),
                         e('p', { className: 'text-sm text-gray-500 mb-6' }, "Shared device — please complete your details for this session."),
-                        e(ProfileFormFieldsInline, {
-                            schools, schoolsLoading, schoolsError,
+                        e(SharedDeviceCapture, {
+                            schools, schoolsLoading, schoolsError, districtOptions,
                             onBack: () => setScreen('deviceCheck')
                         })
                     ) : null,
 
                     screen === 'profileSetup' ? e(ProfileForm, {
-                        schools, schoolsLoading, schoolsError,
+                        schools, schoolsLoading, schoolsError, districtOptions,
                         initial: editingExisting ? activeProfile : null,
                         onSave: handleSaveProfile,
                         onCancel: profiles.length > 0 ? () => setScreen(activeProfile ? 'welcome' : 'profileSwitch') : null
@@ -397,51 +677,11 @@
 
                     screen === 'welcome' && activeProfile ? e(WelcomeScreen, {
                         profile: activeProfile,
-                        onSwitchProfile: () => setScreen('profileSwitch')
-                    }) : null
-                )
-            );
-        }
+                        onEditProfile: handleEditProfile,
+                        onLogout: handleLogout
+                    }) : null,
 
-        // A lightweight inline version of the profile fields for the
-        // "shared device" path — captures the same info but never
-        // saves it to this device, and also asks for the Session ID Key
-        // directly since there's no separate Welcome screen for this path.
-        function ProfileFormFieldsInline({ schools, schoolsLoading, schoolsError, onBack }) {
-            const [name, setName] = useState('');
-            const [idNumber, setIdNumber] = useState('');
-            const [school, setSchool] = useState('');
-            const [sessionKey, setSessionKey] = useState('');
-            const [submitted, setSubmitted] = useState(false);
-
-            const canSave = name.trim() && idNumber.trim() && school.trim() && sessionKey.trim();
-
-            if (submitted) {
-                return e('div', { className: 'text-center bg-green-50 border-2 border-green-200 rounded-xl p-5' },
-                    e('div', { className: 'text-3xl mb-2' }, '✅'),
-                    e('p', { className: 'text-sm font-semibold text-green-800' }, 'Attendance captured (prototype only — not yet saved anywhere).'),
-                    e('button', { onClick: onBack, className: 'text-xs font-semibold text-wcg-blue hover:underline mt-3' }, 'Done')
-                );
-            }
-
-            return e(React.Fragment, null,
-                e(TextField, { label: 'Full Name', value: name, onChange: setName, required: true }),
-                e(TextField, { label: 'ID / PERSAL Number', value: idNumber, onChange: setIdNumber, required: true }),
-                e(SchoolSelect, { schools, loading: schoolsLoading, error: schoolsError, value: school, onChange: setSchool }),
-                e(TextField, { label: 'Session ID Key', value: sessionKey, onChange: setSessionKey, placeholder: 'e.g. DTE-0472', required: true }),
-                e('div', { className: 'flex gap-3 mt-2' },
-                    e('button', {
-                        onClick: onBack,
-                        className: 'flex-1 px-4 py-3 rounded-xl font-semibold text-sm border-2 border-gray-200 text-gray-600 hover:border-gray-300 transition-colors'
-                    }, 'Back'),
-                    e('button', {
-                        disabled: !canSave,
-                        onClick: () => {
-                            console.log('Would submit attendance (shared device):', { name, idNumber, school, sessionKey });
-                            setSubmitted(true);
-                        },
-                        className: `flex-1 px-4 py-3 rounded-xl font-bold text-sm text-white transition-colors shadow ${canSave ? 'bg-wcg-green hover:bg-green-700' : 'bg-gray-300 cursor-not-allowed'}`
-                    }, 'Capture Attendance')
+                    e(PopiaFooter)
                 )
             );
         }
