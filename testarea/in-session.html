@@ -51,6 +51,62 @@
         const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
         // ------------------------------------------------------------
+        // GOOGLE SHEETS WRITE TARGET
+        // Paste the deployed Google Apps Script Web App URL here once
+        // it exists (Deploy > New deployment > Web app, "Execute as:
+        // Me", "Who has access: Anyone"). Until then this is a dead
+        // link and submitAttendanceRecord() below will fail — that's
+        // expected for now.
+        // ------------------------------------------------------------
+        const SHEET_WEB_APP_URL = 'PASTE_YOUR_APPS_SCRIPT_WEB_APP_URL_HERE';
+
+        // Builds the flat record that gets written to the sheet: every
+        // profile field, plus the Session ID Key and a capture timestamp.
+        // Column order on the sheet side should match this key order.
+        function buildAttendancePayload(profile, sessionKey) {
+            return {
+                timestamp: new Date().toISOString(),
+                sessionKey: sessionKey.trim(),
+                surname: profile.surname,
+                firstName: profile.firstName,
+                email: profile.email,
+                race: profile.race,
+                raceOther: profile.raceOther,
+                gender: profile.gender,
+                disability: profile.disability,
+                district: profile.district,
+                school: profile.school,
+                officeType: profile.officeType,
+                designation: profile.designation,
+                sector: profile.sector,
+                sace: profile.sace,
+                persal: profile.persal,
+                idNumber: profile.idNumber
+            };
+        }
+
+        // POSTs one attendance record to the Apps Script Web App, which
+        // will append it as a row on the Google Sheet.
+        //
+        // NOTE: Content-Type is deliberately 'text/plain'. Apps Script
+        // Web Apps don't handle CORS preflight (OPTIONS) requests, so a
+        // 'real' application/json request gets blocked by the browser
+        // before it's even sent. Sending text/plain avoids the preflight;
+        // the Apps Script side just needs to JSON.parse(e.postData.contents).
+        async function submitAttendanceRecord(profile, sessionKey) {
+            const payload = buildAttendancePayload(profile, sessionKey);
+            const response = await fetch(SHEET_WEB_APP_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify(payload)
+            });
+            if (!response.ok) {
+                throw new Error(`Sheet write failed with status ${response.status}`);
+            }
+            return payload;
+        }
+
+        // ------------------------------------------------------------
         // ADJUST THESE to match your actual Supabase schools table.
         // This is the only piece of real backend wiring in this
         // prototype — everything else (submitting attendance) is
@@ -515,17 +571,24 @@
             const [sessionKey, setSessionKey] = useState('');
             const [acknowledged, setAcknowledged] = useState(false);
             const [submitted, setSubmitted] = useState(false);
+            const [submitting, setSubmitting] = useState(false);
+            const [submitError, setSubmitError] = useState(null);
             const fullName = fullNameOf(profile);
             const idLine = profile.persal ? `PERSAL ${profile.persal}` : `ID ${profile.idNumber}`;
-            const canSubmit = sessionKey.trim() && acknowledged;
+            const canSubmit = sessionKey.trim() && acknowledged && !submitting;
 
-            const handleSubmit = () => {
-                // PROTOTYPE STUB — no write functionality yet.
-                // This is where the Session ID Key gets validated and
-                // the attendance record gets written (to Supabase,
-                // and from there synced to the Google Sheet).
-                console.log('Would submit attendance:', { profile, sessionKey, acknowledged });
-                setSubmitted(true);
+            const handleSubmit = async () => {
+                setSubmitting(true);
+                setSubmitError(null);
+                try {
+                    await submitAttendanceRecord(profile, sessionKey);
+                    setSubmitted(true);
+                } catch (err) {
+                    console.error('Error writing attendance to sheet:', err);
+                    setSubmitError('Could not save your attendance. Please check your connection and try again.');
+                } finally {
+                    setSubmitting(false);
+                }
             };
 
             return e('div', { className: 'bg-white rounded-2xl shadow-lg p-7 sm:p-9 max-w-md w-full animate-fade-in-up' },
@@ -555,11 +618,12 @@
                             placeholder: 'e.g. DTE-0472', required: true
                         }),
                         e(AcknowledgementConsent, { checked: acknowledged, onChange: setAcknowledged }),
+                        submitError ? e('p', { className: 'text-sm text-wcg-red font-medium mb-4' }, submitError) : null,
                         e('button', {
                             disabled: !canSubmit,
                             onClick: handleSubmit,
                             className: `w-full px-4 py-3.5 rounded-xl font-bold text-base text-white transition-colors shadow ${canSubmit ? 'bg-wcg-green hover:brightness-95' : 'bg-gray-300 cursor-not-allowed'}`
-                        }, 'Capture Attendance')
+                        }, submitting ? 'Saving…' : 'Capture Attendance')
                     )
             );
         }
@@ -575,10 +639,12 @@
             const [sessionKey, setSessionKey] = useState('');
             const [acknowledged, setAcknowledged] = useState(false);
             const [submitted, setSubmitted] = useState(false);
+            const [submitting, setSubmitting] = useState(false);
+            const [submitError, setSubmitError] = useState(null);
 
             const errors = getFieldErrors(fields);
             const profileOk = Object.keys(errors).length === 0;
-            const canSubmit = profileOk && sessionKey.trim() && acknowledged;
+            const canSubmit = profileOk && sessionKey.trim() && acknowledged && !submitting;
 
             if (submitted) {
                 return e('div', { className: 'text-center bg-green-50 border-2 border-green-200 rounded-xl p-5' },
@@ -587,18 +653,27 @@
                 );
             }
 
-            const handleSubmitClick = () => {
-                if (!profileOk) { setAttempted(true); return; }
-                if (!sessionKey.trim() || !acknowledged) { setAttempted(true); return; }
-                console.log('Would submit attendance (shared device):', { ...buildProfileRecord(fields), sessionKey, acknowledged });
-                setSubmitted(true);
+            const handleSubmitClick = async () => {
+                if (!profileOk || !sessionKey.trim() || !acknowledged) { setAttempted(true); return; }
+                setSubmitting(true);
+                setSubmitError(null);
+                try {
+                    await submitAttendanceRecord(buildProfileRecord(fields), sessionKey);
+                    setSubmitted(true);
+                } catch (err) {
+                    console.error('Error writing attendance to sheet:', err);
+                    setSubmitError('Could not save your attendance. Please check your connection and try again.');
+                } finally {
+                    setSubmitting(false);
+                }
             };
 
             return e(React.Fragment, null,
                 e(ProfileFieldsForm, { fields, updateField, schools, schoolsLoading, schoolsError, districtOptions, errors: attempted ? errors : {} }),
                 e(TextField, { label: 'Session ID Key', value: sessionKey, onChange: setSessionKey, placeholder: 'e.g. DTE-0472', required: true, error: attempted && !sessionKey.trim() ? 'Session ID Key is required' : null }),
                 e(AcknowledgementConsent, { checked: acknowledged, onChange: setAcknowledged }),
-                attempted && !canSubmit ? e('p', { className: 'text-sm text-wcg-red font-medium mb-4' }, 'Please complete the highlighted fields before capturing attendance.') : null,
+                attempted && !profileOk ? e('p', { className: 'text-sm text-wcg-red font-medium mb-4' }, 'Please complete the highlighted fields before capturing attendance.') : null,
+                submitError ? e('p', { className: 'text-sm text-wcg-red font-medium mb-4' }, submitError) : null,
                 e('div', { className: 'flex gap-3 mt-2' },
                     e('button', {
                         onClick: onBack,
@@ -607,7 +682,7 @@
                     e('button', {
                         onClick: handleSubmitClick,
                         className: `flex-1 px-4 py-3.5 rounded-xl font-bold text-base text-white transition-colors shadow ${canSubmit ? 'bg-wcg-green hover:brightness-95' : 'bg-gray-300 hover:bg-gray-400'}`
-                    }, 'Capture Attendance')
+                    }, submitting ? 'Saving…' : 'Capture Attendance')
                 )
             );
         }
