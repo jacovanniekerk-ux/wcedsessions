@@ -29,7 +29,7 @@
         }
     </script>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+        body { font-family: 'Century Gothic', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
         .animate-fade-in-up { animation: fadeInUp 0.25s ease-out; }
         .wcg-top-accent { background: linear-gradient(90deg, #001489 0%, #8FAD15 100%); }
@@ -63,10 +63,13 @@
         // Builds the flat record that gets written to the sheet: every
         // profile field, plus the Session ID Key and a capture timestamp.
         // Column order on the sheet side should match this key order.
-        function buildAttendancePayload(profile, sessionKey) {
+        function buildAttendancePayload(profile, sessionKey, sessionRecord) {
             return {
                 timestamp: new Date().toISOString(),
                 sessionKey: sessionKey.trim(),
+                sessionTitle: sessionRecord ? sessionRecord.session_title : '',
+                sessionDeliveryMode: sessionRecord ? sessionRecord.session_delivery_mode : '',
+                sessionDate: sessionRecord ? sessionRecord.session_date : '',
                 surname: profile.surname,
                 firstName: profile.firstName,
                 email: profile.email,
@@ -93,8 +96,8 @@
         // 'real' application/json request gets blocked by the browser
         // before it's even sent. Sending text/plain avoids the preflight;
         // the Apps Script side just needs to JSON.parse(e.postData.contents).
-        async function submitAttendanceRecord(profile, sessionKey) {
-            const payload = buildAttendancePayload(profile, sessionKey);
+        async function submitAttendanceRecord(profile, sessionKey, sessionRecord) {
+            const payload = buildAttendancePayload(profile, sessionKey, sessionRecord);
             const response = await fetch(SHEET_WEB_APP_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -104,6 +107,152 @@
                 throw new Error(`Sheet write failed with status ${response.status}`);
             }
             return payload;
+        }
+
+        // ============================================================
+        // SESSION ID KEY — Supabase 'sessions' table lookup + guard rails
+        // ============================================================
+        const SESSIONS_TABLE_NAME = 'sessions';
+        const SESSIONS_COLUMNS = 'id_key, session_title, hosting_unit, hosting_coordinator, session_date, session_start_time, facilitator, session_delivery_mode';
+
+        // Delivery modes whose ID Keys are date- and time-sensitive.
+        // Everything else (e.g. multi-day / pre-register courses) is
+        // only date-gated (must be captured on or before session_date).
+        const TIME_SENSITIVE_DELIVERY_MODES = [
+            'Virtual',
+            'Virtual (non-provincial)',
+            'Transformation Agent (F2F)',
+            'Face-to-Face'
+        ];
+
+        function isTimeSensitiveMode(mode) {
+            const normalized = (mode || '').trim().toLowerCase();
+            return TIME_SENSITIVE_DELIVERY_MODES.some(m => m.toLowerCase() === normalized);
+        }
+
+        // South Africa is UTC+2 year-round (no DST), so the offset is
+        // always fixed. Rather than fight the browser's local timezone,
+        // we shift the current UTC epoch by +2h and then read it back
+        // out with the UTC getters — that gives us SAST wall-clock
+        // values regardless of where the device itself is set to.
+        function getSASTNowParts() {
+            const sastMs = Date.now() + 2 * 60 * 60 * 1000;
+            const d = new Date(sastMs);
+            const dateString = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
+            return { dateString, epochMsShiftedToSAST: sastMs };
+        }
+
+        // Converts a session's stored session_date ('YYYY-MM-DD') and
+        // session_start_time ('HH:MM' or 'HH:MM:SS'), which are captured
+        // in SAST wall-clock time, into a true UTC epoch millisecond
+        // value so it can be compared directly against Date.now().
+        function sessionStartEpochMs(sessionDate, sessionStartTime) {
+            const [y, m, d] = (sessionDate || '').split('-').map(Number);
+            const timeParts = (sessionStartTime || '00:00').split(':').map(Number);
+            const hh = timeParts[0] || 0, mm = timeParts[1] || 0, ss = timeParts[2] || 0;
+            if (!y || !m || !d) return NaN;
+            return Date.UTC(y, m - 1, d, hh, mm, ss) - 2 * 60 * 60 * 1000;
+        }
+
+        // Applies the guard-rail rules for a looked-up session row.
+        // Returns { valid: true } or { valid: false, reason: '...' }.
+        function validateSessionTiming(session) {
+            const { dateString: todaySAST } = getSASTNowParts();
+
+            if (isTimeSensitiveMode(session.session_delivery_mode)) {
+                // Rule: must be captured on the same calendar day as the session.
+                if (session.session_date !== todaySAST) {
+                    return {
+                        valid: false,
+                        reason: `This session is scheduled for ${session.session_date}, not today. This ID Key can only be used on the day of the session.`
+                    };
+                }
+                // Rule: window is 30 minutes before start to 150 minutes after start.
+                const startMs = sessionStartEpochMs(session.session_date, session.session_start_time);
+                const diffMinutes = (Date.now() - startMs) / 60000;
+                if (Number.isNaN(diffMinutes)) {
+                    return { valid: false, reason: 'This session\u2019s start time could not be read. Please check with your facilitator.' };
+                }
+                if (diffMinutes < -30) {
+                    return {
+                        valid: false,
+                        reason: `Registration for this session opens 30 minutes before its ${session.session_start_time} start time. Please try again closer to the start.`
+                    };
+                }
+                if (diffMinutes > 150) {
+                    return {
+                        valid: false,
+                        reason: `The registration window for this session has closed (it closes 2 hours 30 minutes after its ${session.session_start_time} start time).`
+                    };
+                }
+                return { valid: true };
+            }
+
+            // Not time/date sensitive — acts as a pre-register and may be
+            // captured any day up to and including the session date.
+            if (todaySAST > session.session_date) {
+                return {
+                    valid: false,
+                    reason: `This session's registration date (${session.session_date}) has already passed.`
+                };
+            }
+            return { valid: true };
+        }
+
+        // Looks up a session by its 4-digit ID Key. Returns the row, or
+        // null if no session matches.
+        async function lookupSessionByKey(idKey) {
+            const { data, error } = await supabaseClient
+                .from(SESSIONS_TABLE_NAME)
+                .select(SESSIONS_COLUMNS)
+                .eq('id_key', idKey)
+                .maybeSingle();
+            if (error) throw error;
+            return data;
+        }
+
+        // React hook: given a raw Session ID Key string, debounces,
+        // validates the 4-digit format, looks the key up in Supabase,
+        // and applies the date/time guard rails above.
+        // status: 'idle' | 'format' | 'checking' | 'notfound' | 'error' | 'timing_invalid' | 'ok'
+        function useSessionLookup(sessionKeyRaw) {
+            const [status, setStatus] = useState('idle');
+            const [session, setSession] = useState(null);
+            const [timingReason, setTimingReason] = useState(null);
+
+            useEffect(() => {
+                const trimmed = (sessionKeyRaw || '').trim();
+                setSession(null);
+                setTimingReason(null);
+
+                if (!trimmed) { setStatus('idle'); return; }
+                if (!/^\d{4}$/.test(trimmed)) { setStatus('format'); return; }
+
+                let cancelled = false;
+                setStatus('checking');
+                const handle = setTimeout(async () => {
+                    try {
+                        const data = await lookupSessionByKey(trimmed);
+                        if (cancelled) return;
+                        if (!data) { setStatus('notfound'); return; }
+                        const timing = validateSessionTiming(data);
+                        setSession(data);
+                        if (!timing.valid) {
+                            setTimingReason(timing.reason);
+                            setStatus('timing_invalid');
+                        } else {
+                            setStatus('ok');
+                        }
+                    } catch (err) {
+                        console.error('Error looking up Session ID Key:', err);
+                        if (!cancelled) setStatus('error');
+                    }
+                }, 400);
+
+                return () => { cancelled = true; clearTimeout(handle); };
+            }, [sessionKeyRaw]);
+
+            return { status, session, timingReason };
         }
 
         // ------------------------------------------------------------
@@ -388,6 +537,63 @@
             );
         }
 
+        // Formats a stored 'HH:MM' / 'HH:MM:SS' time as 'HH:MM' for display.
+        function formatSessionTime(t) {
+            return (t || '').slice(0, 5);
+        }
+
+        // Session ID Key field: the person types a 4-digit key, it's
+        // looked up against Supabase in real time, the date/time guard
+        // rails are applied, and — if everything checks out — the
+        // person is shown the session details and asked to explicitly
+        // confirm before it can be used to capture attendance.
+        function SessionKeyField({ value, onChange, status, session, timingReason, confirmed, onConfirm, onReset }) {
+            return e('div', { className: 'mb-5' },
+                e(TextField, {
+                    label: 'Session ID Key',
+                    value,
+                    onChange: (v) => onChange(v.replace(/\D/g, '').slice(0, 4)),
+                    placeholder: 'e.g. 0472',
+                    required: true,
+                    inputMode: 'numeric',
+                    maxLength: 4,
+                    helperText: (status === 'idle' || status === 'format') ? '4-digit code provided by your facilitator' : undefined,
+                    error: (status === 'format' && value) ? 'Session ID Key must be exactly 4 digits' : undefined
+                }),
+                status === 'checking' ? e('p', { className: 'text-sm text-gray-400 -mt-3 mb-1' }, 'Checking session\u2026') : null,
+                status === 'notfound' ? e('p', { className: 'text-sm text-wcg-red font-medium -mt-3 mb-1' }, 'No session found for this ID Key. Please check with your facilitator.') : null,
+                status === 'error' ? e('p', { className: 'text-sm text-wcg-red font-medium -mt-3 mb-1' }, 'Could not verify this Session ID Key right now. Please check your connection and try again.') : null,
+                status === 'timing_invalid' && session ? e('div', { className: 'border-2 border-wcg-red bg-red-50 rounded-xl p-4 mt-1 mb-1' },
+                    e('p', { className: 'text-sm font-bold text-wcg-dark mb-1' }, session.session_title),
+                    e('p', { className: 'text-sm text-wcg-red font-medium' }, timingReason)
+                ) : null,
+                status === 'ok' && session ? e('div', { className: `border-2 rounded-xl p-4 mt-1 mb-1 ${confirmed ? 'border-wcg-green bg-green-50' : 'border-wcg-brightblue bg-blue-50'}` },
+                    e('p', { className: 'text-sm font-bold text-wcg-dark mb-2' }, confirmed ? '\u2713 Session confirmed' : 'Please confirm this is your session'),
+                    e('dl', { className: 'text-sm text-gray-700 space-y-1 mb-3' },
+                        e('div', null, e('span', { className: 'font-semibold' }, 'Session: '), session.session_title || '\u2014'),
+                        e('div', null, e('span', { className: 'font-semibold' }, 'Hosted by: '), session.hosting_unit || '\u2014'),
+                        e('div', null, e('span', { className: 'font-semibold' }, 'Coordinator: '), session.hosting_coordinator || '\u2014'),
+                        e('div', null, e('span', { className: 'font-semibold' }, 'Facilitator: '), session.facilitator || '\u2014'),
+                        e('div', null, e('span', { className: 'font-semibold' }, 'Date: '), session.session_date || '\u2014'),
+                        e('div', null, e('span', { className: 'font-semibold' }, 'Start time: '), formatSessionTime(session.session_start_time) || '\u2014'),
+                        e('div', null, e('span', { className: 'font-semibold' }, 'Mode: '), session.session_delivery_mode || '\u2014')
+                    ),
+                    confirmed
+                        ? e('button', { type: 'button', onClick: onReset, className: 'text-sm font-semibold text-gray-500 hover:underline' }, 'Not this one \u2014 change key')
+                        : e('div', { className: 'flex gap-2' },
+                            e('button', {
+                                type: 'button', onClick: onConfirm,
+                                className: 'flex-1 px-3 py-2.5 rounded-lg font-semibold text-sm text-white bg-wcg-green hover:brightness-95 transition-colors'
+                            }, 'Yes, this is my session'),
+                            e('button', {
+                                type: 'button', onClick: onReset,
+                                className: 'flex-1 px-3 py-2.5 rounded-lg font-semibold text-sm border-2 border-gray-300 text-gray-600 hover:border-gray-400 transition-colors'
+                            }, 'Not this one')
+                        )
+                ) : null
+            );
+        }
+
         // Required consent + acknowledgement, shown whenever a Session ID
         // Key is being captured — this is not part of the stored profile.
         function AcknowledgementConsent({ checked, onChange }) {
@@ -569,19 +775,26 @@
         // ============================================================
         function WelcomeScreen({ profile, onEditProfile, onLogout }) {
             const [sessionKey, setSessionKey] = useState('');
+            const { status: sessionStatus, session: sessionRecord, timingReason } = useSessionLookup(sessionKey);
+            const [sessionConfirmed, setSessionConfirmed] = useState(false);
             const [acknowledged, setAcknowledged] = useState(false);
             const [submitted, setSubmitted] = useState(false);
             const [submitting, setSubmitting] = useState(false);
             const [submitError, setSubmitError] = useState(null);
             const fullName = fullNameOf(profile);
             const idLine = profile.persal ? `PERSAL ${profile.persal}` : `ID ${profile.idNumber}`;
-            const canSubmit = sessionKey.trim() && acknowledged && !submitting;
+
+            // Any change to the key (or a fresh lookup result) invalidates
+            // a previous confirmation — the person must re-confirm.
+            useEffect(() => { setSessionConfirmed(false); }, [sessionKey, sessionStatus]);
+
+            const canSubmit = sessionStatus === 'ok' && sessionConfirmed && acknowledged && !submitting;
 
             const handleSubmit = async () => {
                 setSubmitting(true);
                 setSubmitError(null);
                 try {
-                    await submitAttendanceRecord(profile, sessionKey);
+                    await submitAttendanceRecord(profile, sessionKey, sessionRecord);
                     setSubmitted(true);
                 } catch (err) {
                     console.error('Error writing attendance to sheet:', err);
@@ -608,14 +821,17 @@
                     ? e('div', { className: 'text-center bg-green-50 border-2 border-green-200 rounded-xl p-5' },
                         e('p', { className: 'text-base font-semibold text-green-800' }, 'Attendance captured (prototype only — not yet saved anywhere).'),
                         e('button', {
-                            onClick: () => { setSubmitted(false); setSessionKey(''); setAcknowledged(false); },
+                            onClick: () => { setSubmitted(false); setSessionKey(''); setSessionConfirmed(false); setAcknowledged(false); },
                             className: 'text-sm font-semibold text-wcg-brightblue hover:underline mt-3'
                         }, 'Capture another session')
                     )
                     : e(React.Fragment, null,
-                        e(TextField, {
-                            label: 'Session ID Key', value: sessionKey, onChange: setSessionKey,
-                            placeholder: 'e.g. DTE-0472', required: true
+                        e(SessionKeyField, {
+                            value: sessionKey, onChange: setSessionKey,
+                            status: sessionStatus, session: sessionRecord, timingReason,
+                            confirmed: sessionConfirmed,
+                            onConfirm: () => setSessionConfirmed(true),
+                            onReset: () => { setSessionKey(''); setSessionConfirmed(false); }
                         }),
                         e(AcknowledgementConsent, { checked: acknowledged, onChange: setAcknowledged }),
                         submitError ? e('p', { className: 'text-sm text-wcg-red font-medium mb-4' }, submitError) : null,
@@ -637,14 +853,19 @@
             const [attempted, setAttempted] = useState(false);
             const updateField = (key, value) => setFields(prev => ({ ...prev, [key]: value, ...(key === 'district' ? { school: '' } : {}) }));
             const [sessionKey, setSessionKey] = useState('');
+            const { status: sessionStatus, session: sessionRecord, timingReason } = useSessionLookup(sessionKey);
+            const [sessionConfirmed, setSessionConfirmed] = useState(false);
             const [acknowledged, setAcknowledged] = useState(false);
             const [submitted, setSubmitted] = useState(false);
             const [submitting, setSubmitting] = useState(false);
             const [submitError, setSubmitError] = useState(null);
 
+            useEffect(() => { setSessionConfirmed(false); }, [sessionKey, sessionStatus]);
+
             const errors = getFieldErrors(fields);
             const profileOk = Object.keys(errors).length === 0;
-            const canSubmit = profileOk && sessionKey.trim() && acknowledged && !submitting;
+            const sessionOk = sessionStatus === 'ok' && sessionConfirmed;
+            const canSubmit = profileOk && sessionOk && acknowledged && !submitting;
 
             if (submitted) {
                 return e('div', { className: 'text-center bg-green-50 border-2 border-green-200 rounded-xl p-5' },
@@ -654,11 +875,11 @@
             }
 
             const handleSubmitClick = async () => {
-                if (!profileOk || !sessionKey.trim() || !acknowledged) { setAttempted(true); return; }
+                if (!profileOk || !sessionOk || !acknowledged) { setAttempted(true); return; }
                 setSubmitting(true);
                 setSubmitError(null);
                 try {
-                    await submitAttendanceRecord(buildProfileRecord(fields), sessionKey);
+                    await submitAttendanceRecord(buildProfileRecord(fields), sessionKey, sessionRecord);
                     setSubmitted(true);
                 } catch (err) {
                     console.error('Error writing attendance to sheet:', err);
@@ -670,7 +891,16 @@
 
             return e(React.Fragment, null,
                 e(ProfileFieldsForm, { fields, updateField, schools, schoolsLoading, schoolsError, districtOptions, errors: attempted ? errors : {} }),
-                e(TextField, { label: 'Session ID Key', value: sessionKey, onChange: setSessionKey, placeholder: 'e.g. DTE-0472', required: true, error: attempted && !sessionKey.trim() ? 'Session ID Key is required' : null }),
+                e(SessionKeyField, {
+                    value: sessionKey, onChange: setSessionKey,
+                    status: sessionStatus, session: sessionRecord, timingReason,
+                    confirmed: sessionConfirmed,
+                    onConfirm: () => setSessionConfirmed(true),
+                    onReset: () => { setSessionKey(''); setSessionConfirmed(false); }
+                }),
+                attempted && !sessionKey.trim() ? e('p', { className: 'text-sm text-wcg-red font-medium -mt-3 mb-4' }, 'Session ID Key is required') : null,
+                attempted && sessionKey.trim() && sessionStatus !== 'ok' ? e('p', { className: 'text-sm text-wcg-red font-medium -mt-3 mb-4' }, 'Please enter a valid Session ID Key.') : null,
+                attempted && sessionStatus === 'ok' && !sessionConfirmed ? e('p', { className: 'text-sm text-wcg-red font-medium -mt-3 mb-4' }, 'Please confirm the session details above.') : null,
                 e(AcknowledgementConsent, { checked: acknowledged, onChange: setAcknowledged }),
                 attempted && !profileOk ? e('p', { className: 'text-sm text-wcg-red font-medium mb-4' }, 'Please complete the highlighted fields before capturing attendance.') : null,
                 submitError ? e('p', { className: 'text-sm text-wcg-red font-medium mb-4' }, submitError) : null,
