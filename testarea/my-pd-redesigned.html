@@ -1,0 +1,1815 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>WCED eLearning Professional Development</title>
+    <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'wcg-green': '#76B82A',
+                        'wcg-yellow': '#FDB913',
+                        'wcg-red': '#E30613',
+                        'wcg-blue': '#001489',
+                        'wcg-purple': '#672D82',
+                        'wcg-pink': '#C8126E',
+                        'wcg-dark': '#1a1a1a',
+                        'wcg-gray': '#666666',
+                        'wcg-mist': '#F4F6FB'
+                    },
+                    fontFamily: {
+                        'display': ['Poppins', 'Century Gothic', 'Arial', 'sans-serif'],
+                        'sans': ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Helvetica', 'Arial', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+
+        @keyframes pulseGlow {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(253, 185, 19, 0.45); }
+            50% { box-shadow: 0 0 0 10px rgba(253, 185, 19, 0); }
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(14px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        html { scroll-behavior: smooth; }
+        body { -webkit-tap-highlight-color: transparent; }
+
+        .animate-fade-in-up { animation: fadeInUp 0.35s ease-out forwards; }
+        .sheet-backdrop { animation: fadeIn 0.2s ease-out forwards; }
+        .sheet-panel { animation: slideUp 0.28s cubic-bezier(0.32, 0.72, 0, 1) forwards; }
+
+        .milestone-shimmer {
+            background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.4) 50%, transparent 100%);
+            background-size: 200% 100%;
+            animation: shimmer 2s infinite;
+        }
+
+        .current-stop { animation: pulseGlow 2.2s ease-in-out infinite; }
+
+        .pathway-line-fill {
+            background: linear-gradient(90deg, #001489, #C8126E);
+            transition: width 1.2s ease-out;
+        }
+
+        .suggestion-card { transition: all 0.2s ease; }
+        .suggestion-card:active { transform: scale(0.99); }
+
+        .modal-backdrop { background-color: rgba(10, 14, 30, 0.55); }
+
+        .pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); }
+
+        .no-scrollbar { scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .snap-x-chip { scroll-snap-align: start; }
+
+        @media print {
+            .no-print { display: none !important; }
+            body { background: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .print-full-width { max-width: 100% !important; padding: 0 !important; margin: 0 !important; }
+            @page { margin: 1cm; }
+        }
+    </style>
+</head>
+
+<body class="bg-wcg-mist font-sans text-wcg-dark antialiased">
+    <div id="root"></div>
+
+    <script>
+        const { useState, useEffect, useMemo, useRef } = React;
+        const e = React.createElement;
+
+        // ============================================================
+        // SUPABASE CONFIG — replace with your own project URL and key
+        // ============================================================
+        const SUPABASE_URL = 'https://cftpufjzwpmhgzdcgpjb.supabase.co';
+        const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_b1H_5DJYLQSrr83T_dvz6A_2UAqOVg4';
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+
+        // Name of the table in Supabase that holds the attendance records
+        const TABLE_NAME = 'attendance';
+
+        // Maps the app's internal field names to the actual column names
+        // in your Supabase table. Edit the right-hand values to match.
+        const COLUMN_MAP = {
+            'Timestamp': 'Timestamp',
+            'First Name': 'First Name',
+            'Surname': 'Surname',
+            'School': 'School',
+            'District': 'District',
+            'ID/Passport Number': 'ID_number',
+            'PERSAL Number': 'PERSAL Number',
+            'Session Name': 'Session Name',
+            'Development Level': 'Development Level',
+            'Facilitator': 'Facilitator',
+            'Delivery Mode': 'Delivery Mode',
+            'Hosting District': 'Hosting District'
+        };
+
+        function mapRowToRecord(row) {
+            const record = {};
+            Object.keys(COLUMN_MAP).forEach(appKey => {
+                record[appKey] = row[COLUMN_MAP[appKey]] != null ? String(row[COLUMN_MAP[appKey]]) : '';
+            });
+            return record;
+        }
+
+        // Queries Supabase for every record matching a given ID or PERSAL
+        // number. Only matching rows are ever sent to the browser.
+        async function fetchRecordsByKey(searchType, key) {
+            const column = searchType === 'id' ? COLUMN_MAP['ID/Passport Number'] : COLUMN_MAP['PERSAL Number'];
+            const { data: rows, error } = await supabaseClient
+                .from(TABLE_NAME)
+                .select('*')
+                .eq(column, key);
+            if (error) throw error;
+            return (rows || []).map(mapRowToRecord);
+        }
+
+        // === DATA LAST UPDATED (manually update this when refreshing data) ===
+        const DATA_LAST_UPDATED = '05 June 2026';
+
+        // === SESSION DEFINITIONS ===
+        const SPARK_SESSIONS = [
+            'Adoption Strategy',
+            'Digital Skills Course',
+            'Facilitator Think Tank',
+            'Cyber Effect Ambassador Initiation Course'
+        ];
+
+        const PATHWAY_SPARK_SESSIONS = [
+            'Adoption Strategy',
+            'Digital Skills Course',
+            'Cyber Effect Ambassador Initiation Course'
+        ];
+
+        const DOVETAIL_SESSIONS = [
+            'ePedagogy: Building a Digital Lesson',
+            'Integrating digital resources from the ePortal',
+            'Google Fundamentals 1: Account and Google Chrome',
+            'Office Online Fundamentals',
+            'Improved Presentation Skills',
+            'Ease of Access with QR Codes and Bit.ly links',
+            'Teaching with Videos',
+            'Orientation to Google Forms',
+            'AI In Education: Work Smarter, not Harder',
+            'Introduction to Cyber Wellness Education'
+        ];
+
+        // Milestone definitions for the pathway — colors and enrichment
+        // (keyPoints, dovetailEssentials, availability, next) sourced from pathway.html
+        const MILESTONES = [
+            {
+                id: 'adoption', step: 1, title: 'ICT Adoption Strategy', subtitle: 'The Entry Point',
+                icon: '🧭', color: '#00A1A3', lightColor: '#E5F6F6', sparkSession: 'Adoption Strategy',
+                duration: '24-hour self-paced course',
+                description: 'A foundational online course providing a broad perspective on the visibility of the digital landscape and the "Transformation Agenda." This journey moves you from digital novice to confident ICT integrator.',
+                keyPoints: [
+                    'Comprehensive 12-week self-paced online course',
+                    'Explore the landscape of ICT integration in education',
+                    'Understand the vision of the Transformation Agenda',
+                    'Build foundational digital literacy and confidence',
+                    'Earn your first Spark toward becoming a Transformation Agent'
+                ],
+                availability: {
+                    type: 'registration',
+                    registerUrl: 'http://bit.ly/4sgSf9g?r=lp&m=Mma39rNpG6w',
+                    waitlistUrl: 'https://docs.google.com/forms/d/e/1FAIpQLSeT-sQEVUDnNQ652jxOLogI6DzXV6ZDv9wCPZSa8VXKjNOKFQ/viewform?usp=pp_url&entry.1581432046=ICT+Adoption+Strategy',
+                    expiryDate: '2026-03-22',
+                    activeMessage: 'Registrations are currently open!',
+                    expiredMessage: 'Registrations for the current cohort have closed. Keep an eye on eTPD communications for the next intake, or join the waitlist below.'
+                },
+                next: 'Begin your transformation journey by exploring the digital landscape and understanding how technology can enhance teaching and learning.'
+            },
+            {
+                id: 'dovetail', step: 2, title: 'Dovetail Essentials', subtitle: 'Customisation & Micro-Learning',
+                icon: '🧰', color: '#8FAD15', lightColor: '#F2F6E3', sparkSession: null,
+                duration: '10 focused micro-learning sessions',
+                description: 'A non-linear pathway through targeted 60-120 minute sessions that build practical digital competency (the how). Choose the sessions that match your needs and context across multiple platforms and tools.',
+                dovetailEssentials: [
+                    'ePedagogy: Building a Digital Lesson',
+                    'Integrating digital resources from the ePortal',
+                    'Google Fundamentals 1: Account and Google Chrome',
+                    'Office Online Fundamentals',
+                    'Improved Presentation Skills',
+                    'Ease of Access with QR Codes and Bit.ly links',
+                    'Teaching with Videos',
+                    'Orientation to Google Forms',
+                    'AI In Education: Work Smarter, not Harder',
+                    'Introduction to Cyber Wellness Education'
+                ],
+                sessionsInfoUrl: 'https://jacovanniekerk-ux.github.io/wcedsessions/dovetail-essentials.html',
+                keyPoints: [
+                    'Flexible, non-linear pathway—attend what you need',
+                    'Short, practical sessions (60-120 minutes)',
+                    'Four developmental levels: Laying the Foundation → I Can Do It → I Can Do It Better → The Summit',
+                    'Build practical classroom-ready digital skills',
+                    'Earn your second Spark toward becoming a Transformation Agent'
+                ],
+                next: 'Customize your learning journey by selecting sessions that address your specific needs and developmental level.'
+            },
+            {
+                id: 'digitalskills', step: 3, title: 'Digital Skills Course', subtitle: 'The Experiential Shift',
+                icon: '📖', color: '#007DBA', lightColor: '#E5F2F8', sparkSession: 'Digital Skills Course',
+                duration: '4-week hybrid immersion',
+                description: 'An experiential hybrid course that shifts your focus from "how to use" to "how to learn." View technology from the learner\'s perspective and develop digital wisdom (the why).',
+                keyPoints: [
+                    'Immersive 4-week hybrid learning experience',
+                    'Shift from teacher-centered to learner-centered perspective',
+                    'Synthesize the "what" and "how" into "when" and "why"',
+                    'Develop digital wisdom through experiential learning',
+                    'Foster pedagogical understanding of technology integration',
+                    'Earn your third Spark and become a School-Level Transformation Agent'
+                ],
+                availability: {
+                    type: 'waitlist_only',
+                    waitlistUrl: 'https://docs.google.com/forms/d/e/1FAIpQLSeT-sQEVUDnNQ652jxOLogI6DzXV6ZDv9wCPZSa8VXKjNOKFQ/viewform?usp=pp_url&entry.1581432046=Digital+Skills+Course',
+                    message: 'These courses are hosted each term in the district and are by invitation only. Join the waitlist to express your interest to join a course when available.'
+                },
+                next: 'Experience transformation by seeing technology through your learners\' eyes and develop the wisdom to make informed pedagogical decisions.'
+            },
+            {
+                id: 'cybereffect', step: 4, title: 'Cyber Effect Ambassador', subtitle: 'Ethical Capstone',
+                icon: '🌐', color: '#C8126E', lightColor: '#FBE7F0', sparkSession: 'Cyber Effect Ambassador Initiation Course',
+                duration: 'Self-paced 4-week course',
+                description: 'Deepen your ability to engage with the ethical, emotional, psychological, and behavioural dimensions of technology use. Master the 4P Affective Transformation Model (People, Practices, Pedagogy, Platforms).',
+                keyPoints: [
+                    'Focus on digital citizenship and cyber wellness',
+                    'Understand human-centered design principles',
+                    'Master the 4P Model: People, Practices, Pedagogy, Platforms',
+                    'Address emotional readiness and psychological safety',
+                    'Promote reflective digital responsibility and ethical technology use',
+                    'Earn your fourth Spark and become a Cluster-Level Transformation Agent'
+                ],
+                availability: {
+                    type: 'registration',
+                    registerUrl: 'YOUR_REGISTER_LINK_HERE',
+                    waitlistUrl: 'https://docs.google.com/forms/d/e/1FAIpQLSeT-sQEVUDnNQ652jxOLogI6DzXV6ZDv9wCPZSa8VXKjNOKFQ/viewform?usp=pp_url&entry.1581432046=Cyber+Ambassador',
+                    expiryDate: '2026-07-01',
+                    activeMessage: 'Registrations are currently open!',
+                    expiredMessage: 'Registrations have closed. Please join the waitlist to be notified of the next intake.'
+                },
+                next: 'Become a champion for ethical, human-centered technology integration and support your school community in building a positive digital culture.'
+            }
+        ];
+
+        // Edvance ARC (Facilitator ARC) — specialised, by-invitation track.
+        // Only "Facilitator Think Tank" earns a Spark; Elevate and Shift and
+        // Spark deepen leadership but do not add to the core pathway Sparks.
+        const EDVANCE_ARC = {
+            icon: '🎓',
+            title: 'Edvance ARC',
+            subtitle: 'By Invitation',
+            accentColor: '#672D82',
+            lightColor: '#F3EBF7',
+            steps: [
+                { id: 'thinktank', name: 'Facilitator Think Tank', label: 'Step 1', spark: true },
+                { id: 'elevate', name: 'Elevate', label: 'Step 2', spark: false },
+                { id: 'shiftspark', name: 'Shift and Spark', label: 'Step 3', spark: false }
+            ],
+            description: 'The Edvance ARC is a dedicated face-to-face developmental pathway for educators ready to lead. Beginning at the Facilitator Think Tank (earning your Spark), this journey nurtures digital wisdom and leadership through immersive workshops. It equips you with the vision and practical tools needed to serve as a Transformation Agent, driving sustainable digital transformation across your school community.'
+        };
+
+        // === UTILITIES ===
+
+        // Returns the appropriate call-to-action (register or waitlist link)
+        // for a milestone's availability info, used by Next Steps suggestions.
+        function getAvailabilityCTA(milestoneId) {
+            const milestone = MILESTONES.find(m => m.id === milestoneId);
+            if (!milestone || !milestone.availability) return null;
+            const avail = milestone.availability;
+            const now = new Date();
+            now.setHours(0, 0, 0, 0);
+
+            if (avail.type === 'registration') {
+                const expiry = new Date(avail.expiryDate + 'T23:59:59');
+                const isOpen = now <= expiry;
+                return isOpen
+                    ? { label: 'Register Now', url: avail.registerUrl, style: 'primary' }
+                    : { label: 'Join Waitlist', url: avail.waitlistUrl, style: 'secondary' };
+            }
+            if (avail.type === 'waitlist_only') {
+                return { label: 'Express Interest / Join Waitlist', url: avail.waitlistUrl, style: 'secondary' };
+            }
+            return null;
+        }
+
+        function parseTimestamp(timestamp) {
+            if (!timestamp) return null;
+            try {
+                const [datePart] = timestamp.split(' ');
+                const [day, month, year] = datePart.split('/');
+                return new Date(year, month - 1, day);
+            } catch {
+                return null;
+            }
+        }
+
+        function formatDate(dateObj) {
+            if (!dateObj) return 'N/A';
+            const day = String(dateObj.getDate()).padStart(2, '0');
+            const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const year = dateObj.getFullYear();
+            return `${day}/${month}/${year}`;
+        }
+
+        function isSpark(sessionName) {
+            return SPARK_SESSIONS.includes(sessionName && sessionName.trim());
+        }
+
+        function isDovetail(sessionName) {
+            return DOVETAIL_SESSIONS.includes(sessionName && sessionName.trim());
+        }
+
+        function getLevelColor(level) {
+            if (!level) return 'bg-gray-200 text-gray-800';
+            const normalized = level.toLowerCase().trim();
+            if (normalized === 'laying the foundation') return 'bg-wcg-green text-white';
+            if (normalized === 'i can do it') return 'bg-wcg-yellow text-black';
+            if (normalized === 'i can do it better') return 'bg-wcg-red text-white';
+            if (normalized === 'the summit') return 'bg-wcg-blue text-white';
+            return 'bg-gray-200 text-gray-800';
+        }
+
+        function getLevelDotColor(level) {
+            if (!level) return 'bg-gray-300';
+            const normalized = level.toLowerCase().trim();
+            if (normalized === 'laying the foundation') return 'bg-wcg-green';
+            if (normalized === 'i can do it') return 'bg-wcg-yellow';
+            if (normalized === 'i can do it better') return 'bg-wcg-red';
+            if (normalized === 'the summit') return 'bg-wcg-blue';
+            return 'bg-gray-300';
+        }
+
+        function generateCertificateLink(participantName, sessionName, hostingDistrict, date) {
+            const baseUrl = 'https://jacovanniekerk-ux.github.io/webapps/certificategenerator.html';
+            const params = new URLSearchParams({
+                name: participantName,
+                session: sessionName,
+                unit: hostingDistrict,
+                date: formatDate(date)
+            });
+            return `${baseUrl}?${params.toString()}`;
+        }
+
+        const parseDate = (dateStr) => {
+            if (!dateStr) return new Date(8640000000000000);
+            const parts = dateStr.split('/');
+            if (parts.length === 3) {
+                const [day, month, year] = parts;
+                return new Date(`${year}-${month}-${day}`);
+            }
+            return new Date(dateStr);
+        };
+
+        const isFutureOrToday = (dateObj) => {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            if (dateObj instanceof Date && !isNaN(dateObj)) {
+                dateObj.setHours(0, 0, 0, 0);
+                return dateObj >= today;
+            }
+            return false;
+        };
+
+        // Turn a set of matching Supabase records into the shape the rest
+        // of the app expects (profile + deduplicated, sorted sessions).
+        function buildResultsFromRecords(records) {
+            if (records.length === 0) {
+                return { profile: null, sessions: [], allSessions: [] };
+            }
+            const sortedRecords = [...records].sort((a, b) => parseTimestamp(b.Timestamp) - parseTimestamp(a.Timestamp));
+            const mostRecent = sortedRecords[0];
+            const profile = {
+                name: `${mostRecent['First Name']} ${mostRecent['Surname']}`.trim(),
+                school: mostRecent['School'] || 'N/A',
+                district: mostRecent['District'] || 'N/A'
+            };
+            const seenSessions = new Set();
+            const uniqueSessions = sortedRecords
+                .filter(record => {
+                    const key = `${record['Session Name']}_${record.Timestamp}`;
+                    if (seenSessions.has(key)) return false;
+                    seenSessions.add(key);
+                    return true;
+                })
+                .map(record => {
+                    const parsedDate = parseTimestamp(record.Timestamp);
+                    return {
+                        ...record,
+                        parsedDate,
+                        year: parsedDate ? parsedDate.getFullYear() : 'Unknown',
+                        isSpark: isSpark(record['Session Name']),
+                        isDovetail: isDovetail(record['Session Name'])
+                    };
+                });
+            return { profile, sessions: uniqueSessions, allSessions: uniqueSessions };
+        }
+
+        // Quarter helpers for the attendance timeline
+        const QUARTER_LABELS = { 1: 'Q1 (Jan – Mar)', 2: 'Q2 (Apr – Jun)', 3: 'Q3 (Jul – Sep)', 4: 'Q4 (Oct – Dec)' };
+        function getQuarter(date) {
+            if (!date) return null;
+            return Math.floor(date.getMonth() / 3) + 1;
+        }
+
+        // ============================================================
+        // SHARED UI PRIMITIVES
+        // ============================================================
+
+        // Sheet: bottom-sheet on mobile, centered modal on larger screens.
+        function Sheet({ onClose, children, maxWidth = 'sm:max-w-2xl' }) {
+            return e('div', {
+                className: `fixed inset-0 z-50 flex items-end sm:items-center justify-center no-print sheet-backdrop modal-backdrop`,
+                onClick: onClose
+            },
+                e('div', {
+                    className: `sheet-panel bg-white w-full ${maxWidth} rounded-t-3xl sm:rounded-3xl shadow-2xl max-h-[90vh] overflow-y-auto relative`,
+                    onClick: ev => ev.stopPropagation()
+                },
+                    e('div', { className: 'sm:hidden sticky top-0 flex justify-center pt-3 pb-1 bg-white z-10' },
+                        e('span', { className: 'w-10 h-1.5 rounded-full bg-gray-300' })
+                    ),
+                    e('button', {
+                        onClick: onClose,
+                        'aria-label': 'Close',
+                        className: 'absolute top-3 right-3 w-9 h-9 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center font-bold text-gray-600 text-lg transition-all z-10'
+                    }, '×'),
+                    children
+                )
+            );
+        }
+
+        function CircularProgress({ percent, size, strokeWidth, color, trackColor, children }) {
+            const safe = Math.min(100, Math.max(0, percent || 0));
+            const radius = (size - strokeWidth) / 2;
+            const circumference = 2 * Math.PI * radius;
+            const offset = circumference - (safe / 100) * circumference;
+            return e('div', { className: 'relative inline-flex items-center justify-center flex-shrink-0', style: { width: size, height: size } },
+                e('svg', { width: size, height: size, style: { transform: 'rotate(-90deg)' } },
+                    e('circle', { cx: size / 2, cy: size / 2, r: radius, stroke: trackColor, strokeWidth, fill: 'none' }),
+                    e('circle', {
+                        cx: size / 2, cy: size / 2, r: radius, stroke: color, strokeWidth, fill: 'none',
+                        strokeDasharray: circumference, strokeDashoffset: offset, strokeLinecap: 'round',
+                        style: { transition: 'stroke-dashoffset 1.1s ease-out' }
+                    })
+                ),
+                e('div', { className: 'absolute inset-0 flex items-center justify-center' }, children)
+            );
+        }
+
+        function BottomNav({ tabs, activeTab, onSelect }) {
+            return e('nav', { className: 'no-print fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur border-t border-gray-200 pb-safe' },
+                e('div', { className: 'max-w-2xl mx-auto grid grid-cols-3' },
+                    tabs.map(tab => {
+                        const isActive = activeTab === tab.id;
+                        return e('button', {
+                            key: tab.id,
+                            onClick: () => onSelect(tab.id),
+                            className: `relative flex flex-col items-center justify-center gap-0.5 py-2.5 text-[11px] font-bold transition-colors ${isActive ? 'text-wcg-blue' : 'text-gray-400'}`
+                        },
+                            isActive ? e('span', { className: 'absolute top-0 h-0.5 w-9 rounded-full bg-wcg-blue' }) : null,
+                            e('span', { className: 'relative text-xl leading-none mb-0.5' },
+                                tab.icon,
+                                tab.badge ? e('span', { className: 'absolute -top-1.5 -right-2.5 min-w-[16px] h-4 px-1 rounded-full bg-wcg-pink text-white text-[9px] font-bold flex items-center justify-center' }, tab.badge) : null
+                            ),
+                            e('span', null, tab.label)
+                        );
+                    })
+                )
+            );
+        }
+
+        // === NAV MENU ===
+        function Menu() {
+            const [isOpen, setIsOpen] = useState(false);
+
+            const MenuIcon = () => e('svg', { xmlns: "http://www.w3.org/2000/svg", width: "22", height: "22", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round" },
+                e('line', { x1: "4", x2: "20", y1: "12", y2: "12" }),
+                e('line', { x1: "4", x2: "20", y1: "6", y2: "6" }),
+                e('line', { x1: "4", x2: "20", y1: "18", y2: "18" })
+            );
+
+            const CloseIcon = () => e('svg', { xmlns: "http://www.w3.org/2000/svg", width: "22", height: "22", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round" },
+                e('line', { x1: "18", x2: "6", y1: "6", y2: "18" }),
+                e('line', { x1: "6", x2: "18", y1: "6", y2: "18" })
+            );
+
+            const linkStyle = "flex items-center gap-3 px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:text-wcg-blue border-b border-gray-100 last:border-b-0 transition-colors";
+
+            return e('div', { className: "relative z-50" },
+                e('button', {
+                    onClick: () => setIsOpen(!isOpen),
+                    className: "p-2 rounded-full text-gray-500 hover:bg-gray-100 hover:text-wcg-blue transition-colors focus:outline-none focus:ring-2 focus:ring-wcg-blue",
+                    "aria-label": "Toggle menu"
+                },
+                    isOpen ? e(CloseIcon) : e(MenuIcon)
+                ),
+                isOpen ? e('div', { className: "fixed inset-0 z-40", onClick: () => setIsOpen(false) }) : null,
+                isOpen ? e('div', { className: "absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.15)] border border-gray-100 overflow-hidden animate-fade-in-up z-50" },
+                    e('div', { className: "py-1" },
+                        e('a', { href: "index.html", className: linkStyle }, "🏠 Home"),
+                        e('a', { href: "pathway.html", className: linkStyle }, "🧭 Pathway Info"),
+                        e('a', { href: "my-pd.html", className: linkStyle }, "📊 My PD"),
+                        e('a', { href: "calendar.html", className: linkStyle }, "📅 Calendar View")
+                    )
+                ) : null
+            );
+        }
+
+        // ============================================================
+        // PATHWAY (TRAIL)
+        // ============================================================
+
+        function MilestoneStop({ milestone, status, isLast, isCurrent, onClick }) {
+            const isDone = status.state === 'completed';
+            const isInProgress = status.state === 'in-progress';
+            const lineFilled = isDone;
+
+            return e('div', { className: 'relative flex gap-4' },
+                e('div', { className: 'flex flex-col items-center' },
+                    e('button', {
+                        onClick, 'aria-label': `${milestone.title} details`,
+                        className: `flex-shrink-0 w-14 h-14 rounded-2xl flex items-center justify-center text-2xl shadow-sm transition-transform active:scale-95 ${isCurrent ? 'current-stop' : ''}`,
+                        style: {
+                            background: isDone ? milestone.color : (isInProgress ? milestone.lightColor : '#EDEFF6'),
+                            border: isInProgress ? `2px solid ${milestone.color}` : (isDone ? 'none' : '2px solid #E2E5F1')
+                        }
+                    }, milestone.icon),
+                    !isLast ? e('div', { className: 'w-0.5 flex-1 my-1 rounded-full', style: { background: lineFilled ? milestone.color : '#E2E5F1', minHeight: '30px' } }) : null
+                ),
+                e('button', { onClick, className: 'flex-1 text-left pb-7 min-w-0' },
+                    e('div', { className: 'bg-white rounded-2xl p-4 shadow-sm border border-gray-100' },
+                        e('div', { className: 'flex items-start justify-between gap-2' },
+                            e('div', { className: 'min-w-0' },
+                                e('div', { className: 'text-[10px] font-bold uppercase tracking-wide text-gray-400' }, `Step ${milestone.step} of ${MILESTONES.length}`),
+                                e('h4', { className: 'font-display font-bold text-wcg-dark leading-snug truncate' }, milestone.title),
+                                e('p', { className: 'text-xs text-gray-500' }, milestone.subtitle)
+                            ),
+                            isDone
+                                ? e('span', { className: 'flex-shrink-0 text-[10px] font-bold px-2 py-1 rounded-full bg-green-100 text-green-700 whitespace-nowrap' }, '✓ Done')
+                                : isInProgress
+                                    ? e('span', { className: 'flex-shrink-0 text-[10px] font-bold px-2 py-1 rounded-full bg-amber-100 text-amber-700 whitespace-nowrap' }, 'In progress')
+                                    : e('span', { className: 'flex-shrink-0 text-[10px] font-bold px-2 py-1 rounded-full bg-gray-100 text-gray-400 whitespace-nowrap' }, 'Not started')
+                        ),
+                        isInProgress && status.progress !== undefined ? e('div', { className: 'mt-3' },
+                            e('div', { className: 'w-full bg-gray-100 rounded-full h-1.5' },
+                                e('div', { className: 'h-1.5 rounded-full transition-all duration-1000', style: { width: status.progress + '%', background: milestone.color } })
+                            ),
+                            status.detail ? e('p', { className: 'text-[11px] text-gray-500 mt-1' }, status.detail) : null
+                        ) : (status.detail ? e('p', { className: 'text-[11px] text-gray-500 mt-2' }, status.detail) : null),
+                        isDone && status.completedDate ? e('p', { className: 'text-[11px] text-green-700 mt-2 font-semibold' }, `⭐ Completed ${status.completedDate}`) : null,
+                        e('div', { className: 'mt-3 text-[11px] font-bold', style: { color: milestone.color } }, 'View details & links →')
+                    )
+                )
+            );
+        }
+
+        function FacilitatorARCCard({ hasThinkTank, hasElevate, hasShiftSpark, totalSessions }) {
+            const stepDone = { thinktank: hasThinkTank, elevate: hasElevate, shiftspark: hasShiftSpark };
+            const anyStarted = hasThinkTank || hasElevate || hasShiftSpark;
+
+            return e('div', {
+                className: "text-white rounded-2xl p-5 shadow-md",
+                style: { background: `linear-gradient(135deg, ${EDVANCE_ARC.accentColor} 0%, #001489 100%)` }
+            },
+                e('div', { className: "flex items-center gap-3 mb-4" },
+                    e('div', { className: "text-3xl" }, EDVANCE_ARC.icon),
+                    e('div', { className: 'min-w-0' },
+                        e('div', { className: "inline-block px-2.5 py-0.5 bg-amber-400 text-black font-bold text-[9px] rounded-full uppercase mb-1" },
+                            anyStarted ? "In Progress" : "Special Recognition"
+                        ),
+                        e('h3', { className: "font-display text-lg font-bold leading-tight" }, EDVANCE_ARC.title),
+                        e('p', { className: "text-[11px] text-purple-100/80" }, EDVANCE_ARC.subtitle)
+                    )
+                ),
+                e('p', { className: 'text-xs text-purple-100 mb-4 leading-relaxed' }, EDVANCE_ARC.description),
+                (!hasThinkTank && totalSessions >= 15) ? e('p', { className: "text-xs mb-4 font-semibold text-amber-300" }, `Your strong PD engagement (${totalSessions} sessions) means you could be considered for future invitations.`) : null,
+                e('div', { className: "grid grid-cols-3 gap-2" },
+                    EDVANCE_ARC.steps.map((step) => {
+                        const done = stepDone[step.id];
+                        return e('div', {
+                            key: step.id,
+                            className: `px-2 py-2.5 rounded-xl text-center border ${done ? 'bg-amber-400/20 border-amber-300' : 'bg-white/10 border-white/10'}`
+                        },
+                            e('div', { className: `text-[9px] font-bold ${done ? 'text-amber-300' : 'text-purple-100'}` }, step.label + (done ? ' ✓' : '')),
+                            e('div', { className: "text-[11px] font-semibold leading-tight" }, step.name),
+                            step.spark ? e('div', { className: `text-[9px] font-bold mt-0.5 ${done ? 'text-amber-300' : 'text-purple-100/70'}` }, done ? '⭐ Earned' : '⭐ Awards Spark') : null
+                        );
+                    })
+                )
+            );
+        }
+
+        function PathwayTab({ pathwayStatus, onMilestoneClick }) {
+            const currentIdx = MILESTONES.findIndex((m, i) => pathwayStatus.milestoneStatuses[i].state !== 'completed');
+            return e('div', { className: 'animate-fade-in-up space-y-6' },
+                e('div', { className: 'bg-white rounded-2xl shadow-sm p-5 border border-gray-100' },
+                    e('div', null,
+                        MILESTONES.map((milestone, idx) => e(MilestoneStop, {
+                            key: milestone.id,
+                            milestone,
+                            status: pathwayStatus.milestoneStatuses[idx],
+                            isLast: idx === MILESTONES.length - 1,
+                            isCurrent: idx === currentIdx,
+                            onClick: () => onMilestoneClick(idx)
+                        }))
+                    )
+                ),
+                e(FacilitatorARCCard, {
+                    hasThinkTank: pathwayStatus.hasThinkTank,
+                    hasElevate: pathwayStatus.hasElevate,
+                    hasShiftSpark: pathwayStatus.hasShiftSpark,
+                    totalSessions: pathwayStatus.totalSessions
+                })
+            );
+        }
+
+        // === MILESTONE DETAIL SHEET ===
+        function MilestoneModal({ milestone, status, pathwayStatus, onClose }) {
+            if (!milestone) return null;
+
+            const renderAvailability = () => {
+                const avail = milestone.availability;
+                if (!avail) return null;
+
+                const now = new Date();
+                now.setHours(0, 0, 0, 0);
+
+                if (avail.type === 'registration') {
+                    const expiry = new Date(avail.expiryDate + 'T23:59:59');
+                    const isOpen = now <= expiry;
+                    return e('div', null,
+                        e('h4', { className: "font-semibold text-gray-900 mb-1" }, isOpen ? 'Registration Open' : 'Registration Closed'),
+                        e('p', { className: "text-sm text-gray-700" }, isOpen ? avail.activeMessage : avail.expiredMessage),
+                        isOpen ? e('div', { className: "mt-3" },
+                            e('p', { className: "text-xs text-gray-500 mb-2" }, `Closes: ${new Date(avail.expiryDate).toLocaleDateString('en-ZA', { day: 'numeric', month: 'long', year: 'numeric' })}`),
+                            e('a', {
+                                href: avail.registerUrl, target: "_blank", rel: "noopener noreferrer",
+                                className: "inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-sm text-white bg-green-600 hover:bg-green-700 transition-colors shadow"
+                            }, "Register Now")
+                        ) : e('div', { className: "mt-3" },
+                            e('a', {
+                                href: avail.waitlistUrl || '#', target: "_blank", rel: "noopener noreferrer",
+                                className: "inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-sm text-white bg-wcg-blue hover:bg-blue-800 transition-colors shadow"
+                            }, "Join Waitlist")
+                        )
+                    );
+                }
+
+                if (avail.type === 'waitlist_only') {
+                    return e('div', null,
+                        e('h4', { className: "font-semibold text-gray-900 mb-1" }, "By Invitation Only"),
+                        e('p', { className: "text-sm text-gray-700" }, avail.message),
+                        e('div', { className: "mt-3" },
+                            e('a', {
+                                href: avail.waitlistUrl || '#', target: "_blank", rel: "noopener noreferrer",
+                                className: "inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-sm text-white bg-wcg-blue hover:bg-blue-800 transition-colors shadow"
+                            }, "Join Waitlist")
+                        )
+                    );
+                }
+
+                if (avail.type === 'info') {
+                    return e('div', null,
+                        e('h4', { className: "font-semibold text-gray-900 mb-1" }, "How to Join"),
+                        e('p', { className: "text-sm text-gray-700" }, avail.message)
+                    );
+                }
+
+                return null;
+            };
+
+            return e(Sheet, { onClose },
+                e('div', {
+                    className: "p-7 pt-8 text-white text-center relative rounded-t-none sm:rounded-t-3xl",
+                    style: { background: `linear-gradient(135deg, ${milestone.color} 0%, #001489 100%)` }
+                },
+                    e('div', { className: "text-5xl mb-2" }, milestone.icon),
+                    e('h2', { className: "font-display text-2xl font-bold" }, milestone.title),
+                    e('p', { className: "text-white/80 font-semibold text-sm" }, milestone.subtitle),
+                    e('span', { className: "inline-block mt-3 px-4 py-1 bg-white/20 backdrop-blur-md rounded-full text-xs font-bold" }, milestone.duration)
+                ),
+                e('div', { className: "p-6 space-y-6" },
+                    e('div', null,
+                        e('span', {
+                            className: `inline-block px-3 py-1 rounded-full text-sm font-bold ${status.state === 'completed' ? 'bg-green-100 text-green-800' : status.state === 'in-progress' ? 'bg-amber-100 text-amber-800' : 'bg-gray-100 text-gray-500'}`
+                        }, status.state === 'completed' ? '✓ Completed' : status.state === 'in-progress' ? 'In Progress' : 'Not Started'),
+                        status.completedDate ? e('p', { className: "text-sm text-gray-600 mt-1" }, `Completed on: ${status.completedDate}`) : null,
+                        status.detail ? e('p', { className: "text-sm text-gray-600 mt-1" }, status.detail) : null
+                    ),
+                    e('div', null,
+                        e('h3', { className: "font-display text-base font-bold border-b pb-1 mb-2 text-wcg-blue" }, "Overview"),
+                        e('p', { className: "text-gray-600 text-sm leading-relaxed" }, milestone.description)
+                    ),
+                    milestone.keyPoints ? e('div', null,
+                        e('h3', { className: "font-display text-base font-bold border-b pb-1 mb-2 text-wcg-blue" }, "Key Focus Areas"),
+                        e('ul', { className: "space-y-2" },
+                            milestone.keyPoints.map((point, idx) => e('li', {
+                                key: idx,
+                                className: "text-sm text-gray-600 bg-gray-50 p-2.5 rounded-lg border-l-4 flex items-start gap-2",
+                                style: { borderColor: '#007DBA' }
+                            },
+                                e('span', { className: "text-green-600 font-bold" }, "✓"),
+                                e('span', null, point)
+                            ))
+                        )
+                    ) : null,
+                    (milestone.id === 'dovetail' && pathwayStatus) ? e('div', null,
+                        e('h3', { className: "font-display text-base font-bold border-b pb-1 mb-2 text-wcg-blue" }, `Session Checklist (${pathwayStatus.dovetailCount}/10)`),
+                        e('p', { className: "text-xs italic mb-2", style: { color: milestone.color } }, "These 10 sessions form a curated learning pathway within the broader micro-learning landscape."),
+                        e('div', { className: "space-y-1.5" },
+                            DOVETAIL_SESSIONS.map((session, idx) => {
+                                const done = pathwayStatus.completedDovetails.includes(session);
+                                return e('div', { key: idx, className: `flex items-center gap-2 p-2 rounded-lg border ${done ? 'border-green-300 bg-green-50' : 'border-gray-200 bg-gray-50'}` },
+                                    e('span', { className: `flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-xs ${done ? 'bg-green-500 text-white' : 'bg-gray-300 text-gray-500'}` }, done ? '✓' : idx + 1),
+                                    e('span', { className: `text-sm ${done ? 'text-green-800 font-medium' : 'text-gray-500'}` }, session)
+                                );
+                            })
+                        ),
+                        milestone.sessionsInfoUrl ? e('div', { className: "mt-3" },
+                            e('a', {
+                                href: milestone.sessionsInfoUrl, target: "_blank", rel: "noopener noreferrer",
+                                className: "inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-sm text-white transition-colors shadow",
+                                style: { background: milestone.color }
+                            }, "View Session Details & Schedule")
+                        ) : null
+                    ) : null,
+                    renderAvailability(),
+                    milestone.next ? e('div', null,
+                        e('h3', { className: "font-display text-base font-bold border-b pb-1 mb-2 text-wcg-blue" }, "Next Steps"),
+                        e('p', { className: "text-sm text-gray-600" }, milestone.next)
+                    ) : null
+                )
+            );
+        }
+
+        // === SESSION DETAIL SHEET (upcoming sessions) ===
+        function SessionDetailModal({ session, onClose }) {
+            if (!session) return null;
+            return e(Sheet, { onClose, maxWidth: 'sm:max-w-lg' },
+                e('div', { className: "p-6 border-b border-gray-200" },
+                    e('h3', { className: "text-xl font-display font-bold text-wcg-blue pr-8" }, session.name),
+                    e('p', { className: "text-sm text-gray-500 mt-1" }, `${session.district} • ${session.level}`)
+                ),
+                e('div', { className: "p-6 space-y-4" },
+                    e('div', { className: "grid grid-cols-2 gap-4" },
+                        e('div', null,
+                            e('span', { className: "text-xs font-bold text-gray-500 uppercase" }, "Date"),
+                            e('p', { className: "font-semibold text-gray-900" }, session.date)
+                        ),
+                        e('div', null,
+                            e('span', { className: "text-xs font-bold text-gray-500 uppercase" }, "Time"),
+                            e('p', { className: "font-semibold text-gray-900" }, session.time || 'TBA')
+                        )
+                    ),
+                    session.venue ? e('div', null,
+                        e('span', { className: "text-xs font-bold text-gray-500 uppercase" }, "Venue"),
+                        e('p', { className: "text-gray-700" }, session.venue)
+                    ) : null,
+                    e('div', null,
+                        e('span', { className: "text-xs font-bold text-gray-500 uppercase" }, "Description"),
+                        e('p', { className: "text-gray-700 text-sm mt-1" }, session.description || 'No description available.')
+                    ),
+                    session.link ? e('div', { className: "pt-4" },
+                        e('a', {
+                            href: session.link, target: "_blank", rel: "noopener noreferrer",
+                            className: "block w-full text-center bg-wcg-blue text-white font-bold py-3.5 px-4 rounded-xl hover:bg-blue-800 transition-colors shadow-lg"
+                        }, "Register Now")
+                    ) : null
+                )
+            );
+        }
+
+        // ============================================================
+        // NEXT STEPS
+        // ============================================================
+
+        function SuggestionCard({ icon, title, description, remainingList, remainingMore, type, sessions, ctas, onSessionClick }) {
+            const typeColor = {
+                action: '#001489',
+                progress: '#FDB913',
+                celebration: '#76B82A',
+                invitation: '#672D82',
+                info: '#C8126E'
+            }[type] || '#9CA3AF';
+
+            return e('div', { className: `suggestion-card bg-white rounded-2xl p-5 shadow-sm border border-gray-100`, style: { borderLeft: `4px solid ${typeColor}` } },
+                e('div', { className: "flex items-start gap-3 mb-2" },
+                    e('span', { className: "text-2xl flex-shrink-0" }, icon),
+                    e('h4', { className: "font-display font-bold text-wcg-dark leading-snug" }, title)
+                ),
+                description ? e('p', { className: "text-sm text-gray-600 mb-2 whitespace-pre-line" }, description) : null,
+                (remainingList && remainingList.length > 0) ? e('ul', { className: "text-sm text-gray-600 mb-3 list-disc pl-5 space-y-1" },
+                    remainingList.map((name, idx) => e('li', { key: idx }, name)),
+                    remainingMore > 0 ? e('li', { key: 'more' }, `+${remainingMore} more`) : null
+                ) : null,
+                (sessions && sessions.length > 0) ? e('div', { className: "mb-3" },
+                    e('p', { className: "text-xs font-bold text-gray-500 uppercase mb-1.5" }, "Upcoming Sessions"),
+                    e('div', { className: "space-y-1.5" },
+                        sessions.slice(0, 3).map((s, idx) => e('button', {
+                            key: idx,
+                            onClick: () => onSessionClick(s),
+                            className: "block w-full text-left text-xs bg-wcg-mist rounded-lg px-3 py-2.5 hover:bg-blue-50 border border-gray-100 transition-colors"
+                        },
+                            e('span', { className: "font-semibold text-wcg-blue" }, s.name), ' — ', s.date
+                        ))
+                    )
+                ) : null,
+                (ctas && ctas.length > 0) ? e('div', { className: "pt-3 mt-3 border-t border-gray-100 flex flex-wrap gap-2" },
+                    ctas.map((cta, idx) => e('a', {
+                        key: idx, href: cta.url, target: "_blank", rel: "noopener noreferrer",
+                        className: `inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl font-bold text-xs text-white transition-colors shadow ${cta.style === 'primary' ? 'bg-green-600 hover:bg-green-700' : 'bg-wcg-blue hover:bg-blue-800'}`
+                    }, cta.label))
+                ) : null
+            );
+        }
+
+        function NextStepsTab({ suggestions, onSessionClick }) {
+            if (suggestions.length === 0) {
+                return e('div', { className: "bg-white rounded-2xl shadow-sm border border-gray-100 p-8 text-center animate-fade-in-up" },
+                    e('span', { className: "text-4xl block mb-3" }, "🎉"),
+                    e('h3', { className: "font-display text-lg font-bold text-wcg-dark mb-1" }, "You're all caught up!"),
+                    e('p', { className: "text-sm text-gray-600" }, "No new suggestions right now — check back after your next session.")
+                );
+            }
+            return e('div', { className: "animate-fade-in-up space-y-4" },
+                suggestions.map((suggestion, idx) => e(SuggestionCard, Object.assign({ key: idx, onSessionClick }, suggestion)))
+            );
+        }
+
+        // ============================================================
+        // HISTORY
+        // ============================================================
+
+        function FilterSheet({ filters, setFilters, filterOptions, onClose }) {
+            const [draft, setDraft] = useState(filters);
+            const apply = () => { setFilters(draft); onClose(); };
+            const reset = () => { const cleared = { level: '', district: '', mode: '', category: '' }; setDraft(cleared); setFilters(cleared); onClose(); };
+
+            const Select = (label, key, options) => e('div', { className: 'mb-4' },
+                e('label', { className: 'block text-sm font-semibold text-gray-700 mb-2' }, label),
+                e('select', {
+                    value: draft[key],
+                    onChange: (ev) => setDraft({ ...draft, [key]: ev.target.value }),
+                    className: 'w-full px-3 py-3 border border-gray-200 bg-wcg-mist rounded-xl focus:ring-2 focus:ring-wcg-blue text-sm'
+                },
+                    e('option', { value: '' }, `All ${label}`),
+                    ...options.map(opt => e('option', { key: opt, value: opt }, opt))
+                )
+            );
+
+            return e(Sheet, { onClose, maxWidth: 'sm:max-w-md' },
+                e('div', { className: 'p-6' },
+                    e('h3', { className: 'font-display text-lg font-bold text-wcg-dark mb-4' }, 'Filter Sessions'),
+                    Select('Development Level', 'level', filterOptions.levels),
+                    Select('Hosting District', 'district', filterOptions.districts),
+                    Select('Delivery Mode', 'mode', filterOptions.modes),
+                    e('div', { className: 'mb-2' },
+                        e('label', { className: 'block text-sm font-semibold text-gray-700 mb-2' }, 'Category'),
+                        e('div', { className: 'flex gap-2' },
+                            [{ v: '', l: 'All' }, { v: 'spark', l: '⭐ Sparks' }, { v: 'dovetail', l: '💎 Dovetail' }].map(opt =>
+                                e('button', {
+                                    key: opt.v,
+                                    onClick: () => setDraft({ ...draft, category: opt.v }),
+                                    className: `flex-1 py-2.5 rounded-xl text-xs font-bold border-2 transition-colors ${draft.category === opt.v ? 'border-wcg-blue bg-wcg-blue text-white' : 'border-gray-200 text-gray-600'}`
+                                }, opt.l)
+                            )
+                        )
+                    ),
+                    e('div', { className: 'flex gap-3 mt-6' },
+                        e('button', { onClick: reset, className: 'flex-1 py-3 rounded-xl font-bold text-sm border-2 border-gray-200 text-gray-600' }, 'Reset'),
+                        e('button', { onClick: apply, className: 'flex-1 py-3 rounded-xl font-bold text-sm bg-wcg-blue text-white shadow' }, 'Apply Filters')
+                    )
+                )
+            );
+        }
+
+        function HistoryTab({
+            profileName, filteredSessions, sessionsByYear, filterOptions,
+            filters, setFilters, viewMode, setViewMode
+        }) {
+            const [filterOpen, setFilterOpen] = useState(false);
+            const activeFilterCount = ['level', 'district', 'mode', 'category'].filter(k => filters[k]).length;
+
+            const timelineByYear = useMemo(() => {
+                const years = {};
+                filteredSessions.forEach(s => {
+                    const year = s.year;
+                    const q = getQuarter(s.parsedDate) || 0;
+                    if (!years[year]) years[year] = {};
+                    if (!years[year][q]) years[year][q] = [];
+                    years[year][q].push(s);
+                });
+                return Object.keys(years).sort((a, b) => b - a).map(year => ({
+                    year,
+                    total: Object.values(years[year]).reduce((sum, arr) => sum + arr.length, 0),
+                    quarters: Object.keys(years[year]).sort((a, b) => b - a).map(q => ({
+                        quarter: Number(q),
+                        sessions: [...years[year][q]].sort((a, b) => (a.parsedDate || 0) - (b.parsedDate || 0))
+                    }))
+                }));
+            }, [filteredSessions]);
+
+            const legend = e('div', { className: 'bg-white rounded-2xl shadow-sm border border-gray-100 p-4 no-print text-xs text-gray-600 space-y-2' },
+                e('div', { className: 'flex items-center gap-2' },
+                    e('span', { className: 'inline-block w-3.5 h-3.5 bg-pink-100 border border-gray-300 rounded flex-shrink-0' }),
+                    e('span', null,
+                        'Highlighted sessions are ', e('strong', null, 'Dovetail Essentials'), '. ',
+                        e('a', { href: 'https://jacovanniekerk-ux.github.io/wcedsessions/dovetail-essentials.html', target: '_blank', rel: 'noopener noreferrer', className: 'text-wcg-blue font-semibold' }, 'Learn more')
+                    )
+                ),
+                e('div', { className: 'flex items-center gap-2' },
+                    e('span', { className: 'inline-block w-3.5 h-3.5 bg-yellow-100 border border-gray-300 rounded flex-shrink-0' }),
+                    e('span', null,
+                        'Highlighted sessions award a ', e('strong', null, 'Spark'), '. ',
+                        e('a', { href: 'https://jacovanniekerk-ux.github.io/wcedsessions/pathway.html', target: '_blank', rel: 'noopener noreferrer', className: 'text-wcg-blue font-semibold' }, 'Learn more')
+                    )
+                )
+            );
+
+            const timelineView = e('div', { className: 'bg-white rounded-2xl shadow-sm border border-gray-100 p-5 no-print' },
+                timelineByYear.length === 0
+                    ? e('p', { className: 'text-sm text-gray-500 text-center py-6' }, 'No sessions to display for the selected filters.')
+                    : e('div', { className: 'space-y-7' },
+                        timelineByYear.map(({ year, total, quarters }) => e('div', { key: year },
+                            e('div', { className: 'flex items-center gap-3 mb-4' },
+                                e('span', { className: 'font-display text-xl font-bold text-wcg-dark' }, year),
+                                e('span', { className: 'text-xs text-gray-500 bg-wcg-mist px-2 py-0.5 rounded-full font-semibold' }, `${total} session${total !== 1 ? 's' : ''}`)
+                            ),
+                            e('div', { className: 'relative pl-6 border-l-2 border-gray-100 space-y-6' },
+                                quarters.map(({ quarter, sessions }) => e('div', { key: quarter, className: 'relative' },
+                                    e('span', { className: 'absolute -left-[29px] top-1 w-3.5 h-3.5 rounded-full border-2 border-white shadow', style: { background: '#001489' } }),
+                                    e('div', { className: 'flex items-center gap-2 mb-2' },
+                                        e('span', { className: 'text-sm font-bold text-wcg-blue' }, QUARTER_LABELS[quarter] || 'Undated'),
+                                        e('span', { className: 'text-xs text-gray-400' }, `(${sessions.length})`)
+                                    ),
+                                    e('div', { className: 'space-y-1.5' },
+                                        sessions.map((s, idx) => e('div', {
+                                            key: idx,
+                                            className: `flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 text-xs rounded-xl px-3 py-2.5 ${s.isDovetail ? 'bg-pink-50' : s.isSpark ? 'bg-yellow-50' : 'bg-wcg-mist'}`
+                                        },
+                                            e('span', { className: 'flex items-center gap-2 text-gray-700 font-medium' },
+                                                e('span', { className: `w-2.5 h-2.5 rounded-full flex-shrink-0 ${getLevelDotColor(s['Development Level'])}` }),
+                                                s['Session Name'] || 'Untitled Session'
+                                            ),
+                                            e('span', { className: 'text-gray-400 flex-shrink-0' }, formatDate(s.parsedDate))
+                                        ))
+                                    )
+                                ))
+                            )
+                        ))
+                    )
+            );
+
+            const cardsView = e('div', { className: 'space-y-8 no-print' },
+                sessionsByYear.map(({ year, sessions }) =>
+                    e('div', { key: year },
+                        e('h3', { className: 'font-display text-lg font-bold text-wcg-dark mb-4 pb-2 border-b-2 border-wcg-blue' }, year),
+                        e('div', { className: 'grid gap-4 sm:grid-cols-2' },
+                            sessions.map((session, idx) =>
+                                e('div', {
+                                    key: idx,
+                                    className: `bg-white rounded-2xl shadow-sm border border-gray-100 p-5 relative overflow-hidden ${session.isSpark ? 'border-l-4 border-l-wcg-yellow' : session.isDovetail ? 'border-l-4 border-l-wcg-pink' : ''}`
+                                },
+                                    e('div', { className: 'flex justify-between items-start mb-3 gap-2' },
+                                        e('span', { className: `px-2.5 py-1 rounded-full text-xs font-semibold ${getLevelColor(session['Development Level'])}` }, session['Development Level'] || 'N/A'),
+                                        e('span', { className: 'text-xs text-gray-400 flex-shrink-0' }, formatDate(session.parsedDate))
+                                    ),
+                                    e('h4', { className: 'font-display font-semibold text-wcg-dark mb-3 leading-snug' }, session['Session Name'] || 'Untitled Session'),
+                                    e('div', { className: 'space-y-1 text-xs text-gray-600 mb-3' },
+                                        e('p', null, e('span', { className: 'font-medium' }, 'Facilitator:'), ' ' + (session['Facilitator'] || 'N/A')),
+                                        e('p', null, e('span', { className: 'font-medium' }, 'Hosting Unit:'), ' ' + (session['Hosting District'] || 'N/A')),
+                                        e('p', null, e('span', { className: 'font-medium' }, 'Mode:'), ' ' + (session['Delivery Mode'] || 'N/A'))
+                                    ),
+                                    session.isSpark && e('div', { className: 'mt-3 pt-3 border-t border-gray-100' },
+                                        e('span', { className: 'inline-flex items-center gap-1 bg-wcg-yellow text-black px-2 py-1 rounded-full text-xs font-bold' }, '⭐ Spark Session')
+                                    ),
+                                    session.isDovetail && e('div', { className: 'mt-3 pt-3 border-t border-gray-100' },
+                                        e('span', { className: 'inline-flex items-center gap-1 bg-wcg-pink text-white px-2 py-1 rounded-full text-xs font-bold' }, '💎 Dovetail Essential')
+                                    ),
+                                    e('div', { className: 'mt-4 pt-3 border-t border-gray-100' },
+                                        e('a', {
+                                            href: generateCertificateLink(profileName, session['Session Name'], session['Hosting District'], session.parsedDate),
+                                            target: '_blank', rel: 'noopener noreferrer',
+                                            className: 'inline-flex items-center justify-center gap-1 border-2 border-gray-200 text-gray-700 px-3 py-2 rounded-xl text-xs font-semibold active:border-wcg-blue active:text-wcg-blue transition-colors'
+                                        }, 'Generate Certificate')
+                                    )
+                                )
+                            )
+                        )
+                    )
+                )
+            );
+
+            const tableView = e('div', { className: 'bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden no-print' },
+                e('div', { className: 'overflow-x-auto' },
+                    e('table', { className: 'w-full' },
+                        e('thead', { className: 'bg-wcg-mist border-b border-gray-100' },
+                            e('tr', null,
+                                e('th', { className: 'px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase' }, 'Date'),
+                                e('th', { className: 'px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase' }, 'Session Name'),
+                                e('th', { className: 'px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase' }, 'Level'),
+                                e('th', { className: 'px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase' }, 'Facilitator'),
+                                e('th', { className: 'px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase' }, 'Hosting Unit'),
+                                e('th', { className: 'px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase' }, 'Mode'),
+                                e('th', { className: 'px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase' }, 'Certificate')
+                            )
+                        ),
+                        e('tbody', { className: 'divide-y divide-gray-100' },
+                            filteredSessions.map((session, idx) =>
+                                e('tr', { key: idx, className: `${session.isSpark ? 'bg-yellow-50/60' : session.isDovetail ? 'bg-pink-50/60' : ''}` },
+                                    e('td', { className: 'px-4 py-3 text-sm text-gray-900 whitespace-nowrap' }, formatDate(session.parsedDate)),
+                                    e('td', { className: 'px-4 py-3 text-sm text-gray-900' }, session['Session Name'] || 'Untitled Session'),
+                                    e('td', { className: 'px-4 py-3 text-sm' },
+                                        e('span', { className: `px-2 py-1 rounded text-xs font-semibold ${getLevelColor(session['Development Level'])}` }, session['Development Level'] || 'N/A')
+                                    ),
+                                    e('td', { className: 'px-4 py-3 text-sm text-gray-700' }, session['Facilitator'] || 'N/A'),
+                                    e('td', { className: 'px-4 py-3 text-sm text-gray-700' }, session['Hosting District'] || 'N/A'),
+                                    e('td', { className: 'px-4 py-3 text-sm text-gray-700' }, session['Delivery Mode'] || 'N/A'),
+                                    e('td', { className: 'px-4 py-3 text-sm' },
+                                        e('a', {
+                                            href: generateCertificateLink(profileName, session['Session Name'], session['Hosting District'], session.parsedDate),
+                                            target: '_blank', rel: 'noopener noreferrer',
+                                            className: 'inline-flex items-center gap-1 border-2 border-gray-200 text-gray-700 px-2 py-1 rounded text-xs font-semibold hover:border-wcg-blue hover:text-wcg-blue transition-colors'
+                                        }, 'Generate')
+                                    )
+                                )
+                            )
+                        )
+                    )
+                )
+            );
+
+            const viewOptions = [
+                { id: 'timeline', label: 'Timeline', icon: '🕒' },
+                { id: 'cards', label: 'Cards', icon: '🗂️' },
+                { id: 'table', label: 'Table', icon: '📋' }
+            ];
+
+            return e('div', { className: 'space-y-5 animate-fade-in-up' },
+                filterOpen ? e(FilterSheet, { filters, setFilters, filterOptions, onClose: () => setFilterOpen(false) }) : null,
+
+                e('div', { className: 'flex gap-2 no-print' },
+                    e('button', {
+                        onClick: () => setFilterOpen(true),
+                        className: 'relative flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-gray-200 shadow-sm text-sm font-semibold text-gray-700'
+                    },
+                        e('span', null, '⚙️'), 'Filters',
+                        activeFilterCount > 0 ? e('span', { className: 'ml-1 w-5 h-5 rounded-full bg-wcg-blue text-white text-[10px] font-bold flex items-center justify-center' }, activeFilterCount) : null
+                    ),
+                    e('div', { className: 'flex-1 flex bg-white border border-gray-200 rounded-xl shadow-sm p-1 gap-1 overflow-x-auto no-scrollbar' },
+                        viewOptions.map(opt => e('button', {
+                            key: opt.id,
+                            onClick: () => setViewMode(opt.id),
+                            className: `flex-1 flex items-center justify-center gap-1 px-2 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-colors ${viewMode === opt.id ? 'bg-wcg-blue text-white' : 'text-gray-500'}`
+                        }, e('span', null, opt.icon), opt.label))
+                    )
+                ),
+
+                filteredSessions.length === 0
+                    ? e('div', { className: 'bg-white rounded-2xl shadow-sm border border-gray-100 p-8 text-center no-print' },
+                        e('p', { className: 'text-gray-600 text-sm' }, 'No sessions found matching the selected filters.')
+                    )
+                    : viewMode === 'timeline' ? timelineView : viewMode === 'cards' ? cardsView : tableView,
+
+                legend
+            );
+        }
+
+        // === CHECKLIST SHEET (Sparks / Dovetail) ===
+        function ChecklistModal({ isOpen, onClose, type, completedSessions, allSessions }) {
+            if (!isOpen) return null;
+            const title = type === 'spark' ? '⭐ Spark Sessions' : '💎 Dovetail Essentials';
+
+            const uniqueDovetails = type === 'spark'
+                ? [...new Set(allSessions.filter(s => isDovetail(s['Session Name'] && s['Session Name'].trim())).map(s => s['Session Name'] && s['Session Name'].trim()))]
+                : [];
+            const bonus5Dovetail = type === 'spark' && uniqueDovetails.length >= 5;
+            const sessionsList = type === 'spark' ? SPARK_SESSIONS : DOVETAIL_SESSIONS;
+
+            return e(Sheet, { onClose, maxWidth: 'sm:max-w-2xl' },
+                e('div', { className: 'p-6 border-b border-gray-100' },
+                    e('h3', { className: 'font-display text-xl font-bold text-wcg-dark pr-8' }, title)
+                ),
+                e('div', { className: 'p-6' },
+                    e('div', { className: 'space-y-2' },
+                        sessionsList.map((session, idx) => {
+                            const isCompleted = completedSessions.includes(session);
+                            return e('div', {
+                                key: idx,
+                                className: `flex items-start gap-3 p-3 rounded-xl border-2 ${isCompleted ? 'border-green-400 bg-green-50' : 'border-gray-200 bg-wcg-mist'}`
+                            },
+                                e('div', { className: `flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center ${isCompleted ? 'bg-green-500' : 'bg-gray-300'}` },
+                                    isCompleted && e('svg', { className: 'w-4 h-4 text-white', fill: 'none', stroke: 'currentColor', viewBox: '0 0 24 24' },
+                                        e('path', { strokeLinecap: 'round', strokeLinejoin: 'round', strokeWidth: 3, d: 'M5 13l4 4L19 7' })
+                                    )
+                                ),
+                                e('span', { className: `flex-1 text-sm ${isCompleted ? 'text-green-900 font-medium' : 'text-gray-500'}` }, session)
+                            );
+                        }),
+                        type === 'spark' && e('div', {
+                            className: `flex items-start gap-3 p-3 rounded-xl border-2 mt-4 ${bonus5Dovetail ? 'border-green-400 bg-green-50' : 'border-gray-200 bg-wcg-mist'}`
+                        },
+                            e('div', { className: `flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center ${bonus5Dovetail ? 'bg-green-500' : 'bg-gray-300'}` },
+                                bonus5Dovetail && e('svg', { className: 'w-4 h-4 text-white', fill: 'none', stroke: 'currentColor', viewBox: '0 0 24 24' },
+                                    e('path', { strokeLinecap: 'round', strokeLinejoin: 'round', strokeWidth: 3, d: 'M5 13l4 4L19 7' })
+                                )
+                            ),
+                            e('span', { className: `flex-1 text-sm ${bonus5Dovetail ? 'text-green-900 font-medium' : 'text-gray-500'}` },
+                                e('strong', null, 'Bonus Spark:'), ` Complete 5+ Dovetail Essentials (${uniqueDovetails.length}/5)`
+                            )
+                        )
+                    )
+                )
+            );
+        }
+
+        // === PRINT REPORT (always mounted, hidden on screen, shown only when printing) ===
+        // Always reflects the FULL, unfiltered attendance record — independent of
+        // whichever tab is open or how the on-screen table is filtered.
+        function PrintReport({ profileName, profile, allSessions }) {
+            const sortedSessions = useMemo(() =>
+                [...allSessions].sort((a, b) => (b.parsedDate || 0) - (a.parsedDate || 0)),
+                [allSessions]
+            );
+
+            const byLevel = useMemo(() => {
+                const levels = { 'Laying the Foundation': 0, 'I can do it': 0, 'I can do it better': 0, 'The Summit': 0 };
+                allSessions.forEach(s => {
+                    const level = s['Development Level'] && s['Development Level'].trim();
+                    if (levels.hasOwnProperty(level)) levels[level]++;
+                });
+                return levels;
+            }, [allSessions]);
+
+            const uniqueDovetails = useMemo(() =>
+                [...new Set(allSessions.filter(s => s.isDovetail).map(s => s['Session Name'] && s['Session Name'].trim()))],
+                [allSessions]
+            );
+
+            return e('div', { className: 'hidden print:block w-full' },
+                e('div', { className: 'text-center mb-8' },
+                    e('img', { src: 'header.png', alt: 'WCED Header', className: 'h-16 mx-auto mb-4' }),
+                    e('h2', { className: 'text-lg font-bold text-wcg-dark' }, 'Professional Development Attendance Record'),
+                    e('p', { className: 'text-sm text-gray-700 font-medium mt-1' }, profileName + (profile ? ` — ${profile.school}, ${profile.district}` : '')),
+                    e('p', { className: 'text-sm text-gray-600 mb-2' }, 'Report Generated: ' + new Date().toLocaleDateString('en-GB')),
+                    e('p', { className: 'text-xs text-gray-600 max-w-3xl mx-auto italic' },
+                        'Disclaimer: The information in this report is based on self-captured data which could lead to inaccurate data. We endeavour to ensure the data is as clear as possible.'
+                    )
+                ),
+                e('div', { className: 'mb-8' },
+                    e('h3', { className: 'text-base font-bold text-wcg-dark mb-2' }, 'Developmental Level Breakdown'),
+                    e('table', { className: 'w-full text-sm border-collapse border border-gray-300' },
+                        e('thead', null,
+                            e('tr', { className: 'bg-gray-100' },
+                                e('th', { className: 'border border-gray-300 px-3 py-1.5 text-center' }, 'Total Sessions'),
+                                e('th', { className: 'border border-gray-300 px-3 py-1.5 text-center' }, 'Laying the Foundation'),
+                                e('th', { className: 'border border-gray-300 px-3 py-1.5 text-center' }, 'I can do it'),
+                                e('th', { className: 'border border-gray-300 px-3 py-1.5 text-center' }, 'I can do it better'),
+                                e('th', { className: 'border border-gray-300 px-3 py-1.5 text-center' }, 'The Summit')
+                            )
+                        ),
+                        e('tbody', null,
+                            e('tr', null,
+                                e('td', { className: 'border border-gray-300 px-3 py-1.5 text-center font-bold text-lg' }, allSessions.length),
+                                e('td', { className: 'border border-gray-300 px-3 py-1.5 text-center' }, byLevel['Laying the Foundation']),
+                                e('td', { className: 'border border-gray-300 px-3 py-1.5 text-center' }, byLevel['I can do it']),
+                                e('td', { className: 'border border-gray-300 px-3 py-1.5 text-center' }, byLevel['I can do it better']),
+                                e('td', { className: 'border border-gray-300 px-3 py-1.5 text-center' }, byLevel['The Summit'])
+                            )
+                        )
+                    )
+                ),
+                e('div', { className: 'mb-8 w-full' },
+                    e('div', { className: 'border border-gray-300 p-4 rounded bg-pink-50' },
+                        e('h4', { className: 'font-bold text-sm mb-3 flex items-center justify-between' },
+                            e('span', null, 'Dovetail Essentials'),
+                            e('span', { className: 'text-gray-600 font-normal' }, `${uniqueDovetails.length} / ${DOVETAIL_SESSIONS.length}`)
+                        ),
+                        e('ul', { className: 'text-xs space-y-2 grid grid-cols-2 gap-x-4' },
+                            DOVETAIL_SESSIONS.map(s => {
+                                const isCompleted = uniqueDovetails.includes(s);
+                                return e('li', { key: s, className: `flex items-start gap-2 ${isCompleted ? 'text-gray-900 font-medium' : 'text-gray-500'}` },
+                                    e('span', { className: 'w-4 h-4 border border-gray-400 bg-white inline-flex items-center justify-center font-bold flex-shrink-0 mt-0.5' }, isCompleted ? '✓' : ''),
+                                    e('span', null, s)
+                                );
+                            })
+                        )
+                    )
+                ),
+                e('h3', { className: 'text-base font-bold text-wcg-dark mb-2' }, 'Detailed Attendance Record'),
+                e('table', { className: 'w-full text-xs border-collapse border border-gray-400' },
+                    e('thead', null,
+                        e('tr', { className: 'bg-gray-200' },
+                            e('th', { className: 'border border-gray-400 px-2 py-1.5 text-left font-semibold w-20' }, 'Date'),
+                            e('th', { className: 'border border-gray-400 px-2 py-1.5 text-left font-semibold' }, 'Session Name'),
+                            e('th', { className: 'border border-gray-400 px-2 py-1.5 text-left font-semibold' }, 'Development Level'),
+                            e('th', { className: 'border border-gray-400 px-2 py-1.5 text-left font-semibold' }, 'Facilitator'),
+                            e('th', { className: 'border border-gray-400 px-2 py-1.5 text-left font-semibold w-24' }, 'Mode')
+                        )
+                    ),
+                    e('tbody', null,
+                        sortedSessions.map((row, idx) => {
+                            let rowColor = '';
+                            if (row.isDovetail) rowColor = 'bg-pink-100';
+                            else if (row.isSpark) rowColor = 'bg-yellow-100';
+                            return e('tr', { key: idx, className: rowColor },
+                                e('td', { className: 'border border-gray-400 px-2 py-1' }, formatDate(row.parsedDate)),
+                                e('td', { className: 'border border-gray-400 px-2 py-1 font-medium' }, row['Session Name'] || 'Untitled'),
+                                e('td', { className: 'border border-gray-400 px-2 py-1' }, row['Development Level'] || 'N/A'),
+                                e('td', { className: 'border border-gray-400 px-2 py-1' }, row['Facilitator'] || 'N/A'),
+                                e('td', { className: 'border border-gray-400 px-2 py-1' }, row['Delivery Mode'] || 'N/A')
+                            );
+                        })
+                    )
+                ),
+                e('div', { className: 'mt-4 text-xs text-gray-700 space-y-2' },
+                    e('div', { className: 'flex items-center gap-2' },
+                        e('span', { className: 'inline-block w-4 h-4 bg-pink-100 border border-gray-400 rounded flex-shrink-0' }),
+                        e('span', null,
+                            'Highlighted sessions are ', e('strong', null, 'Dovetail Essentials'), ' sessions. ',
+                            e('a', { href: 'https://jacovanniekerk-ux.github.io/wcedsessions/dovetail-essentials.html', target: '_blank', rel: 'noopener noreferrer', className: 'text-blue-600' }, 'Learn more')
+                        )
+                    ),
+                    e('div', { className: 'flex items-center gap-2' },
+                        e('span', { className: 'inline-block w-4 h-4 bg-yellow-100 border border-gray-400 rounded flex-shrink-0' }),
+                        e('span', null,
+                            'Highlighted sessions are sessions that award a ', e('strong', null, 'Spark'), '. ',
+                            e('a', { href: 'https://jacovanniekerk-ux.github.io/wcedsessions/pathway.html', target: '_blank', rel: 'noopener noreferrer', className: 'text-blue-600' }, 'Learn more')
+                        )
+                    )
+                )
+            );
+        }
+
+        // ============================================================
+        // DASHBOARD HERO (profile + trail-ring summary)
+        // ============================================================
+        function DashboardHero({ profile, pathwayStatus, onOpenPathway, onOpenDovetail, onOpenHistory }) {
+            const initials = (profile.name || '').split(' ').filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase();
+            const stats = [
+                { key: 'total', label: 'Total Sessions', value: pathwayStatus.totalSessions, color: '#001489', onClick: onOpenHistory },
+                { key: 'found', label: 'Foundation', value: pathwayStatus.byLevel['Laying the Foundation'], color: '#76B82A' },
+                { key: 'ican', label: 'I Can Do It', value: pathwayStatus.byLevel['I can do it'], color: '#FDB913' },
+                { key: 'better', label: 'Better', value: pathwayStatus.byLevel['I can do it better'], color: '#E30613' },
+                { key: 'summit', label: 'Summit', value: pathwayStatus.byLevel['The Summit'], color: '#001489' }
+            ];
+
+            return e('div', { className: 'bg-white rounded-3xl shadow-sm border border-gray-100 p-5 sm:p-6 no-print' },
+                e('div', { className: 'flex items-center gap-4' },
+                    e('div', {
+                        className: 'w-14 h-14 rounded-2xl flex items-center justify-center text-white font-display font-bold text-lg flex-shrink-0',
+                        style: { background: 'linear-gradient(135deg, #001489 0%, #C8126E 100%)' }
+                    }, initials || '🙂'),
+                    e('div', { className: 'min-w-0 flex-1' },
+                        e('h2', { className: 'font-display text-xl font-bold text-wcg-dark truncate' }, profile.name),
+                        e('p', { className: 'text-xs text-gray-500 truncate' }, `${profile.school} • ${profile.district}`)
+                    ),
+                    e(CircularProgress, { percent: pathwayStatus.overallProgress, size: 58, strokeWidth: 6, color: '#001489', trackColor: '#EDEFF6' },
+                        e('span', { className: 'text-xs font-display font-bold text-wcg-blue' }, `${Math.round(pathwayStatus.overallProgress)}%`)
+                    )
+                ),
+                e('p', { className: 'text-[11px] text-gray-400 mt-3' }, 'Data last updated: ' + DATA_LAST_UPDATED),
+
+                e('div', { className: 'grid grid-cols-2 gap-3 mt-5' },
+                    e('button', {
+                        onClick: onOpenPathway,
+                        className: 'flex items-center gap-3 rounded-2xl p-3.5 bg-yellow-50 active:scale-[0.98] transition-transform'
+                    },
+                        e('span', { className: 'text-2xl' }, '⭐'),
+                        e('div', { className: 'text-left' },
+                            e('div', { className: 'font-display font-bold text-lg text-wcg-yellow leading-none' }, pathwayStatus.totalSparks),
+                            e('div', { className: 'text-[11px] text-gray-500 font-semibold mt-0.5' }, 'Sparks earned')
+                        )
+                    ),
+                    e('button', {
+                        onClick: onOpenDovetail,
+                        className: 'flex items-center gap-3 rounded-2xl p-3.5 bg-pink-50 active:scale-[0.98] transition-transform'
+                    },
+                        e('span', { className: 'text-2xl' }, '💎'),
+                        e('div', { className: 'text-left' },
+                            e('div', { className: 'font-display font-bold text-lg text-wcg-pink leading-none' }, `${pathwayStatus.dovetailCount}/10`),
+                            e('div', { className: 'text-[11px] text-gray-500 font-semibold mt-0.5' }, 'Dovetail Essentials')
+                        )
+                    )
+                ),
+
+                e('div', { className: 'flex gap-2 mt-4 overflow-x-auto no-scrollbar -mx-1 px-1' },
+                    stats.map(stat => e('button', {
+                        key: stat.key,
+                        onClick: stat.onClick || undefined,
+                        className: `snap-x-chip flex-shrink-0 min-w-[92px] rounded-2xl p-3 text-center ${stat.onClick ? 'active:scale-[0.97]' : ''}`,
+                        style: { background: stat.color + '14' }
+                    },
+                        e('div', { className: 'font-display font-bold text-xl', style: { color: stat.color } }, stat.value),
+                        e('div', { className: 'text-[10px] text-gray-500 font-semibold mt-0.5 whitespace-nowrap' }, stat.label)
+                    ))
+                )
+            );
+        }
+
+        // === MAIN APP ===
+        function App() {
+            const [loading, setLoading] = useState(true);
+            const [searching, setSearching] = useState(false);
+            const [searchError, setSearchError] = useState('');
+            const [searchType, setSearchType] = useState('persal');
+            const [searchValue, setSearchValue] = useState('');
+            const [acknowledged, setAcknowledged] = useState(false);
+            const [results, setResults] = useState(null);
+            const [upcomingData, setUpcomingData] = useState([]);
+            const [activeTab, setActiveTab] = useState('pathway');
+            const [selectedMilestone, setSelectedMilestone] = useState(null);
+            const [selectedSession, setSelectedSession] = useState(null);
+            const [modalOpen, setModalOpen] = useState({ isOpen: false, type: null });
+            const [viewMode, setViewMode] = useState('timeline');
+            const [filters, setFilters] = useState({ level: '', district: '', mode: '', category: '' });
+
+            // Load the upcoming sessions CSV (used by the Next Steps tab)
+            useEffect(() => {
+                Papa.parse('upcoming-sessions.csv', {
+                    download: true,
+                    header: true,
+                    skipEmptyLines: true,
+                    complete: (result) => setUpcomingData(result.data),
+                    error: () => setUpcomingData([])
+                });
+            }, []);
+
+            // Swap the document title while printing so browsers that still show a
+            // header/footer display something meaningful rather than the app name.
+            useEffect(() => {
+                if (!results || !results.profile) return;
+                const originalTitle = document.title;
+                const printTitle = `${results.profile.name} - PD Attendance Record`;
+                const handleBeforePrint = () => { document.title = printTitle; };
+                const handleAfterPrint = () => { document.title = originalTitle; };
+                window.addEventListener('beforeprint', handleBeforePrint);
+                window.addEventListener('afterprint', handleAfterPrint);
+                return () => {
+                    window.removeEventListener('beforeprint', handleBeforePrint);
+                    window.removeEventListener('afterprint', handleAfterPrint);
+                    document.title = originalTitle;
+                };
+            }, [results]);
+
+            // Auto-login from localStorage
+            useEffect(() => {
+                (async () => {
+                    try {
+                        const saved = JSON.parse(localStorage.getItem('wced_pd_credentials') || 'null');
+                        if (saved && saved.searchType && saved.searchValue) {
+                            const searchKey = saved.searchValue.trim();
+                            const records = await fetchRecordsByKey(saved.searchType, searchKey);
+                            if (records.length > 0) {
+                                setSearchType(saved.searchType);
+                                setSearchValue(saved.searchValue);
+                                setAcknowledged(true);
+                                setResults(buildResultsFromRecords(records));
+                                setFilters({ level: '', district: '', mode: '', category: '' });
+                            }
+                        }
+                    } catch (err) {
+                        console.error('Error during auto-login lookup:', err);
+                    } finally {
+                        setLoading(false);
+                    }
+                })();
+            }, []);
+
+            const handleSearch = async () => {
+                if (!searchValue.trim() || !acknowledged || searching) return;
+                const searchKey = searchValue.trim();
+                setSearching(true);
+                setSearchError('');
+                try {
+                    const records = await fetchRecordsByKey(searchType, searchKey);
+                    setResults(buildResultsFromRecords(records));
+                    setFilters({ level: '', district: '', mode: '', category: '' });
+                    setActiveTab('pathway');
+                    localStorage.setItem('wced_pd_credentials', JSON.stringify({ searchType, searchValue: searchKey }));
+                } catch (err) {
+                    console.error('Error fetching records from Supabase:', err);
+                    setSearchError('Something went wrong looking up your records. Please try again.');
+                } finally {
+                    setSearching(false);
+                }
+            };
+
+            const handleLogout = () => {
+                localStorage.removeItem('wced_pd_credentials');
+                setResults(null);
+                setSearchValue('');
+                setAcknowledged(false);
+                setActiveTab('pathway');
+            };
+
+            // === PATHWAY STATUS (drives summary strip + Pathway tab) ===
+            const pathwayStatus = useMemo(() => {
+                if (!results || !results.sessions) return null;
+                const sessions = results.sessions;
+                const sessionNames = [...new Set(sessions.map(s => s['Session Name'] && s['Session Name'].trim()).filter(Boolean))];
+
+                const hasAdoption = sessionNames.includes('Adoption Strategy');
+                const hasDigitalSkills = sessionNames.includes('Digital Skills Course');
+                const hasCyberEffect = sessionNames.includes('Cyber Effect Ambassador Initiation Course');
+                const hasThinkTank = sessionNames.includes('Facilitator Think Tank');
+                const hasElevate = sessionNames.includes('Elevate');
+                const hasShiftSpark = sessionNames.includes('Shift and Spark');
+
+                const completedDovetails = DOVETAIL_SESSIONS.filter(d => sessionNames.includes(d));
+                const dovetailCount = completedDovetails.length;
+                const remainingDovetails = DOVETAIL_SESSIONS.filter(d => !sessionNames.includes(d));
+                const hasDovetailSpark = dovetailCount >= 5;
+
+                const uniqueSparks = PATHWAY_SPARK_SESSIONS.filter(s => sessionNames.includes(s));
+                const pathwaySparks = uniqueSparks.length + (hasDovetailSpark ? 1 : 0);
+                const totalSparks = pathwaySparks + (hasThinkTank ? 1 : 0);
+
+                const getCompletionDate = (sessionName) => {
+                    const match = sessions.find(s => s['Session Name'] && s['Session Name'].trim() === sessionName);
+                    return match ? formatDate(match.parsedDate) : null;
+                };
+
+                const milestoneStatuses = [
+                    { state: hasAdoption ? 'completed' : 'not-started', detail: hasAdoption ? null : 'Enrols in cohorts twice a year', completedDate: getCompletionDate('Adoption Strategy') },
+                    { state: dovetailCount >= 5 ? 'completed' : dovetailCount > 0 ? 'in-progress' : 'not-started', detail: dovetailCount > 0 ? `${dovetailCount}/10 sessions completed` : 'Flexible micro-learning sessions', progress: (dovetailCount / 10) * 100, completedDate: null },
+                    { state: hasDigitalSkills ? 'completed' : 'not-started', detail: hasDigitalSkills ? null : hasAdoption ? 'By invitation after Adoption Strategy' : 'Complete Adoption Strategy first', completedDate: getCompletionDate('Digital Skills Course') },
+                    { state: hasCyberEffect ? 'completed' : 'not-started', detail: hasCyberEffect ? null : 'By invitation', completedDate: getCompletionDate('Cyber Effect Ambassador Initiation Course') }
+                ];
+
+                const completedMilestones = milestoneStatuses.filter(m => m.state === 'completed').length;
+                const overallProgress = (completedMilestones / 4) * 100;
+
+                const byLevel = { 'Laying the Foundation': 0, 'I can do it': 0, 'I can do it better': 0, 'The Summit': 0 };
+                sessions.forEach(s => {
+                    const level = s['Development Level'] && s['Development Level'].trim();
+                    if (byLevel.hasOwnProperty(level)) byLevel[level]++;
+                });
+
+                return {
+                    milestoneStatuses, hasAdoption, hasDigitalSkills, hasCyberEffect, hasThinkTank, hasElevate, hasShiftSpark,
+                    dovetailCount, completedDovetails, remainingDovetails, hasDovetailSpark,
+                    pathwaySparks, totalSparks, overallProgress, totalSessions: sessions.length, byLevel
+                };
+            }, [results]);
+
+            // === SUGGESTIONS (drives Next Steps tab) ===
+            const suggestions = useMemo(() => {
+                if (!pathwayStatus) return [];
+                const { hasAdoption, hasDigitalSkills, hasCyberEffect, dovetailCount, remainingDovetails, totalSessions, hasDovetailSpark } = pathwayStatus;
+                const items = [];
+
+                if (!hasAdoption) {
+                    items.push({
+                        icon: '🧭', title: 'Start Your Journey: ICT Adoption Strategy',
+                        description: 'This 12-week, self-paced online course is the starting line for any educator looking to reimagine their approach to technology. Whether you are validating what you already know, picking up new skills, or shifting your mindset, the course offers a broad perspective on the digital landscape and the vision of the Transformation Agenda.\n\nRegardless of your current tech skill level, this foundational step helps you confidently integrate ICT to transform your classroom. By completing the course, you will earn your first Spark—igniting your ongoing pathway as a Transformation Agent.',
+                        type: 'action', ctas: [getAvailabilityCTA('adoption')].filter(Boolean)
+                    });
+                }
+
+                if (dovetailCount < 10) {
+                    const upcomingDovetailSessions = upcomingData
+                        .filter(row => {
+                            const name = row['Session Name'] && row['Session Name'].trim();
+                            const matchesName = remainingDovetails.some(d => name && name.toLowerCase().includes(d.toLowerCase().split(':')[0].toLowerCase()));
+                            if (!matchesName) return false;
+                            const dateStr = row['Date'] && row['Date'].trim();
+                            return isFutureOrToday(parseDate(dateStr));
+                        })
+                        .map(row => ({
+                            date: (row['Date'] && row['Date'].trim()) || 'TBA',
+                            name: row['Session Name'] && row['Session Name'].trim(),
+                            district: (row['HOSTING DISTRICT'] && row['HOSTING DISTRICT'].trim()) || '',
+                            time: row['Time'] || '',
+                            venue: row['Venue'] || '',
+                            link: row['Registration Link'] || row['Pre-Register'] || '',
+                            description: row['Session Desciption'] || '',
+                            level: row['Developmental Level'] || ''
+                        }))
+                        .sort((a, b) => parseDate(a.date) - parseDate(b.date))
+                        .slice(0, 8);
+
+                    const dovetailInfoCta = { label: 'View Session Details & Schedule', url: MILESTONES.find(m => m.id === 'dovetail').sessionsInfoUrl, style: 'secondary' };
+
+                    if (dovetailCount === 0) {
+                        items.push({
+                            icon: '🧰', title: 'Build Practical Skills: Dovetail Essentials',
+                            description: 'Choose from 10 focused micro-learning sessions (90-120 min each) to build practical digital skills. Complete 5 or more to earn a bonus Spark! Sessions run regularly across districts.',
+                            type: 'action', sessions: upcomingDovetailSessions, ctas: [dovetailInfoCta]
+                        });
+                   } else if (!hasDovetailSpark) {
+                        items.push({
+                            icon: '🧰', title: `Keep Going: ${dovetailCount}/10 Dovetail Essentials Done`,
+                            description: `You've completed ${dovetailCount} session${dovetailCount > 1 ? 's' : ''}. ${5 - dovetailCount > 0 ? `Complete ${5 - dovetailCount} more to earn your bonus Spark, or try these remaining sessions:` : 'Try these remaining sessions:'}`,
+                            remainingList: remainingDovetails.slice(0, 3),
+                            remainingMore: Math.max(0, remainingDovetails.length - 3),
+                            type: 'progress', sessions: upcomingDovetailSessions, ctas: [dovetailInfoCta]
+                        });
+                    } else {
+                        items.push({
+                            icon: '🧰', title: `Dovetail Essentials Spark Earned! (${dovetailCount}/10 Complete)`,
+                            description: `Great progress! You've earned your Dovetail Spark for completing at least half of the pathway. ${remainingDovetails.length > 0 ? 'Continue strengthening your skills with the remaining sessions:' : 'All 10 sessions complete!'}`,
+                            remainingList: remainingDovetails.length > 0 ? remainingDovetails.slice(0, 3) : undefined,
+                            remainingMore: remainingDovetails.length > 0 ? Math.max(0, remainingDovetails.length - 3) : undefined,
+                            type: 'celebration', sessions: remainingDovetails.length > 0 ? upcomingDovetailSessions : undefined, ctas: remainingDovetails.length > 0 ? [dovetailInfoCta] : undefined
+                        });
+                    }
+                } else {
+                    items.push({
+                        icon: '🎉', title: 'All 10 Dovetail Essentials Completed!',
+                        description: 'Outstanding! You\'ve completed every Dovetail Essential session. Your practical digital skills are well-rounded.',
+                        type: 'celebration'
+                    });
+                }
+
+                if (pathwayStatus.hasAdoption && !hasDigitalSkills) {
+                    items.push({
+                        icon: '📖', title: 'Next: Digital Skills Course',
+                        description: 'This four-week hybrid course helps educators shift from simply using technology to understanding how students learn with it. By adopting a learner-centred perspective, participants gain the digital wisdom needed to transform technical skills ("what" and "how") into thoughtful pedagogical decisions ("when" and "why").\n\nAs the next step in your learning pathway, this district-hosted course builds directly on your completed milestones. Because cohorts are offered by invitation only each term, join the waitlist today to signal your interest for the upcoming session.',
+                        type: 'invitation', ctas: [getAvailabilityCTA('digitalskills')].filter(Boolean)
+                    });
+                }
+
+                if (hasDigitalSkills && !hasCyberEffect) {
+                    items.push({
+                        icon: '🌐', title: 'Next: Cyber Effect Ambassador Course',
+                        description: 'Deepen your impact by exploring the ethical, emotional, and behavioural dimensions of technology use. By mastering the 4P Affective Transformation Model—People, Practices, Pedagogy, and Platforms—you will gain the tools to embed cyber wellness, psychological safety, and human-centred design into your educational environment.\n\nAs the next step in your learning pathway, this course empowers you to champion a positive, reflective digital culture across your community.',
+                        type: 'invitation', ctas: [getAvailabilityCTA('cybereffect')].filter(Boolean)
+                    });
+                }
+
+                if (!pathwayStatus.hasThinkTank && totalSessions >= 15 && (hasDigitalSkills || hasCyberEffect || pathwayStatus.hasAdoption)) {
+                    items.push({
+                        icon: '💡', title: 'Start the Edvance ARC',
+                        description: `Your strong PD engagement (${totalSessions} sessions) puts you on the path to being considered for the Facilitator Think Tank — the entry point to the Edvance ARC.\n\nThe Edvance ARC is a face-to-face leadership pathway for educators ready to guide digital growth. Through immersive workshops, it equips you with the vision and practical tools to lead sustainable transformation across your school community.`,
+                        type: 'invitation', ctas: [{ label: 'Contact your eAdvisory Team', url: 'https://wcedeportal.co.za/meet-the-team', style: 'secondary' }]
+                    });
+                }
+
+                return items;
+            }, [pathwayStatus, upcomingData]);
+
+            // === HISTORY TAB: filtering, grouping, metrics ===
+            const filteredSessions = useMemo(() => {
+                if (!results) return [];
+                let filtered = results.allSessions;
+                if (filters.level) filtered = filtered.filter(s => s['Development Level'] && s['Development Level'].toLowerCase().trim() === filters.level.toLowerCase().trim());
+                if (filters.district) filtered = filtered.filter(s => s['Hosting District'] && s['Hosting District'].trim() === filters.district);
+                if (filters.mode) filtered = filtered.filter(s => s['Delivery Mode'] && s['Delivery Mode'].trim() === filters.mode);
+                if (filters.category === 'spark') filtered = filtered.filter(s => s.isSpark);
+                if (filters.category === 'dovetail') filtered = filtered.filter(s => s.isDovetail);
+                return filtered;
+            }, [results, filters]);
+
+            const sessionsByYear = useMemo(() => {
+                const grouped = {};
+                filteredSessions.forEach(session => {
+                    const year = session.year;
+                    if (!grouped[year]) grouped[year] = [];
+                    grouped[year].push(session);
+                });
+                return Object.keys(grouped).sort((a, b) => b - a).map(year => ({ year, sessions: grouped[year] }));
+            }, [filteredSessions]);
+
+            const historyMetrics = useMemo(() => {
+                if (!results) return null;
+                const total = filteredSessions.length;
+                const byLevel = { 'Laying the Foundation': 0, 'I can do it': 0, 'I can do it better': 0, 'The Summit': 0, 'Other': 0 };
+                filteredSessions.forEach(session => {
+                    const level = session['Development Level'] && session['Development Level'].trim();
+                    if (byLevel.hasOwnProperty(level)) byLevel[level]++; else byLevel['Other']++;
+                });
+                const uniqueSparkSessions = [...new Set(results.allSessions.filter(s => s.isSpark).map(s => s['Session Name'] && s['Session Name'].trim()))];
+                const uniqueDovetailSessions = [...new Set(results.allSessions.filter(s => s.isDovetail).map(s => s['Session Name'] && s['Session Name'].trim()))];
+                const bonusSpark = uniqueDovetailSessions.length >= 5 ? 1 : 0;
+                const totalSparks = uniqueSparkSessions.length + bonusSpark;
+                return { total, byLevel, uniqueSparks: uniqueSparkSessions, uniqueDovetails: uniqueDovetailSessions, totalSparks, totalDovetails: uniqueDovetailSessions.length, hasBonusSpark: bonusSpark };
+            }, [filteredSessions, results]);
+
+            const filterOptions = useMemo(() => {
+                if (!results) return { levels: [], districts: [], modes: [] };
+                const levels = [...new Set(results.allSessions.map(s => s['Development Level'] && s['Development Level'].trim()).filter(Boolean))];
+                const districts = [...new Set(results.allSessions.map(s => s['Hosting District'] && s['Hosting District'].trim()).filter(Boolean))].sort();
+                const modes = [...new Set(results.allSessions.map(s => s['Delivery Mode'] && s['Delivery Mode'].trim()).filter(Boolean))].sort();
+                return { levels, districts, modes };
+            }, [results]);
+
+            const isValidInput = () => {
+                if (!searchValue.trim()) return false;
+                if (searchType === 'id') return /^\d{13}$/.test(searchValue.trim());
+                if (searchType === 'persal') return /^\d{8}$/.test(searchValue.trim());
+                return false;
+            };
+            const canSearch = acknowledged && isValidInput() && !searching;
+
+            // === RENDER ===
+            if (loading) {
+                return e('div', { className: "min-h-screen flex items-center justify-center bg-wcg-mist" },
+                    e('div', { className: "text-center" },
+                        e('div', { className: "animate-spin rounded-full h-12 w-12 border-b-2 border-wcg-blue mx-auto mb-4" }),
+                        e('p', { className: "text-gray-500 text-sm font-medium" }, "Checking for saved details…")
+                    )
+                );
+            }
+
+            const navTabs = [
+                { id: 'pathway', label: 'Pathway', icon: '🧭' },
+                { id: 'nextsteps', label: 'Next Steps', icon: '📋', badge: suggestions.length || null },
+                { id: 'history', label: 'History', icon: '🕒' }
+            ];
+
+            return e('div', { className: "min-h-screen bg-wcg-mist" },
+                e('header', { className: "sticky top-0 z-30 bg-white/95 backdrop-blur shadow-sm no-print" },
+                    e('div', { className: "max-w-2xl mx-auto px-4 py-3 flex justify-between items-center" },
+                        e('img', { src: "header.png", alt: "WCED Header", className: "h-9 sm:h-11" }),
+                        e('div', { className: "flex items-center gap-2" },
+                            results && e('button', {
+                                onClick: handleLogout,
+                                className: "text-xs font-bold text-red-600 border border-red-200 rounded-full px-3 py-1.5 active:bg-red-50"
+                            }, "Logout"),
+                            e(Menu)
+                        )
+                    )
+                ),
+
+                e('div', { className: `max-w-2xl mx-auto px-4 py-5 print-full-width ${results ? 'pb-28' : 'pb-8'}` },
+                    !results ? (
+                        // === LOGIN / SEARCH FORM ===
+                        e('div', { className: "animate-fade-in-up" },
+                            e('div', { className: 'text-center mb-6 pt-2' },
+                                e('div', { className: 'w-16 h-16 mx-auto rounded-2xl flex items-center justify-center text-3xl shadow-lg mb-4', style: { background: 'linear-gradient(135deg, #001489 0%, #C8126E 100%)' } }, '🧭'),
+                                e('h1', { className: "font-display text-2xl font-bold text-wcg-dark mb-2" }, "My eLearning Professional Development"),
+                                e('p', { className: "text-gray-500 text-sm px-2" }, "Track your progress on the Adoption & Transformation Pathway and view your full session history.")
+                            ),
+                            e('div', { className: "bg-white rounded-3xl shadow-sm border border-gray-100 p-6" },
+                                e('div', { className: "mb-5" },
+                                    e('label', { className: "block text-sm font-semibold text-gray-700 mb-2" }, "Search by"),
+                                    e('div', { className: "flex gap-2 bg-wcg-mist p-1 rounded-xl" },
+                                        e('button', {
+                                            onClick: () => { setSearchType('persal'); setSearchValue(''); },
+                                            className: `flex-1 py-2.5 px-3 rounded-lg text-sm font-bold transition-colors ${searchType === 'persal' ? 'bg-wcg-blue text-white shadow' : 'text-gray-500'}`
+                                        }, "PERSAL Number"),
+                                        e('button', {
+                                            onClick: () => { setSearchType('id'); setSearchValue(''); },
+                                            className: `flex-1 py-2.5 px-3 rounded-lg text-sm font-bold transition-colors ${searchType === 'id' ? 'bg-wcg-blue text-white shadow' : 'text-gray-500'}`
+                                        }, "ID Number")
+                                    )
+                                ),
+                                e('div', { className: "mb-5" },
+                                    e('label', { className: "block text-sm font-semibold text-gray-700 mb-2" }, searchType === 'id' ? 'ID Number (13 digits)' : 'PERSAL Number (8 digits)'),
+                                    e('input', {
+                                        type: "text", inputMode: "numeric",
+                                        value: searchValue,
+                                        onChange: (ev) => setSearchValue(ev.target.value),
+                                        onKeyPress: (ev) => ev.key === 'Enter' && canSearch && handleSearch(),
+                                        placeholder: searchType === 'id' ? '1234567890123' : '12345678',
+                                        className: "w-full px-4 py-3.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-wcg-blue focus:border-wcg-blue text-lg",
+                                        maxLength: searchType === 'id' ? 13 : 8
+                                    }),
+                                    (searchValue && !isValidInput()) ? e('p', { className: "text-sm text-red-600 mt-1.5" }, `Please enter a valid ${searchType === 'id' ? '13-digit ID' : '8-digit PERSAL'} number`) : null
+                                ),
+                                e('label', { className: "flex items-start gap-3 cursor-pointer mb-4" },
+                                    e('input', {
+                                        type: "checkbox", checked: acknowledged,
+                                        onChange: (ev) => setAcknowledged(ev.target.checked),
+                                        className: "mt-0.5 h-5 w-5 text-wcg-blue border-gray-300 rounded focus:ring-wcg-blue flex-shrink-0"
+                                    }),
+                                    e('span', { className: "text-sm text-gray-600" }, "I confirm I am accessing my own professional development records for personal verification purposes only.")
+                                ),
+                                e('details', { className: "mb-5 bg-amber-50 border border-amber-200 rounded-xl overflow-hidden" },
+                                    e('summary', { className: "px-4 py-2.5 text-xs font-bold text-amber-800 cursor-pointer select-none" }, "Data accuracy disclaimer"),
+                                    e('p', { className: "px-4 pb-3 text-xs text-amber-800" },
+                                        "This record is generated from self-captured attendance data. Every effort is made to ensure accuracy; discrepancies may occur due to manual entry errors. Please ensure consistency in your submissions to maintain an accurate transformation profile.",
+                                        e('br'), e('strong', null, "Data last updated:"), ' ' + DATA_LAST_UPDATED
+                                    )
+                                ),
+                                searchError && e('div', { className: 'mb-4 bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-700' }, searchError),
+                                e('button', {
+                                    onClick: () => handleSearch(),
+                                    disabled: !canSearch,
+                                    className: `w-full py-3.5 px-4 rounded-xl font-bold text-base transition-colors ${canSearch ? 'bg-wcg-blue text-white active:bg-blue-800 shadow-lg' : 'bg-gray-200 text-gray-400'}`
+                                }, searching ? 'Searching…' : 'View My PD')
+                            )
+                        )
+                    ) : results.profile === null ? (
+                        // === NO RECORDS FOUND ===
+                        e('div', { className: "text-center animate-fade-in-up pt-6" },
+                            e('div', { className: "bg-white rounded-3xl shadow-sm border border-gray-100 p-8" },
+                                e('span', { className: "text-5xl block mb-4" }, "🔍"),
+                                e('h2', { className: "font-display text-xl font-bold text-gray-800 mb-2" }, "No Records Found"),
+                                e('p', { className: "text-gray-500 text-sm mb-6" }, `We couldn't find any PD records matching your search. Please check your ${searchType === 'id' ? 'ID' : 'PERSAL'} number and try again.`),
+                                e('button', { onClick: handleLogout, className: "bg-wcg-blue text-white px-6 py-3 rounded-xl font-bold text-sm shadow" }, "Try Again")
+                            )
+                        )
+                    ) : (
+                        // === RESULTS DASHBOARD ===
+                        e(React.Fragment, null,
+                            e(ChecklistModal, {
+                                isOpen: modalOpen.isOpen,
+                                onClose: () => setModalOpen({ isOpen: false, type: null }),
+                                type: modalOpen.type,
+                                completedSessions: modalOpen.type === 'spark' ? (historyMetrics ? historyMetrics.uniqueSparks : []) : (historyMetrics ? historyMetrics.uniqueDovetails : []),
+                                allSessions: results.allSessions
+                            }),
+
+                            e('div', { className: "space-y-5" },
+                                e(DashboardHero, {
+                                    profile: results.profile,
+                                    pathwayStatus,
+                                    onOpenPathway: () => setActiveTab('pathway'),
+                                    onOpenDovetail: () => setModalOpen({ isOpen: true, type: 'dovetail' }),
+                                    onOpenHistory: () => setActiveTab('history')
+                                }),
+
+                                e('div', { className: "no-print" },
+                                    activeTab === 'pathway' && pathwayStatus ? e(PathwayTab, {
+                                        pathwayStatus, onMilestoneClick: setSelectedMilestone
+                                    }) : null,
+
+                                    activeTab === 'nextsteps' ? e(NextStepsTab, {
+                                        suggestions, onSessionClick: setSelectedSession
+                                    }) : null,
+
+                                    activeTab === 'history' ? e(HistoryTab, {
+                                        profileName: results.profile.name,
+                                        filteredSessions, sessionsByYear, filterOptions,
+                                        filters, setFilters, viewMode, setViewMode
+                                    }) : null
+                                ),
+
+                                // Always mounted, screen-hidden — this is what actually prints
+                                e(PrintReport, {
+                                    profileName: results.profile.name,
+                                    profile: results.profile,
+                                    allSessions: results.allSessions
+                                }),
+
+                                e('div', { className: "text-center text-[11px] text-gray-400 no-print pt-2 pb-2" },
+                                    e('p', { className: "mb-1" },
+                                        e('strong', null, "Disclaimer: "),
+                                        "This record is generated from self-captured attendance data and may contain manual entry discrepancies."
+                                    )
+                                )
+                            ),
+
+                            e('button', {
+                                onClick: () => window.print(),
+                                'aria-label': 'Download attendance record',
+                                className: "no-print fixed right-4 bottom-24 z-40 w-14 h-14 rounded-full bg-wcg-blue text-white shadow-xl flex items-center justify-center text-xl active:scale-95 transition-transform"
+                            }, "⬇️"),
+
+                            e(BottomNav, { tabs: navTabs, activeTab, onSelect: setActiveTab }),
+
+                            (selectedMilestone !== null && pathwayStatus) ? e(MilestoneModal, {
+                                milestone: MILESTONES[selectedMilestone],
+                                status: pathwayStatus.milestoneStatuses[selectedMilestone],
+                                pathwayStatus,
+                                onClose: () => setSelectedMilestone(null)
+                            }) : null,
+
+                            selectedSession ? e(SessionDetailModal, { session: selectedSession, onClose: () => setSelectedSession(null) }) : null
+                        )
+                    )
+                )
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(e(App));
+    </script>
+</body>
+
+</html>
