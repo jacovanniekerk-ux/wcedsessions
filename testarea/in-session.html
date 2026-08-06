@@ -29,7 +29,7 @@
         }
     </script>
     <style>
-        body { font-family: 'Century Gothic', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
         .animate-fade-in-up { animation: fadeInUp 0.25s ease-out; }
         .wcg-top-accent { background: linear-gradient(90deg, #001489 0%, #8FAD15 100%); }
@@ -542,12 +542,53 @@
             return (t || '').slice(0, 5);
         }
 
+        // Generic modal overlay. Renders centered, dims the background,
+        // and closes on backdrop click. Kept intentionally simple/reusable.
+        function Modal({ onClose, children }) {
+            return e('div', {
+                className: 'fixed inset-0 bg-black/50 flex items-center justify-center px-4 z-50',
+                onClick: onClose
+            },
+                e('div', {
+                    className: 'bg-white rounded-2xl shadow-xl p-6 sm:p-7 max-w-sm w-full animate-fade-in-up',
+                    onClick: (ev) => ev.stopPropagation()
+                }, children)
+            );
+        }
+
+        // Confirmation modal shown once a Session ID Key passes all
+        // guard-rail checks. Deliberately shows only the minimal set of
+        // fields requested — no coordinator, date, or time — to keep the
+        // pop-up clean.
+        function SessionConfirmModal({ session, onConfirm, onReject }) {
+            return e(Modal, { onClose: onReject },
+                e('h3', { className: 'text-lg font-bold text-wcg-dark mb-4' }, 'Confirm your session'),
+                e('dl', { className: 'text-base text-gray-700 space-y-2.5 mb-6' },
+                    e('div', null, e('dt', { className: 'text-xs font-semibold uppercase tracking-wide text-gray-400' }, 'Session Name'), e('dd', { className: 'font-medium text-wcg-dark' }, session.session_title || '\u2014')),
+                    e('div', null, e('dt', { className: 'text-xs font-semibold uppercase tracking-wide text-gray-400' }, 'Hosting District'), e('dd', { className: 'font-medium text-wcg-dark' }, session.hosting_unit || '\u2014')),
+                    e('div', null, e('dt', { className: 'text-xs font-semibold uppercase tracking-wide text-gray-400' }, 'Facilitator'), e('dd', { className: 'font-medium text-wcg-dark' }, session.facilitator || '\u2014'))
+                ),
+                e('div', { className: 'flex gap-3' },
+                    e('button', {
+                        type: 'button', onClick: onReject,
+                        className: 'flex-1 px-3 py-3 rounded-xl font-semibold text-sm border-2 border-gray-300 text-gray-600 hover:border-gray-400 transition-colors'
+                    }, 'Not my session'),
+                    e('button', {
+                        type: 'button', onClick: onConfirm,
+                        className: 'flex-1 px-3 py-3 rounded-xl font-bold text-sm text-white bg-wcg-green hover:brightness-95 transition-colors'
+                    }, 'Yes, this is my session')
+                )
+            );
+        }
+
         // Session ID Key field: the person types a 4-digit key, it's
-        // looked up against Supabase in real time, the date/time guard
-        // rails are applied, and — if everything checks out — the
-        // person is shown the session details and asked to explicitly
-        // confirm before it can be used to capture attendance.
-        function SessionKeyField({ value, onChange, status, session, timingReason, confirmed, onConfirm, onReset }) {
+        // looked up against Supabase in real time and the date/time
+        // guard rails are applied. Any failure (not found, wrong day,
+        // outside the window) surfaces as one generic message — no
+        // details about the session or the reason are revealed. On
+        // success a confirmation modal is shown by the parent screen.
+        function SessionKeyField({ value, onChange, status, confirmed }) {
+            const showGenericError = status === 'notfound' || status === 'timing_invalid' || status === 'error';
             return e('div', { className: 'mb-5' },
                 e(TextField, {
                     label: 'Session ID Key',
@@ -561,36 +602,8 @@
                     error: (status === 'format' && value) ? 'Session ID Key must be exactly 4 digits' : undefined
                 }),
                 status === 'checking' ? e('p', { className: 'text-sm text-gray-400 -mt-3 mb-1' }, 'Checking session\u2026') : null,
-                status === 'notfound' ? e('p', { className: 'text-sm text-wcg-red font-medium -mt-3 mb-1' }, 'No session found for this ID Key. Please check with your facilitator.') : null,
-                status === 'error' ? e('p', { className: 'text-sm text-wcg-red font-medium -mt-3 mb-1' }, 'Could not verify this Session ID Key right now. Please check your connection and try again.') : null,
-                status === 'timing_invalid' && session ? e('div', { className: 'border-2 border-wcg-red bg-red-50 rounded-xl p-4 mt-1 mb-1' },
-                    e('p', { className: 'text-sm font-bold text-wcg-dark mb-1' }, session.session_title),
-                    e('p', { className: 'text-sm text-wcg-red font-medium' }, timingReason)
-                ) : null,
-                status === 'ok' && session ? e('div', { className: `border-2 rounded-xl p-4 mt-1 mb-1 ${confirmed ? 'border-wcg-green bg-green-50' : 'border-wcg-brightblue bg-blue-50'}` },
-                    e('p', { className: 'text-sm font-bold text-wcg-dark mb-2' }, confirmed ? '\u2713 Session confirmed' : 'Please confirm this is your session'),
-                    e('dl', { className: 'text-sm text-gray-700 space-y-1 mb-3' },
-                        e('div', null, e('span', { className: 'font-semibold' }, 'Session: '), session.session_title || '\u2014'),
-                        e('div', null, e('span', { className: 'font-semibold' }, 'Hosted by: '), session.hosting_unit || '\u2014'),
-                        e('div', null, e('span', { className: 'font-semibold' }, 'Coordinator: '), session.hosting_coordinator || '\u2014'),
-                        e('div', null, e('span', { className: 'font-semibold' }, 'Facilitator: '), session.facilitator || '\u2014'),
-                        e('div', null, e('span', { className: 'font-semibold' }, 'Date: '), session.session_date || '\u2014'),
-                        e('div', null, e('span', { className: 'font-semibold' }, 'Start time: '), formatSessionTime(session.session_start_time) || '\u2014'),
-                        e('div', null, e('span', { className: 'font-semibold' }, 'Mode: '), session.session_delivery_mode || '\u2014')
-                    ),
-                    confirmed
-                        ? e('button', { type: 'button', onClick: onReset, className: 'text-sm font-semibold text-gray-500 hover:underline' }, 'Not this one \u2014 change key')
-                        : e('div', { className: 'flex gap-2' },
-                            e('button', {
-                                type: 'button', onClick: onConfirm,
-                                className: 'flex-1 px-3 py-2.5 rounded-lg font-semibold text-sm text-white bg-wcg-green hover:brightness-95 transition-colors'
-                            }, 'Yes, this is my session'),
-                            e('button', {
-                                type: 'button', onClick: onReset,
-                                className: 'flex-1 px-3 py-2.5 rounded-lg font-semibold text-sm border-2 border-gray-300 text-gray-600 hover:border-gray-400 transition-colors'
-                            }, 'Not this one')
-                        )
-                ) : null
+                showGenericError ? e('p', { className: 'text-sm text-wcg-red font-medium -mt-3 mb-1' }, 'Invalid or inactive key. Please check with your facilitator.') : null,
+                status === 'ok' && confirmed ? e('p', { className: 'text-sm text-green-700 font-semibold -mt-3 mb-1' }, '\u2713 Session confirmed') : null
             );
         }
 
@@ -614,7 +627,7 @@
         // Shown on every screen, per the POPIA requirement that this
         // notice remains visible on the form at all times.
         function PopiaFooter() {
-            return e('div', { className: 'max-w-lg w-full mx-auto mt-6 px-2 text-center' },
+            return e('div', { className: 'max-w-xl w-full mx-auto mt-6 px-2 text-center' },
                 e('p', { className: 'text-xs leading-relaxed text-gray-400' },
                     'POPIA Disclaimer: Training provided by WCED eLearning Directorate collects and processes personal and special information as stipulated in the Protection of Personal Information Notice available ',
                     e('a', { href: POPIA_URL, target: '_blank', rel: 'noopener noreferrer', className: 'underline hover:text-gray-600' }, 'here'),
@@ -626,6 +639,53 @@
         // Small colour accent strip used at the top of each card.
         function TopAccent() {
             return e('div', { className: 'h-1.5 rounded-full wcg-top-accent mb-5 -mt-1' });
+        }
+
+        // ============================================================
+        // Burger menu — sits in the header, gives quick access to other
+        // parts of the wider system. Placeholder links for now; swap
+        // the `href`/`label` values in MENU_LINKS as real pages exist.
+        // ============================================================
+        const MENU_LINKS = [
+            { label: 'Link 1', href: '#' },
+            { label: 'Link 2', href: '#' },
+            { label: 'Link 3', href: '#' }
+        ];
+
+        function BurgerMenu({ links = MENU_LINKS }) {
+            const [open, setOpen] = useState(false);
+            const wrapperRef = useRef(null);
+
+            useEffect(() => {
+                function handleClickOutside(ev) {
+                    if (wrapperRef.current && !wrapperRef.current.contains(ev.target)) setOpen(false);
+                }
+                document.addEventListener('mousedown', handleClickOutside);
+                return () => document.removeEventListener('mousedown', handleClickOutside);
+            }, []);
+
+            return e('div', { className: 'relative ml-auto', ref: wrapperRef },
+                e('button', {
+                    type: 'button',
+                    onClick: () => setOpen(o => !o),
+                    'aria-label': 'Open menu',
+                    'aria-expanded': open,
+                    className: 'w-11 h-11 flex flex-col items-center justify-center gap-1.5 rounded-lg hover:bg-gray-100 transition-colors'
+                },
+                    e('span', { className: 'block w-6 h-0.5 bg-wcg-dark rounded-full' }),
+                    e('span', { className: 'block w-6 h-0.5 bg-wcg-dark rounded-full' }),
+                    e('span', { className: 'block w-6 h-0.5 bg-wcg-dark rounded-full' })
+                ),
+                open ? e('div', {
+                    className: 'absolute right-0 mt-2 w-48 bg-white border-2 border-gray-100 rounded-xl shadow-lg py-2 z-40 animate-fade-in-up'
+                },
+                    links.map((link, idx) => e('a', {
+                        key: idx,
+                        href: link.href,
+                        className: 'block px-4 py-2.5 text-base font-medium text-gray-700 hover:bg-blue-50 hover:text-wcg-blue transition-colors'
+                    }, link.label))
+                ) : null
+            );
         }
 
         // ============================================================
@@ -716,7 +776,7 @@
                 }
             };
 
-            return e('div', { className: 'bg-white rounded-2xl shadow-lg p-7 sm:p-9 max-w-lg w-full animate-fade-in-up' },
+            return e('div', { className: 'bg-white rounded-2xl shadow-lg p-7 sm:p-9 max-w-xl w-full animate-fade-in-up' },
                 e(TopAccent),
                 e('h2', { className: 'text-2xl font-bold text-wcg-dark mb-1' }, initial ? 'View / Edit Profile' : 'Set Up Your Profile'),
                 e('p', { className: 'text-base text-gray-500 mb-6' }, "These details are stored on this device only, so you don't need to retype them every session."),
@@ -739,7 +799,7 @@
         // Profile switcher — pick between saved profiles, or add new
         // ============================================================
         function ProfileSwitcher({ profiles, onSelect, onAddNew, onDelete, onCancel }) {
-            return e('div', { className: 'bg-white rounded-2xl shadow-lg p-7 sm:p-9 max-w-md w-full animate-fade-in-up' },
+            return e('div', { className: 'bg-white rounded-2xl shadow-lg p-7 sm:p-9 max-w-xl w-full animate-fade-in-up' },
                 e(TopAccent),
                 e('h2', { className: 'text-2xl font-bold text-wcg-dark mb-1' }, 'Switch Profile'),
                 e('p', { className: 'text-base text-gray-500 mb-6' }, 'Select a saved profile for this device, or add a new one.'),
@@ -777,6 +837,7 @@
             const [sessionKey, setSessionKey] = useState('');
             const { status: sessionStatus, session: sessionRecord, timingReason } = useSessionLookup(sessionKey);
             const [sessionConfirmed, setSessionConfirmed] = useState(false);
+            const [showSessionModal, setShowSessionModal] = useState(false);
             const [acknowledged, setAcknowledged] = useState(false);
             const [submitted, setSubmitted] = useState(false);
             const [submitting, setSubmitting] = useState(false);
@@ -785,8 +846,12 @@
             const idLine = profile.persal ? `PERSAL ${profile.persal}` : `ID ${profile.idNumber}`;
 
             // Any change to the key (or a fresh lookup result) invalidates
-            // a previous confirmation — the person must re-confirm.
-            useEffect(() => { setSessionConfirmed(false); }, [sessionKey, sessionStatus]);
+            // a previous confirmation — the person must re-confirm. A
+            // successful lookup automatically pops the confirmation modal.
+            useEffect(() => {
+                setSessionConfirmed(false);
+                setShowSessionModal(sessionStatus === 'ok');
+            }, [sessionKey, sessionStatus]);
 
             const canSubmit = sessionStatus === 'ok' && sessionConfirmed && acknowledged && !submitting;
 
@@ -804,7 +869,7 @@
                 }
             };
 
-            return e('div', { className: 'bg-white rounded-2xl shadow-lg p-7 sm:p-9 max-w-md w-full animate-fade-in-up' },
+            return e('div', { className: 'bg-white rounded-2xl shadow-lg p-7 sm:p-9 max-w-xl w-full animate-fade-in-up' },
                 e(TopAccent),
                 e('div', { className: 'text-center mb-6' },
                     e('div', { className: 'w-16 h-16 rounded-full bg-wcg-blue text-white flex items-center justify-center text-3xl font-bold mx-auto mb-3' },
@@ -828,10 +893,7 @@
                     : e(React.Fragment, null,
                         e(SessionKeyField, {
                             value: sessionKey, onChange: setSessionKey,
-                            status: sessionStatus, session: sessionRecord, timingReason,
-                            confirmed: sessionConfirmed,
-                            onConfirm: () => setSessionConfirmed(true),
-                            onReset: () => { setSessionKey(''); setSessionConfirmed(false); }
+                            status: sessionStatus, confirmed: sessionConfirmed
                         }),
                         e(AcknowledgementConsent, { checked: acknowledged, onChange: setAcknowledged }),
                         submitError ? e('p', { className: 'text-sm text-wcg-red font-medium mb-4' }, submitError) : null,
@@ -839,7 +901,12 @@
                             disabled: !canSubmit,
                             onClick: handleSubmit,
                             className: `w-full px-4 py-3.5 rounded-xl font-bold text-base text-white transition-colors shadow ${canSubmit ? 'bg-wcg-green hover:brightness-95' : 'bg-gray-300 cursor-not-allowed'}`
-                        }, submitting ? 'Saving…' : 'Capture Attendance')
+                        }, submitting ? 'Saving…' : 'Capture Attendance'),
+                        showSessionModal && sessionRecord ? e(SessionConfirmModal, {
+                            session: sessionRecord,
+                            onConfirm: () => { setSessionConfirmed(true); setShowSessionModal(false); },
+                            onReject: () => { setSessionKey(''); setSessionConfirmed(false); setShowSessionModal(false); }
+                        }) : null
                     )
             );
         }
@@ -855,12 +922,16 @@
             const [sessionKey, setSessionKey] = useState('');
             const { status: sessionStatus, session: sessionRecord, timingReason } = useSessionLookup(sessionKey);
             const [sessionConfirmed, setSessionConfirmed] = useState(false);
+            const [showSessionModal, setShowSessionModal] = useState(false);
             const [acknowledged, setAcknowledged] = useState(false);
             const [submitted, setSubmitted] = useState(false);
             const [submitting, setSubmitting] = useState(false);
             const [submitError, setSubmitError] = useState(null);
 
-            useEffect(() => { setSessionConfirmed(false); }, [sessionKey, sessionStatus]);
+            useEffect(() => {
+                setSessionConfirmed(false);
+                setShowSessionModal(sessionStatus === 'ok');
+            }, [sessionKey, sessionStatus]);
 
             const errors = getFieldErrors(fields);
             const profileOk = Object.keys(errors).length === 0;
@@ -893,10 +964,7 @@
                 e(ProfileFieldsForm, { fields, updateField, schools, schoolsLoading, schoolsError, districtOptions, errors: attempted ? errors : {} }),
                 e(SessionKeyField, {
                     value: sessionKey, onChange: setSessionKey,
-                    status: sessionStatus, session: sessionRecord, timingReason,
-                    confirmed: sessionConfirmed,
-                    onConfirm: () => setSessionConfirmed(true),
-                    onReset: () => { setSessionKey(''); setSessionConfirmed(false); }
+                    status: sessionStatus, confirmed: sessionConfirmed
                 }),
                 attempted && !sessionKey.trim() ? e('p', { className: 'text-sm text-wcg-red font-medium -mt-3 mb-4' }, 'Session ID Key is required') : null,
                 attempted && sessionKey.trim() && sessionStatus !== 'ok' ? e('p', { className: 'text-sm text-wcg-red font-medium -mt-3 mb-4' }, 'Please enter a valid Session ID Key.') : null,
@@ -913,7 +981,12 @@
                         onClick: handleSubmitClick,
                         className: `flex-1 px-4 py-3.5 rounded-xl font-bold text-base text-white transition-colors shadow ${canSubmit ? 'bg-wcg-green hover:brightness-95' : 'bg-gray-300 hover:bg-gray-400'}`
                     }, submitting ? 'Saving…' : 'Capture Attendance')
-                )
+                ),
+                showSessionModal && sessionRecord ? e(SessionConfirmModal, {
+                    session: sessionRecord,
+                    onConfirm: () => { setSessionConfirmed(true); setShowSessionModal(false); },
+                    onReject: () => { setSessionKey(''); setSessionConfirmed(false); setShowSessionModal(false); }
+                }) : null
             );
         }
 
@@ -1019,12 +1092,13 @@
                 e('header', { className: 'bg-white shadow-sm border-b-4 border-wcg-blue' },
                     e('div', { className: 'max-w-5xl mx-auto px-4 sm:px-6 py-4 flex items-center gap-3' },
                         e('img', { src: 'header.png', alt: 'WCED Header', className: 'h-10 sm:h-12', onError: (ev) => { ev.target.style.display = 'none'; } }),
-                        e('span', { className: 'font-bold text-wcg-dark text-base sm:text-lg' }, 'In-Session Attendance')
+                        e('span', { className: 'font-bold text-wcg-dark text-base sm:text-lg' }, 'In-Session Attendance'),
+                        e(BurgerMenu)
                     )
                 ),
                 e('div', { className: 'flex-1 flex flex-col items-center justify-center px-4 py-10' },
 
-                    screen === 'deviceCheck' ? e('div', { className: 'bg-white rounded-2xl shadow-lg p-7 sm:p-9 max-w-md w-full text-center animate-fade-in-up' },
+                    screen === 'deviceCheck' ? e('div', { className: 'bg-white rounded-2xl shadow-lg p-7 sm:p-9 max-w-xl w-full text-center animate-fade-in-up' },
                         e(TopAccent),
                         e('h2', { className: 'text-2xl font-bold text-wcg-dark mb-2' }, 'Is this your device?'),
                         e('p', { className: 'text-base text-gray-500 mb-6' }, "So we know whether to remember your details for next time."),
@@ -1040,7 +1114,7 @@
                         )
                     ) : null,
 
-                    screen === 'sharedForm' ? e('div', { className: 'bg-white rounded-2xl shadow-lg p-7 sm:p-9 max-w-lg w-full animate-fade-in-up' },
+                    screen === 'sharedForm' ? e('div', { className: 'bg-white rounded-2xl shadow-lg p-7 sm:p-9 max-w-xl w-full animate-fade-in-up' },
                         e(TopAccent),
                         e('h2', { className: 'text-2xl font-bold text-wcg-dark mb-1' }, 'Capture Attendance'),
                         e('p', { className: 'text-base text-gray-500 mb-6' }, "Shared device — please complete your details for this session."),
