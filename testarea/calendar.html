@@ -51,7 +51,7 @@
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <link href="https://fonts.googleapis.com/css2?family=Didact+Gothic&family=Montserrat:wght@400;600;700&display=swap"
         rel="stylesheet">
@@ -218,8 +218,15 @@
     <div id="root"></div>
 
     <script>
-        const { useState, useMemo, useEffect, useRef } = React;
+        const { useState, useMemo, useEffect, useRef, useCallback } = React;
         const e = React.createElement;
+
+        // ---------------------------------------------------------------
+        // Supabase configuration
+        // ---------------------------------------------------------------
+        const SUPABASE_URL = 'https://cftpufjzwpmhgzdcgpjb.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_b1H_5DJYLQSrr83T_dvz6A_2UAqOVg4';
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         // --- ICONS ---
         const Icons = {
@@ -256,10 +263,11 @@
                 e('path', { d: "m22 8-6 4 6 4V8Z" }),
                 e('rect', { width: "14", height: "12", x: "2", y: "6", rx: "2", ry: "2" })
             ),
-            Upload: () => e('svg', { xmlns: "http://www.w3.org/2000/svg", width: "20", height: "20", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round" },
-                e('path', { d: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" }),
-                e('polyline', { points: "17 8 12 3 7 8" }),
-                e('line', { x1: "12", x2: "12", y1: "3", y2: "15" })
+            RefreshCw: () => e('svg', { xmlns: "http://www.w3.org/2000/svg", width: "16", height: "16", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round" },
+                e('path', { d: "M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" }),
+                e('path', { d: "M3 3v5h5" }),
+                e('path', { d: "M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" }),
+                e('path', { d: "M16 16h5v5" })
             ),
             Loader: () => e('svg', { xmlns: "http://www.w3.org/2000/svg", width: "32", height: "32", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", className: "spin" },
                 e('path', { d: "M21 12a9 9 0 1 1-6.219-8.56" })
@@ -277,14 +285,13 @@
         };
 
         // --- HELPERS ---
+
+        // Parses a 'YYYY-MM-DD' string (as returned by Supabase for a `date` column)
+        // into a local JS Date representing that calendar day.
         const parseDate = (dateStr) => {
             if (!dateStr) return new Date(8640000000000000);
-            const parts = dateStr.split('/');
-            if (parts.length === 3) {
-                const [day, month, year] = parts;
-                return new Date(year, month - 1, day);
-            }
-            return new Date(dateStr);
+            const d = new Date(`${dateStr}T00:00:00`);
+            return isNaN(d.getTime()) ? new Date(8640000000000000) : d;
         };
 
         const isToday = (date) => {
@@ -302,22 +309,127 @@
             return checkDate < today;
         };
 
-        const processCSVData = (results) => {
-            return results.data.map((row, index) => ({
-                id: index,
-                date: row['Date'] || '',
-                time: row['Time'] || '',
-                term: row['Term'] || '',
-                district: row['HOSTING DISTRICT'] || 'Unspecified',
-                name: row['Session Name'] || 'Untitled Session',
-                level: row['Developmental Level'] || '',
-                description: row['Session Desciption'] || row['Session Description'] || '',
-                outcomes: row['Session Outcomes'] || '',
-                registerLink: row['Pre-Register'] || '',
-                googleCal: row['Add To Calendar (Google)'] || '#',
-                outlookCal: row['Add to Calendar (Outlook)'] || '#',
-                joinLink: row['Join Link'] || ''
-            })).filter(s => s.name !== 'Untitled Session');
+        const formatCountdown = (diffMs) => {
+            if (diffMs <= 0) return "00:00:00";
+            const totalSeconds = Math.floor(diffMs / 1000);
+            const hours = Math.floor(totalSeconds / 3600);
+            const minutes = Math.floor((totalSeconds % 3600) / 60);
+            const seconds = totalSeconds % 60;
+            return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        };
+
+        const WEEKDAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const SAST_OFFSET_MS = 2 * 60 * 60 * 1000; // Africa/Johannesburg is a fixed UTC+2, no DST
+
+        const pad2 = (n) => String(n).padStart(2, '0');
+
+        // Given a UTC epoch timestamp, returns the wall-clock components for
+        // that instant in the fixed Africa/Johannesburg (UTC+2) timezone.
+        const getJoburgParts = (timestampMs) => {
+            const shifted = new Date(timestampMs + SAST_OFFSET_MS);
+            return {
+                year: shifted.getUTCFullYear(),
+                month: shifted.getUTCMonth() + 1,
+                day: shifted.getUTCDate(),
+                hours: shifted.getUTCHours(),
+                minutes: shifted.getUTCMinutes(),
+                seconds: shifted.getUTCSeconds(),
+                weekdayIdx: shifted.getUTCDay()
+            };
+        };
+
+        // Combines a 'YYYY-MM-DD' date and a 'HH:MM:SS' time (both as returned
+        // by Supabase) into a UTC epoch timestamp, treating the pair as SAST.
+        const toEpoch = (dateStr, timeStr) => {
+            if (!dateStr || !timeStr) return null;
+            const ts = new Date(`${dateStr}T${timeStr}+02:00`).getTime();
+            return isNaN(ts) ? null : ts;
+        };
+
+        // Google Forms pre-fill links encode spaces as "+" and only percent-encode
+        // characters like [ ] (i.e. encodeURI() output, with %20 swapped for +).
+        const encodeForFormEntry = (str) => encodeURI(str).replace(/%20/g, '+');
+
+        const buildRegisterLink = ({ startParts, district, name, id }) => {
+            const dateTimeStr = `${WEEKDAY_NAMES[startParts.weekdayIdx]}, ${MONTH_NAMES[startParts.month - 1]} ${startParts.day} @ ${pad2(startParts.hours)}:${pad2(startParts.minutes)}`;
+            const raw = `${dateTimeStr} - (${(district || '').toUpperCase()}) - ${name} [${id}]`;
+            const encoded = encodeForFormEntry(raw);
+            return `https://docs.google.com/forms/d/e/1FAIpQLScMwanHrYwf9_kOML0icuKE9VfoFXD703of7ETLR5z6ysZoxA/viewform?usp=pp_url&entry.1422040156=${encoded}`;
+        };
+
+        const buildGoogleCalendarLink = ({ startParts, endParts, name, description, joinLink }) => {
+            const fmt = (p) => `${p.year}${pad2(p.month)}${pad2(p.day)}T${pad2(p.hours)}${pad2(p.minutes)}${pad2(p.seconds)}`;
+            const text = `\u{1F4BB} eTPD Webinar: ${name}`;
+            const details = `${description || ''}\n\n\u{1F517} Join Link: \n${joinLink || ''}\n\n\u2139\uFE0F For more info: https://bit.ly/m/wcedtpd`;
+            return `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(text)}&dates=${fmt(startParts)}/${fmt(endParts)}&details=${encodeURIComponent(details)}&location=MS%20Teams&ctz=Africa/Johannesburg`;
+        };
+
+        const buildOutlookLink = ({ startParts, endParts, name, joinLink }) => {
+            const iso = (p) => `${p.year}-${pad2(p.month)}-${pad2(p.day)}T${pad2(p.hours)}:${pad2(p.minutes)}:${pad2(p.seconds)}`;
+            const body = `Join Link: ${joinLink || ''}`;
+            return `https://outlook.office.com/calendar/0/action/compose?allday=false&body=${encodeURIComponent(body)}&enddt=${encodeURIComponent(iso(endParts))}&location=Virtual%20Session&path=/calendar/action/compose&rru=addevent&startdt=${encodeURIComponent(iso(startParts))}&subject=${encodeURIComponent(name)}`;
+        };
+
+        // ---------------------------------------------------------------
+        // Combine `session` + `courses` rows fetched from Supabase into the
+        // shape the UI needs (this replaces the old CSV row processing).
+        // ---------------------------------------------------------------
+        const combineSessionsAndCourses = (sessionRows, courseRows) => {
+            const coursesByName = new Map();
+            (courseRows || []).forEach(c => {
+                if (c.course_name) coursesByName.set(c.course_name, c);
+            });
+
+            return (sessionRows || [])
+                .filter(s => s.session_delivery_mode === 'Virtual')
+                .map(s => {
+                    const course = coursesByName.get(s.session_title) || {};
+                    const durationMin = Number(course.programme_duration) || 0;
+
+                    const startEpoch = toEpoch(s.session_date, s.session_start_time);
+                    const endEpoch = startEpoch !== null ? startEpoch + durationMin * 60000 : null;
+
+                    const startParts = startEpoch !== null ? getJoburgParts(startEpoch) : null;
+                    const endParts = endEpoch !== null ? getJoburgParts(endEpoch) : null;
+
+                    const dateISO = s.session_date || '';
+                    const timeDisplay = (startParts && endParts)
+                        ? `${pad2(startParts.hours)}:${pad2(startParts.minutes)} - ${pad2(endParts.hours)}:${pad2(endParts.minutes)}`
+                        : '';
+
+                    const district = s.hosting_unit || 'Unspecified';
+                    const name = s.session_title || 'Untitled Session';
+
+                    const registerLink = startParts
+                        ? buildRegisterLink({ startParts, district, name, id: s.id })
+                        : '';
+                    const googleCal = (startParts && endParts)
+                        ? buildGoogleCalendarLink({ startParts, endParts, name, description: course.session_desciption, joinLink: s.session_link })
+                        : '#';
+                    const outlookCal = (startParts && endParts)
+                        ? buildOutlookLink({ startParts, endParts, name, joinLink: s.session_link })
+                        : '#';
+
+                    return {
+                        id: s.id,
+                        date: dateISO,
+                        time: timeDisplay,
+                        term: '',
+                        district,
+                        name,
+                        level: course.developmental_level || '',
+                        description: course.session_desciption || '',
+                        outcomes: course.session_outcomes || '',
+                        registerLink,
+                        googleCal,
+                        outlookCal,
+                        joinLink: s.session_link || '',
+                        startTimestamp: startEpoch,
+                        endTimestamp: endEpoch
+                    };
+                })
+                .filter(s => s.name !== 'Untitled Session');
         };
 
         // --- COMPONENTS ---
@@ -348,10 +460,22 @@
             }, children);
         };
 
-        const SessionModal = ({ session, onClose }) => {
+        const SessionModal = ({ session, onClose, currentTime = Date.now() }) => {
             const dateObj = parseDate(session.date);
             const isTodaySession = isToday(dateObj);
-            const isPast = isPastDate(dateObj);
+
+            const start = session.startTimestamp ?? null;
+            const end = session.endTimestamp ?? null;
+            const hasValidTimes = start !== null && end !== null;
+            const isBeforeStart = hasValidTimes && currentTime < start;
+            const hasStarted = hasValidTimes && currentTime >= start;
+            const hasConcluded = hasValidTimes && currentTime > end;
+            const isJoinable = hasValidTimes && currentTime >= (start - 30 * 60 * 1000) && currentTime <= end;
+
+            // Days before today are always "ended". For today's session, rely on the
+            // precise end timestamp so the state updates live as the session concludes.
+            const dayPast = isPastDate(dateObj);
+            const isPast = isTodaySession ? hasConcluded : dayPast;
 
             const formatOutcomes = (text) => {
                 if (!text) return null;
@@ -372,6 +496,46 @@
                 document.addEventListener('keydown', handleEscape);
                 return () => document.removeEventListener('keydown', handleEscape);
             }, [onClose]);
+
+            const renderActionSection = () => {
+                if (isTodaySession) {
+                    if (isJoinable && session.joinLink) {
+                        return e('div', { className: "flex flex-col space-y-2 w-full" },
+                            !hasStarted && e('div', { className: "text-center text-sm font-bold text-wcg-blue mb-1" }, "Starts in: ", e('span', { className: "font-mono" }, formatCountdown(start - currentTime))),
+                            e('a', { href: session.joinLink, target: "_blank", rel: "noopener noreferrer", className: "flex items-center justify-center bg-wcg-red hover:bg-red-700 text-white font-bold font-accent py-4 px-6 rounded-lg transition-all text-lg shadow-lg animate-pulse-glow w-full" },
+                                e(Icons.Video), e('span', { className: "ml-3" }, "JOIN NOW")
+                            )
+                        );
+                    }
+                    if (isBeforeStart) {
+                        return e('div', { className: "flex flex-col items-center justify-center py-3 px-4 bg-blue-50 border border-blue-100 rounded-lg w-full" },
+                            e('span', { className: "text-[10px] text-gray-500 uppercase tracking-widest mb-1 font-bold" }, "Starts In"),
+                            e('span', { className: "text-2xl font-bold font-accent text-wcg-blue font-mono tracking-wider" }, formatCountdown(start - currentTime))
+                        );
+                    }
+                    if (session.joinLink) {
+                        return e('a', { href: session.joinLink, target: "_blank", rel: "noopener noreferrer", className: "flex items-center justify-center bg-wcg-red hover:bg-red-700 text-white font-bold font-accent py-4 px-6 rounded-lg transition-all text-lg shadow-lg animate-pulse-glow w-full" },
+                            e(Icons.Video), e('span', { className: "ml-3" }, "JOIN NOW")
+                        );
+                    }
+                    return e('div', { className: "flex items-center justify-center bg-gray-50 text-gray-400 font-bold py-3 px-6 rounded-lg border border-gray-100 uppercase tracking-wide text-xs w-full" }, "Session Today");
+                }
+
+                return e('div', { className: "grid grid-cols-1 sm:grid-cols-2 gap-3" },
+                    e('a', { href: session.registerLink, target: "_blank", rel: "noopener noreferrer", className: `col-span-1 sm:col-span-2 flex items-center justify-center bg-wcg-blue hover:bg-blue-800 text-white font-bold font-accent py-2.5 px-4 rounded-lg transition-all text-sm shadow-sm hover:shadow ${!session.registerLink ? 'opacity-50 pointer-events-none' : ''}` },
+                        e('span', { className: "mr-2" }, "Register Now"),
+                        e(Icons.ExternalLink)
+                    ),
+                    e('a', { href: session.googleCal, target: "_blank", rel: "noreferrer", className: "flex items-center justify-center bg-white border border-gray-200 hover:border-wcg-blue hover:bg-blue-50 text-gray-600 font-medium py-2 px-2 rounded-lg text-xs transition-colors", title: "Add to Google Calendar" },
+                        e(Icons.Calendar),
+                        e('span', { className: "ml-1.5" }, "Google Calendar")
+                    ),
+                    e('a', { href: session.outlookCal, target: "_blank", rel: "noreferrer", className: "flex items-center justify-center bg-white border border-gray-200 hover:border-wcg-blue hover:bg-blue-50 text-gray-600 font-medium py-2 px-2 rounded-lg text-xs transition-colors", title: "Add to Outlook Calendar" },
+                        e(Icons.Calendar),
+                        e('span', { className: "ml-1.5" }, "Outlook Calendar")
+                    )
+                );
+            };
 
             return e('div', { className: "modal-overlay", onClick: onClose },
                 e('div', { className: "modal-content fade-in", onClick: (evt) => evt.stopPropagation() },
@@ -408,26 +572,10 @@
                             )
                         ),
                         !isPast && e('div', { className: "pt-4 border-t border-gray-100" },
-                            isTodaySession && session.joinLink ? e('a', { href: session.joinLink, target: "_blank", rel: "noopener noreferrer", className: "flex items-center justify-center bg-wcg-red hover:bg-red-700 text-white font-bold font-accent py-4 px-6 rounded-lg transition-all text-lg shadow-lg w-full" },
-                                e(Icons.Video),
-                                e('span', { className: "ml-3" }, "JOIN NOW")
-                            ) : e('div', { className: "grid grid-cols-1 sm:grid-cols-2 gap-3" },
-                                e('a', { href: session.registerLink, target: "_blank", rel: "noopener noreferrer", className: `col-span-1 sm:col-span-2 flex items-center justify-center bg-wcg-blue hover:bg-blue-800 text-white font-bold font-accent py-2.5 px-4 rounded-lg transition-all text-sm shadow-sm hover:shadow ${!session.registerLink ? 'opacity-50 pointer-events-none' : ''}` },
-                                    e('span', { className: "mr-2" }, "Register Now"),
-                                    e(Icons.ExternalLink)
-                                ),
-                                e('a', { href: session.googleCal, target: "_blank", rel: "noreferrer", className: "flex items-center justify-center bg-white border border-gray-200 hover:border-wcg-blue hover:bg-blue-50 text-gray-600 font-medium py-2 px-2 rounded-lg text-xs transition-colors", title: "Add to Google Calendar" },
-                                    e(Icons.Calendar),
-                                    e('span', { className: "ml-1.5" }, "Google Calendar")
-                                ),
-                                e('a', { href: session.outlookCal, target: "_blank", rel: "noreferrer", className: "flex items-center justify-center bg-white border border-gray-200 hover:border-wcg-blue hover:bg-blue-50 text-gray-600 font-medium py-2 px-2 rounded-lg text-xs transition-colors", title: "Add to Outlook Calendar" },
-                                    e(Icons.Calendar),
-                                    e('span', { className: "ml-1.5" }, "Outlook Calendar")
-                                )
-                            )
+                            renderActionSection()
                         ),
                         isPast && e('div', { className: "pt-4 border-t border-gray-100 text-center text-gray-500 text-sm py-3 bg-gray-50 rounded-lg" },
-                            e('p', { className: "font-medium" }, "This session has ended"),
+                            e('p', { className: "font-medium" }, isTodaySession ? "This session has concluded" : "This session has ended"),
                             e('p', { className: "text-xs mt-1" }, "Check the calendar for upcoming sessions")
                         )
                     )
@@ -435,10 +583,21 @@
             );
         };
 
-        const SessionPill = ({ session, onClick }) => {
+        const SessionPill = ({ session, onClick, currentTime = Date.now() }) => {
             const dateObj = parseDate(session.date);
             const isTodaySession = isToday(dateObj);
-            const isPast = isPastDate(dateObj);
+
+            const start = session.startTimestamp ?? null;
+            const end = session.endTimestamp ?? null;
+            const hasValidTimes = start !== null && end !== null;
+            const isBeforeStart = hasValidTimes && currentTime < start;
+            const hasConcluded = hasValidTimes && currentTime > end;
+            const isJoinable = hasValidTimes && currentTime >= (start - 30 * 60 * 1000) && currentTime <= end;
+
+            const dayPast = isPastDate(dateObj);
+            const isPast = isTodaySession ? hasConcluded : dayPast;
+            const isLive = isTodaySession && isJoinable && session.joinLink && !isPast;
+            const isCountingDown = isTodaySession && isBeforeStart && !isPast;
 
             const level = (session.level || '').toLowerCase();
             let levelClass = '';
@@ -449,30 +608,34 @@
 
             let bgColor = 'bg-white', textColor = 'text-gray-900', borderColor = 'border-gray-200';
             if (isPast) { bgColor = 'bg-gray-100'; textColor = 'text-gray-500'; borderColor = 'border-gray-300'; }
-            else if (isTodaySession && session.joinLink) { bgColor = 'bg-red-50'; borderColor = 'border-red-300'; }
+            else if (isLive) { bgColor = 'bg-red-50'; borderColor = 'border-red-300'; }
 
             return e('div', {
                 className: `session-pill ${bgColor} ${textColor} border ${borderColor} ${levelClass} mb-2 px-2.5 py-2 shadow-sm hover:shadow-md`,
                 onClick: onClick
             },
                 e('div', { className: "flex items-start gap-2" },
-                    isTodaySession && session.joinLink && !isPast && e('div', { className: "flex-shrink-0 mt-1" }, e('span', { className: "live-dot" })),
+                    isLive && e('div', { className: "flex-shrink-0 mt-1" }, e('span', { className: "live-dot" })),
                     e('div', { className: "flex-1 min-w-0" },
                         e('div', { className: "text-xs md:text-sm font-bold leading-tight mb-1", style: { wordBreak: 'break-word' } }, session.name),
                         session.time && e('div', { className: `flex items-center gap-1 text-[10px] md:text-xs ${isPast ? 'opacity-60' : 'opacity-75'}` },
                             e(Icons.Clock),
                             e('span', null, session.time)
                         ),
-                        isTodaySession && session.joinLink && !isPast && e('div', { className: "mt-1.5 flex items-center gap-1 text-[10px] md:text-xs font-bold text-wcg-red" },
+                        isLive && e('div', { className: "mt-1.5 flex items-center gap-1 text-[10px] md:text-xs font-bold text-wcg-red" },
                             e(Icons.Video),
                             e('span', null, "LIVE - JOIN NOW")
+                        ),
+                        isCountingDown && e('div', { className: "mt-1.5 flex items-center gap-1 text-[10px] md:text-xs font-bold text-wcg-blue" },
+                            e(Icons.Clock),
+                            e('span', { className: "font-mono" }, formatCountdown(start - currentTime))
                         )
                     )
                 )
             );
         };
 
-        const CalendarDay = ({ date, isCurrentMonth, sessions, onSessionClick }) => {
+        const CalendarDay = ({ date, isCurrentMonth, sessions, onSessionClick, currentTime }) => {
             const isTodayDate = date && isToday(date);
 
             if (!isCurrentMonth) return e('div', { className: "calendar-day-cell other-month-cell" });
@@ -485,12 +648,12 @@
                     )
                 ),
                 e('div', { className: "space-y-1 overflow-y-auto", style: { maxHeight: 'calc(100% - 28px)' } },
-                    sessions.map((session, idx) => e(SessionPill, { key: idx, session: session, onClick: () => onSessionClick(session) }))
+                    sessions.map((session, idx) => e(SessionPill, { key: idx, session: session, onClick: () => onSessionClick(session), currentTime: currentTime }))
                 )
             );
         };
 
-        const CalendarView = ({ sessions, currentMonth, setCurrentMonth }) => {
+        const CalendarView = ({ sessions, currentMonth, setCurrentMonth, currentTime }) => {
             const [selectedSession, setSelectedSession] = useState(null);
 
             const sessionsByDate = useMemo(() => {
@@ -504,22 +667,18 @@
                 return grouped;
             }, [sessions]);
 
-            // Optimized calendar generation to remove 2-week buffer
             const calendarDays = useMemo(() => {
                 const days = [];
                 const firstDay = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
                 const lastDay = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
 
-                // Get Mon=0 offset for first day
                 let startOffset = firstDay.getDay();
                 startOffset = startOffset === 0 ? 6 : startOffset - 1;
 
-                // 1. Add empty cells for leading days of the week (if Mon-Fri grid)
                 for (let i = 0; i < startOffset; i++) {
                     if (i < 5) days.push({ isCurrentMonth: false });
                 }
 
-                // 2. Add actual days of the month
                 for (let d = 1; d <= lastDay.getDate(); d++) {
                     const date = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), d);
                     const dayOfWeek = date.getDay();
@@ -533,7 +692,6 @@
                     }
                 }
 
-                // 3. Fill remaining grid to keep row consistency (5 columns)
                 while (days.length % 5 !== 0) {
                     days.push({ isCurrentMonth: false });
                 }
@@ -542,7 +700,7 @@
             }, [currentMonth, sessionsByDate]);
 
             return e('div', { className: "fade-in" },
-                selectedSession && e(SessionModal, { session: selectedSession, onClose: () => setSelectedSession(null) }),
+                selectedSession && e(SessionModal, { session: selectedSession, onClose: () => setSelectedSession(null), currentTime: currentTime }),
                 e('div', { className: "bg-white rounded-xl shadow-sm border border-gray-200 p-4 md:p-6 mb-6" },
                     e('div', { className: "flex items-center justify-between" },
                         e('button', { onClick: () => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1)), className: "p-2 hover:bg-gray-100 rounded-lg transition-colors" }, e(Icons.ChevronLeft)),
@@ -561,7 +719,7 @@
                         ))
                     ),
                     e('div', { className: "calendar-grid" },
-                        calendarDays.map((day, idx) => e(CalendarDay, { key: idx, date: day.date, isCurrentMonth: day.isCurrentMonth, sessions: day.sessions || [], onSessionClick: (s) => setSelectedSession(s) }))
+                        calendarDays.map((day, idx) => e(CalendarDay, { key: idx, date: day.date, isCurrentMonth: day.isCurrentMonth, sessions: day.sessions || [], onSessionClick: (s) => setSelectedSession(s), currentTime: currentTime }))
                     )
                 ),
                 e('div', { className: "mt-6 bg-white rounded-xl shadow-sm border border-gray-200 p-4 md:p-6" },
@@ -591,23 +749,52 @@
             const [searchTerm, setSearchTerm] = useState('');
             const [selectedDistrict, setSelectedDistrict] = useState('All');
             const [selectedSessionName, setSelectedSessionName] = useState('All');
-            const [selectedLevel, setSelectedLevel] = useState('All'); // New Filter State
+            const [selectedLevel, setSelectedLevel] = useState('All');
             const [currentMonth, setCurrentMonth] = useState(new Date());
 
-            const fileInputRef = useRef(null);
             const [menuOpen, setMenuOpen] = useState(false);
+            const [currentTime, setCurrentTime] = useState(Date.now());
 
             useEffect(() => {
-                Papa.parse('upcoming-sessions.csv', {
-                    download: true, header: true, skipEmptyLines: true,
-                    complete: (res) => { const valid = processCSVData(res); setData(valid); setLoading(false); },
-                    error: () => { setError('failed_fetch'); setLoading(false); }
-                });
+                const timer = setInterval(() => setCurrentTime(Date.now()), 1000);
+                return () => clearInterval(timer);
             }, []);
+
+            const fetchData = useCallback(async () => {
+                setLoading(true);
+                setError(null);
+                try {
+                    const [sessionRes, courseRes] = await Promise.all([
+                        supabaseClient.from('session').select('*').eq('session_delivery_mode', 'Virtual'),
+                        supabaseClient.from('courses').select('*')
+                    ]);
+
+                    if (sessionRes.error) throw sessionRes.error;
+                    if (courseRes.error) throw courseRes.error;
+
+                    const combined = combineSessionsAndCourses(sessionRes.data, courseRes.data);
+
+                    if (combined.length > 0) {
+                        setData(combined);
+                    } else {
+                        setData([]);
+                        setError('empty');
+                    }
+                } catch (err) {
+                    console.error('Failed to load sessions from Supabase:', err);
+                    setError('failed_fetch');
+                } finally {
+                    setLoading(false);
+                }
+            }, []);
+
+            useEffect(() => {
+                fetchData();
+            }, [fetchData]);
 
             const districts = useMemo(() => ['All', ...new Set(data.map(s => s.district).filter(Boolean).sort())], [data]);
             const sessionNames = useMemo(() => ['All', ...new Set(data.map(s => s.name).filter(Boolean).sort())], [data]);
-            const levels = useMemo(() => ['All', ...new Set(data.map(s => s.level).filter(Boolean).sort())], [data]); // Unique Levels
+            const levels = useMemo(() => ['All', ...new Set(data.map(s => s.level).filter(Boolean).sort())], [data]);
 
             const filteredSessions = useMemo(() => {
                 return data.filter(session => {
@@ -652,8 +839,8 @@
                                         className: "flex items-center justify-center w-10 h-10 rounded-lg border-2 border-gray-300 hover:border-wcg-blue hover:bg-gray-50 transition-colors flex-shrink-0",
                                         "aria-label": "Menu"
                                     },
-                                        menuOpen ? e('svg', { className: "w-5 h-5 text-gray-700", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" }, e('path', { strokeLinecap: "round", strokeLinejoin="round", strokeWidth: 2, d: "M6 18L18 6M6 6l12 12" }))
-                                                 : e('svg', { className: "w-5 h-5 text-gray-700", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" }, e('path', { strokeLinecap: "round", strokeLinejoin="round", strokeWidth: 2, d: "M4 6h16M4 12h16M4 18h16" }))
+                                        menuOpen ? e('svg', { className: "w-5 h-5 text-gray-700", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" }, e('path', { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M6 18L18 6M6 6l12 12" }))
+                                                 : e('svg', { className: "w-5 h-5 text-gray-700", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" }, e('path', { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M4 6h16M4 12h16M4 18h16" }))
                                     ),
                                     menuOpen && e('div', { className: "absolute right-0 top-12 bg-white rounded-xl shadow-lg border border-gray-200 py-2 w-52 z-50" },
                                         e('a', { href: "my-journey.html", className: "block px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:text-wcg-blue transition-colors" }, "My PD Journey"),
@@ -680,11 +867,26 @@
                 ),
                 e('main', { className: "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" },
                     error ? e('div', { className: "p-6 bg-red-50 border border-red-100 rounded-xl" },
-                        e('h3', { className: "font-bold text-wcg-red" }, "Data Source Not Found"),
-                        e('p', { className: "text-sm mt-1" }, "Please ensure the CSV file is in the correct folder.")
+                        e('div', { className: "flex items-start gap-4" },
+                            e('span', { className: "text-wcg-red mt-1" }, e(Icons.AlertTriangle)),
+                            e('div', null,
+                                e('h3', { className: "font-bold text-wcg-red text-lg" }, error === 'empty' ? "No Virtual Sessions Found" : "Unable to Load Sessions"),
+                                e('p', { className: "text-gray-700 mt-1 text-sm" },
+                                    error === 'empty'
+                                        ? "No sessions with a delivery mode of \"Virtual\" were found in Supabase."
+                                        : "There was a problem fetching data from Supabase. Please check your connection and try again."
+                                ),
+                                e('div', { className: "mt-4 pt-4 border-t border-red-100" },
+                                    e('button', {
+                                        onClick: fetchData,
+                                        className: "cursor-pointer bg-white border border-gray-300 hover:border-wcg-blue text-gray-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm flex items-center gap-2 w-fit"
+                                    }, e(Icons.RefreshCw), e('span', null, "Retry"))
+                                )
+                            )
+                        )
                     ) : filteredSessions.length === 0 ? e('div', { className: "text-center py-24 bg-white rounded-2xl shadow-sm border border-dashed border-gray-300" },
                         e('h3', { className: "text-xl font-bold text-gray-900" }, "No sessions found")
-                    ) : e(CalendarView, { sessions: filteredSessions, currentMonth: currentMonth, setCurrentMonth: setCurrentMonth })
+                    ) : e(CalendarView, { sessions: filteredSessions, currentMonth: currentMonth, setCurrentMonth: setCurrentMonth, currentTime: currentTime })
                 ),
                 e('footer', { className: "bg-white border-t border-gray-200 mt-20 py-8 text-center text-gray-400 text-xs font-accent font-bold tracking-widest uppercase" },
                     "© 2026 Western Cape Government"
