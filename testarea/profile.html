@@ -17,6 +17,7 @@
                 extend: {
                     colors: {
                         'wcg-green': '#76B82A',
+                        'wcg-green2': '#8FAD15',
                         'wcg-yellow': '#FDB913',
                         'wcg-red': '#E30613',
                         'wcg-blue': '#001489',
@@ -450,9 +451,9 @@
                 isOpen ? e('div', { className: "absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.1)] border border-gray-100 overflow-hidden animate-fade-in-up" },
                     e('div', { className: "py-1" },
                         e('a', { href: "index.html", className: linkStyle }, "Home"),
-                        e('a', { href: "pathway.html", className: linkStyle }, "Pathway Info"),
-                        e('a', { href: "my-pd.html", className: linkStyle }, "My PD"),
-                        e('a', { href: "calendar.html", className: linkStyle }, "Calendar View")
+                        e('a', { href: "sessions.html", className: linkStyle }, "Upcoming Sessions"),
+                        e('a', { href: "pathway.html", className: linkStyle }, "Adoption and Transformation Pathway"),
+                        e('a', { href: "https://wcedeportal.co.za/meet-the-team", className: linkStyle }, "Contact eLearning")
                     )
                 ) : null
             );
@@ -1561,7 +1562,8 @@
                             }, "Logout"),
                             e(Menu)
                         )
-                    )
+                    ),
+                    e('div', { className: "h-1.5 w-full bg-gradient-to-r from-wcg-blue to-wcg-green2" })
                 ),
 
                 e('div', { className: "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 print-full-width" },
