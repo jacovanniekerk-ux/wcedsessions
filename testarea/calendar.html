@@ -461,11 +461,11 @@
         };
 
         const SessionModal = ({ session, onClose, currentTime = Date.now() }) => {
-            const dateObj = parseDate(sessions.date);
+            const dateObj = parseDate(session.date);
             const isTodaySession = isToday(dateObj);
 
-            const start = sessions.startTimestamp ?? null;
-            const end = sessions.endTimestamp ?? null;
+            const start = session.startTimestamp ?? null;
+            const end = session.endTimestamp ?? null;
             const hasValidTimes = start !== null && end !== null;
             const isBeforeStart = hasValidTimes && currentTime < start;
             const hasStarted = hasValidTimes && currentTime >= start;
@@ -499,10 +499,10 @@
 
             const renderActionSection = () => {
                 if (isTodaySession) {
-                    if (isJoinable && sessions.joinLink) {
+                    if (isJoinable && session.joinLink) {
                         return e('div', { className: "flex flex-col space-y-2 w-full" },
                             !hasStarted && e('div', { className: "text-center text-sm font-bold text-wcg-blue mb-1" }, "Starts in: ", e('span', { className: "font-mono" }, formatCountdown(start - currentTime))),
-                            e('a', { href: sessions.joinLink, target: "_blank", rel: "noopener noreferrer", className: "flex items-center justify-center bg-wcg-red hover:bg-red-700 text-white font-bold font-accent py-4 px-6 rounded-lg transition-all text-lg shadow-lg animate-pulse-glow w-full" },
+                            e('a', { href: session.joinLink, target: "_blank", rel: "noopener noreferrer", className: "flex items-center justify-center bg-wcg-red hover:bg-red-700 text-white font-bold font-accent py-4 px-6 rounded-lg transition-all text-lg shadow-lg animate-pulse-glow w-full" },
                                 e(Icons.Video), e('span', { className: "ml-3" }, "JOIN NOW")
                             )
                         );
@@ -513,8 +513,8 @@
                             e('span', { className: "text-2xl font-bold font-accent text-wcg-blue font-mono tracking-wider" }, formatCountdown(start - currentTime))
                         );
                     }
-                    if (sessions.joinLink) {
-                        return e('a', { href: sessions.joinLink, target: "_blank", rel: "noopener noreferrer", className: "flex items-center justify-center bg-wcg-red hover:bg-red-700 text-white font-bold font-accent py-4 px-6 rounded-lg transition-all text-lg shadow-lg animate-pulse-glow w-full" },
+                    if (session.joinLink) {
+                        return e('a', { href: session.joinLink, target: "_blank", rel: "noopener noreferrer", className: "flex items-center justify-center bg-wcg-red hover:bg-red-700 text-white font-bold font-accent py-4 px-6 rounded-lg transition-all text-lg shadow-lg animate-pulse-glow w-full" },
                             e(Icons.Video), e('span', { className: "ml-3" }, "JOIN NOW")
                         );
                     }
@@ -522,15 +522,15 @@
                 }
 
                 return e('div', { className: "grid grid-cols-1 sm:grid-cols-2 gap-3" },
-                    e('a', { href: sessions.registerLink, target: "_blank", rel: "noopener noreferrer", className: `col-span-1 sm:col-span-2 flex items-center justify-center bg-wcg-blue hover:bg-blue-800 text-white font-bold font-accent py-2.5 px-4 rounded-lg transition-all text-sm shadow-sm hover:shadow ${!sessions.registerLink ? 'opacity-50 pointer-events-none' : ''}` },
+                    e('a', { href: session.registerLink, target: "_blank", rel: "noopener noreferrer", className: `col-span-1 sm:col-span-2 flex items-center justify-center bg-wcg-blue hover:bg-blue-800 text-white font-bold font-accent py-2.5 px-4 rounded-lg transition-all text-sm shadow-sm hover:shadow ${!session.registerLink ? 'opacity-50 pointer-events-none' : ''}` },
                         e('span', { className: "mr-2" }, "Register Now"),
                         e(Icons.ExternalLink)
                     ),
-                    e('a', { href: sessions.googleCal, target: "_blank", rel: "noreferrer", className: "flex items-center justify-center bg-white border border-gray-200 hover:border-wcg-blue hover:bg-blue-50 text-gray-600 font-medium py-2 px-2 rounded-lg text-xs transition-colors", title: "Add to Google Calendar" },
+                    e('a', { href: session.googleCal, target: "_blank", rel: "noreferrer", className: "flex items-center justify-center bg-white border border-gray-200 hover:border-wcg-blue hover:bg-blue-50 text-gray-600 font-medium py-2 px-2 rounded-lg text-xs transition-colors", title: "Add to Google Calendar" },
                         e(Icons.Calendar),
                         e('span', { className: "ml-1.5" }, "Google Calendar")
                     ),
-                    e('a', { href: sessions.outlookCal, target: "_blank", rel: "noreferrer", className: "flex items-center justify-center bg-white border border-gray-200 hover:border-wcg-blue hover:bg-blue-50 text-gray-600 font-medium py-2 px-2 rounded-lg text-xs transition-colors", title: "Add to Outlook Calendar" },
+                    e('a', { href: session.outlookCal, target: "_blank", rel: "noreferrer", className: "flex items-center justify-center bg-white border border-gray-200 hover:border-wcg-blue hover:bg-blue-50 text-gray-600 font-medium py-2 px-2 rounded-lg text-xs transition-colors", title: "Add to Outlook Calendar" },
                         e(Icons.Calendar),
                         e('span', { className: "ml-1.5" }, "Outlook Calendar")
                     )
@@ -546,29 +546,29 @@
                                 e('span', null, dateObj.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' })),
                                 isPast && e('span', { className: "text-xs bg-gray-400 text-white px-2 py-0.5 rounded-full ml-2" }, "Ended")
                             ),
-                            sessions.time && e('div', { className: `flex items-center space-x-2 text-sm mt-1 ml-6 ${isPast ? 'text-gray-400' : 'text-gray-600'}` },
+                            session.time && e('div', { className: `flex items-center space-x-2 text-sm mt-1 ml-6 ${isPast ? 'text-gray-400' : 'text-gray-600'}` },
                                 e(Icons.Clock),
-                                e('span', null, sessions.time)
+                                e('span', null, session.time)
                             )
                         ),
                         e('div', { className: "flex items-center gap-2" },
-                            e(Badge, { type: "district" }, sessions.district),
+                            e(Badge, { type: "district" }, session.district),
                             e('button', { onClick: onClose, className: "text-gray-400 hover:text-gray-600 text-2xl leading-none" }, "×")
                         )
                     ),
                     e('div', { className: "p-5" },
                         e('div', { className: "flex flex-wrap gap-2 mb-3" },
-                            e(Badge, { type: "level" }, sessions.level),
-                            sessions.term && e(Badge, { type: "term" }, sessions.term)
+                            e(Badge, { type: "level" }, session.level),
+                            session.term && e(Badge, { type: "term" }, session.term)
                         ),
-                        e('h3', { className: `text-xl font-bold font-accent mb-3 leading-tight ${isPast ? 'text-gray-600' : 'text-gray-900'}` }, sessions.name),
+                        e('h3', { className: `text-xl font-bold font-accent mb-3 leading-tight ${isPast ? 'text-gray-600' : 'text-gray-900'}` }, session.name),
                         e('div', { className: `text-sm leading-relaxed mb-4 ${isPast ? 'text-gray-500' : 'text-gray-600'}` },
-                            sessions.description,
-                            sessions.outcomes && e('div', { className: "mt-4 pt-4 border-t border-gray-100 bg-blue-50/30 -mx-2 px-3 pb-2 rounded-lg" },
+                            session.description,
+                            session.outcomes && e('div', { className: "mt-4 pt-4 border-t border-gray-100 bg-blue-50/30 -mx-2 px-3 pb-2 rounded-lg" },
                                 e('h4', { className: "text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-2" },
                                     e(Icons.ExternalLink), "Learning Outcomes"
                                 ),
-                                formatOutcomes(sessions.outcomes)
+                                formatOutcomes(session.outcomes)
                             )
                         ),
                         !isPast && e('div', { className: "pt-4 border-t border-gray-100" },
@@ -584,11 +584,11 @@
         };
 
         const SessionPill = ({ session, onClick, currentTime = Date.now() }) => {
-            const dateObj = parseDate(sessions.date);
+            const dateObj = parseDate(session.date);
             const isTodaySession = isToday(dateObj);
 
-            const start = sessions.startTimestamp ?? null;
-            const end = sessions.endTimestamp ?? null;
+            const start = session.startTimestamp ?? null;
+            const end = session.endTimestamp ?? null;
             const hasValidTimes = start !== null && end !== null;
             const isBeforeStart = hasValidTimes && currentTime < start;
             const hasConcluded = hasValidTimes && currentTime > end;
@@ -596,10 +596,10 @@
 
             const dayPast = isPastDate(dateObj);
             const isPast = isTodaySession ? hasConcluded : dayPast;
-            const isLive = isTodaySession && isJoinable && sessions.joinLink && !isPast;
+            const isLive = isTodaySession && isJoinable && session.joinLink && !isPast;
             const isCountingDown = isTodaySession && isBeforeStart && !isPast;
 
-            const level = (sessions.level || '').toLowerCase();
+            const level = (session.level || '').toLowerCase();
             let levelClass = '';
             if (level.includes('foundation')) levelClass = 'level-foundation';
             else if (level.includes('better')) levelClass = 'level-better';
@@ -617,10 +617,10 @@
                 e('div', { className: "flex items-start gap-2" },
                     isLive && e('div', { className: "flex-shrink-0 mt-1" }, e('span', { className: "live-dot" })),
                     e('div', { className: "flex-1 min-w-0" },
-                        e('div', { className: "text-xs md:text-sm font-bold leading-tight mb-1", style: { wordBreak: 'break-word' } }, sessions.name),
-                        sessions.time && e('div', { className: `flex items-center gap-1 text-[10px] md:text-xs ${isPast ? 'opacity-60' : 'opacity-75'}` },
+                        e('div', { className: "text-xs md:text-sm font-bold leading-tight mb-1", style: { wordBreak: 'break-word' } }, session.name),
+                        session.time && e('div', { className: `flex items-center gap-1 text-[10px] md:text-xs ${isPast ? 'opacity-60' : 'opacity-75'}` },
                             e(Icons.Clock),
-                            e('span', null, sessions.time)
+                            e('span', null, session.time)
                         ),
                         isLive && e('div', { className: "mt-1.5 flex items-center gap-1 text-[10px] md:text-xs font-bold text-wcg-red" },
                             e(Icons.Video),
@@ -659,7 +659,7 @@
             const sessionsByDate = useMemo(() => {
                 const grouped = {};
                 sessions.forEach(session => {
-                    const dateObj = parseDate(sessions.date);
+                    const dateObj = parseDate(session.date);
                     const dateKey = `${dateObj.getFullYear()}-${dateObj.getMonth()}-${dateObj.getDate()}`;
                     if (!grouped[dateKey]) grouped[dateKey] = [];
                     grouped[dateKey].push(session);
@@ -765,7 +765,7 @@
                 setError(null);
                 try {
                     const [sessionRes, courseRes] = await Promise.all([
-                        supabaseClient.from('session').select('*').eq('session_delivery_mode', 'Virtual'),
+                        supabaseClient.from('sessions').select('*').eq('session_delivery_mode', 'Virtual'),
                         supabaseClient.from('courses').select('*')
                     ]);
 
@@ -798,15 +798,15 @@
 
             const filteredSessions = useMemo(() => {
                 return data.filter(session => {
-                    const sessionDate = parseDate(sessions.date);
+                    const sessionDate = parseDate(session.date);
                     const today = new Date();
                     const currentMonthStart = new Date(today.getFullYear(), today.getMonth(), 1);
                     if (sessionDate < currentMonthStart) return false;
 
-                    const matchesSearch = (sessions.name || '').toLowerCase().includes(searchTerm.toLowerCase()) || (sessions.description || '').toLowerCase().includes(searchTerm.toLowerCase());
-                    const matchesDistrict = selectedDistrict === 'All' || sessions.district === selectedDistrict;
-                    const matchesSessionName = selectedSessionName === 'All' || sessions.name === selectedSessionName;
-                    const matchesLevel = selectedLevel === 'All' || sessions.level === selectedLevel;
+                    const matchesSearch = (session.name || '').toLowerCase().includes(searchTerm.toLowerCase()) || (session.description || '').toLowerCase().includes(searchTerm.toLowerCase());
+                    const matchesDistrict = selectedDistrict === 'All' || session.district === selectedDistrict;
+                    const matchesSessionName = selectedSessionName === 'All' || session.name === selectedSessionName;
+                    const matchesLevel = selectedLevel === 'All' || session.level === selectedLevel;
 
                     return matchesSearch && matchesDistrict && matchesSessionName && matchesLevel;
                 }).sort((a, b) => parseDate(a.date) - parseDate(b.date));
