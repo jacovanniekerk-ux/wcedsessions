@@ -402,7 +402,7 @@
                     const name = s.session_title || 'Untitled Session';
 
                     const registerLink = startParts
-                        ? buildRegisterLink({ startParts, district, name, id: s.id })
+                        ? buildRegisterLink({ startParts, district, name, id: s.id_key })
                         : '';
                     const googleCal = (startParts && endParts)
                         ? buildGoogleCalendarLink({ startParts, endParts, name, description: course.session_desciption, joinLink: s.session_link })
@@ -412,7 +412,7 @@
                         : '#';
 
                     return {
-                        id: s.id,
+                        id: s.id_key,
                         date: dateISO,
                         time: timeDisplay,
                         term: '',
@@ -764,10 +764,18 @@
                 setLoading(true);
                 setError(null);
                 try {
+                    const now = new Date();
+                    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
+
                     const [sessionRes, courseRes] = await Promise.all([
-                        supabaseClient.from('sessions').select('*').eq('session_delivery_mode', 'Virtual'),
-                        supabaseClient.from('courses').select('*')
-                    ]);
+                    supabaseClient
+                        .from('sessions')
+                        .select('*')
+                        .eq('session_delivery_mode', 'Virtual')
+                        .gte('session_date', startOfMonth)
+                        .order('session_date', { ascending: true }),
+                    supabaseClient.from('courses').select('*')
+]);
 
                     if (sessionRes.error) throw sessionRes.error;
                     if (courseRes.error) throw courseRes.error;
