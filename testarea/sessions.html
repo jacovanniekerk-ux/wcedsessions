@@ -433,7 +433,11 @@
                 setError(null);
                 try {
                     const [sessionRes, courseRes] = await Promise.all([
-                        supabaseClient.from('sessions').select('*').eq('session_delivery_mode', 'Virtual'),
+                        supabaseClient .from('sessions')
+                        .select('*')
+                        .eq('session_delivery_mode', 'Virtual')
+                        .gte('session_date', new Date().toISOString().slice(0, 10)) // today onward, 'YYYY-MM-DD'
+                        .order('session_date', { ascending: true }),
                         supabaseClient.from('courses').select('*')
                     ]);
 
