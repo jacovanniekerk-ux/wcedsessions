@@ -261,7 +261,7 @@
                     const name = s.session_title || 'Untitled Session';
 
                     const registerLink = startParts
-                        ? buildRegisterLink({ startParts, district, name, id: s.id })
+                        ? buildRegisterLink({ startParts, district, name, id: s.id_key })
                         : '';
                     const googleCal = (startParts && endParts)
                         ? buildGoogleCalendarLink({ startParts, endParts, name, description: course.session_desciption, joinLink: s.session_link })
@@ -271,7 +271,7 @@
                         : '#';
 
                     return {
-                        id: s.id,
+                        id: s.id_key,
                         date: dateISO,
                         time: timeDisplay,
                         term: '',
