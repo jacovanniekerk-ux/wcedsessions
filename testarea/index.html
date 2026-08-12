@@ -15,11 +15,12 @@
                 extend: {
                     colors: {
                         wcg: {
-                            blue: '#004B87',
+                            blue: '#001489',
                             grey: '#968C83',
                             red: '#EE3B3B',
                             yellow: '#FFD700',
                             green: '#32CD32',
+                            green2: '#8FAD15',
                             darkText: '#333333',
                             lightBg: '#F3F4F6'
                         }
@@ -472,7 +473,8 @@
                                 className: "text-xs md:text-sm text-wcg-red hover:text-red-700 font-bold ml-auto px-2 md:px-3 py-1 rounded hover:bg-red-50 transition-colors uppercase tracking-wide"
                             }, "Clear")
                         )
-                    )
+                    ),
+                  e('div', { className: "h-1.5 w-full bg-gradient-to-r from-wcg-blue to-wcg-green2" })
                 ),
                 e('main', { className: "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" },
                     error && e('div', { className: "mb-8 p-6 bg-red-50 border border-red-100 rounded-xl shadow-sm" },
