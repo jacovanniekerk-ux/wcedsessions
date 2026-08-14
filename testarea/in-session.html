@@ -695,13 +695,18 @@
         function EventExtraFields({ accommodation, onAccommodationChange, dietary, onDietaryChange, dietaryOther, onDietaryOtherChange, attempted }) {
             return e('div', { className: 'border-2 border-gray-200 rounded-xl p-4 mb-5 bg-gray-50' },
                 e('p', { className: 'text-sm font-bold uppercase tracking-wide text-wcg-blue mb-4' }, 'Event Details'),
-                e(TextAreaField, {
+                e(SelectField, {
                     label: 'Do you require accommodation?',
                     value: accommodation,
                     onChange: onAccommodationChange,
-                    placeholder: '',
-                    helperText: 'Provide any accommodation details or requirements.'
+                    options: ['Yes', 'No'],
+                    required: true,
+                    error: attempted && !accommodation ? 'Please select an option' : undefined
                 }),
+                e('p', { className: 'text-sm text-gray-600 mb-4 leading-relaxed' },
+                    'Accommodation is available to attendees travelling from more than 150km to the venue.'
+                ),
+                     
                 e(SelectField, {
                     label: 'Dietary requirements',
                     value: dietary,
