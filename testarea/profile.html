@@ -8,7 +8,6 @@
     <link rel="icon" type="image/png" href="favicon.png">
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -143,10 +142,117 @@
             return (rows || []).map(mapRowToRecord);
         }
 
-        // === DATA LAST UPDATED (manually update this when refreshing data) ===
-        const DATA_LAST_UPDATED = '05 June 2026';
+        // ============================================================
+        // UPCOMING SESSIONS (sessions + courses join) — same logic used
+        // in index.html / calendar.html, reused here verbatim so all
+        // three pages stay in sync if the mapping ever changes.
+        // ============================================================
+        const WEEKDAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const SAST_OFFSET_MS = 2 * 60 * 60 * 1000; // Africa/Johannesburg is a fixed UTC+2, no DST
 
-        // === SESSION DEFINITIONS ===
+        const pad2 = (n) => String(n).padStart(2, '0');
+
+        const getJoburgParts = (timestampMs) => {
+            const shifted = new Date(timestampMs + SAST_OFFSET_MS);
+            return {
+                year: shifted.getUTCFullYear(),
+                month: shifted.getUTCMonth() + 1,
+                day: shifted.getUTCDate(),
+                hours: shifted.getUTCHours(),
+                minutes: shifted.getUTCMinutes(),
+                seconds: shifted.getUTCSeconds(),
+                weekdayIdx: shifted.getUTCDay()
+            };
+        };
+
+        const toEpoch = (dateStr, timeStr) => {
+            if (!dateStr || !timeStr) return null;
+            const ts = new Date(`${dateStr}T${timeStr}+02:00`).getTime();
+            return isNaN(ts) ? null : ts;
+        };
+
+        const encodeForFormEntry = (str) => encodeURI(str).replace(/%20/g, '+');
+
+        const buildRegisterLink = ({ startParts, district, name, id }) => {
+            const dateTimeStr = `${WEEKDAY_NAMES[startParts.weekdayIdx]}, ${MONTH_NAMES[startParts.month - 1]} ${startParts.day} @ ${pad2(startParts.hours)}:${pad2(startParts.minutes)}`;
+            const raw = `${dateTimeStr} - (${(district || '').toUpperCase()}) - ${name} [${id}]`;
+            const encoded = encodeForFormEntry(raw);
+            return `https://docs.google.com/forms/d/e/1FAIpQLScMwanHrYwf9_kOML0icuKE9VfoFXD703of7ETLR5z6ysZoxA/viewform?usp=pp_url&entry.1422040156=${encoded}`;
+        };
+
+        const buildGoogleCalendarLink = ({ startParts, endParts, name, description, joinLink }) => {
+            const fmt = (p) => `${p.year}${pad2(p.month)}${pad2(p.day)}T${pad2(p.hours)}${pad2(p.minutes)}${pad2(p.seconds)}`;
+            const text = `\u{1F4BB} eTPD Webinar: ${name}`;
+            const details = `${description || ''}\n\n\u{1F517} Join Link: \n${joinLink || ''}\n\n\u2139\uFE0F For more info: https://bit.ly/m/wcedtpd`;
+            return `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(text)}&dates=${fmt(startParts)}/${fmt(endParts)}&details=${encodeURIComponent(details)}&location=MS%20Teams&ctz=Africa/Johannesburg`;
+        };
+
+        const buildOutlookLink = ({ startParts, endParts, name, joinLink }) => {
+            const iso = (p) => `${p.year}-${pad2(p.month)}-${pad2(p.day)}T${pad2(p.hours)}:${pad2(p.minutes)}:${pad2(p.seconds)}`;
+            const body = `Join Link: ${joinLink || ''}`;
+            return `https://outlook.office.com/calendar/0/action/compose?allday=false&body=${encodeURIComponent(body)}&enddt=${encodeURIComponent(iso(endParts))}&location=Virtual%20Session&path=/calendar/action/compose&rru=addevent&startdt=${encodeURIComponent(iso(startParts))}&subject=${encodeURIComponent(name)}`;
+        };
+
+        // Combines `sessions` + `courses` rows fetched from Supabase, filtered
+        // to Virtual delivery mode only (consistent with index.html/calendar.html).
+        const combineSessionsAndCourses = (sessionRows, courseRows) => {
+            const coursesByName = new Map();
+            (courseRows || []).forEach(c => {
+                if (c.course_name) coursesByName.set(c.course_name, c);
+            });
+
+            return (sessionRows || [])
+                .filter(s => s.session_delivery_mode === 'Virtual')
+                .map(s => {
+                    const course = coursesByName.get(s.session_title) || {};
+                    const durationMin = Number(course.programme_duration) || 0;
+
+                    const startEpoch = toEpoch(s.session_date, s.session_start_time);
+                    const endEpoch = startEpoch !== null ? startEpoch + durationMin * 60000 : null;
+
+                    const startParts = startEpoch !== null ? getJoburgParts(startEpoch) : null;
+                    const endParts = endEpoch !== null ? getJoburgParts(endEpoch) : null;
+
+                    const dateISO = s.session_date || '';
+                    const timeDisplay = (startParts && endParts)
+                        ? `${pad2(startParts.hours)}:${pad2(startParts.minutes)} - ${pad2(endParts.hours)}:${pad2(endParts.minutes)}`
+                        : '';
+
+                    const district = s.hosting_unit || 'Unspecified';
+                    const name = s.session_title || 'Untitled Session';
+
+                    const registerLink = startParts
+                        ? buildRegisterLink({ startParts, district, name, id: s.id_key })
+                        : '';
+                    const googleCal = (startParts && endParts)
+                        ? buildGoogleCalendarLink({ startParts, endParts, name, description: course.session_desciption, joinLink: s.session_link })
+                        : '#';
+                    const outlookCal = (startParts && endParts)
+                        ? buildOutlookLink({ startParts, endParts, name, joinLink: s.session_link })
+                        : '#';
+
+                    return {
+                        id: s.id_key,
+                        date: dateISO,
+                        time: timeDisplay,
+                        district,
+                        name,
+                        level: course.developmental_level || '',
+                        description: course.session_desciption || '',
+                        registerLink,
+                        googleCal,
+                        outlookCal,
+                        link: registerLink, // SessionDetailModal's "Register Now" button
+                        joinLink: s.session_link || '',
+                        startTimestamp: startEpoch,
+                        endTimestamp: endEpoch
+                    };
+                })
+                .filter(s => s.name !== 'Untitled Session');
+        };
+
+
         const SPARK_SESSIONS = [
             'Adoption Strategy',
             'Digital Skills Course',
@@ -371,12 +477,8 @@
 
         const parseDate = (dateStr) => {
             if (!dateStr) return new Date(8640000000000000);
-            const parts = dateStr.split('/');
-            if (parts.length === 3) {
-                const [day, month, year] = parts;
-                return new Date(`${year}-${month}-${day}`);
-            }
-            return new Date(dateStr);
+            const d = new Date(`${dateStr}T00:00:00`);
+            return isNaN(d.getTime()) ? new Date(8640000000000000) : d;
         };
 
         const isFutureOrToday = (dateObj) => {
@@ -388,6 +490,10 @@
             }
             return false;
         };
+
+        // Local-timezone 'YYYY-MM-DD', used to compare against Supabase's
+        // ISO session_date without any UTC-shift surprises near midnight.
+        const toISODateString = (d) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
 
         // Turn a set of matching Supabase records into the shape the rest
         // of the app expects (profile + deduplicated, sorted sessions).
@@ -692,7 +798,7 @@
                         e('div', { className: "grid grid-cols-2 gap-4" },
                             e('div', null,
                                 e('span', { className: "text-xs font-bold text-gray-500 uppercase" }, "Date"),
-                                e('p', { className: "font-semibold text-gray-900" }, session.date)
+                                e('p', { className: "font-semibold text-gray-900" }, formatDate(parseDate(session.date)))
                             ),
                             e('div', null,
                                 e('span', { className: "text-xs font-bold text-gray-500 uppercase" }, "Time"),
@@ -1260,15 +1366,24 @@
             const [viewMode, setViewMode] = useState('cards');
             const [filters, setFilters] = useState({ level: '', district: '', mode: '', category: '' });
 
-            // Load the upcoming sessions CSV (used by the Next Steps tab)
+            // Load upcoming (Virtual) sessions from Supabase — used by the
+            // Next Steps tab and the today/tomorrow announcement banner.
             useEffect(() => {
-                Papa.parse('upcoming-sessions.csv', {
-                    download: true,
-                    header: true,
-                    skipEmptyLines: true,
-                    complete: (result) => setUpcomingData(result.data),
-                    error: () => setUpcomingData([])
-                });
+                (async () => {
+                    try {
+                        const todayISO = toISODateString(new Date());
+                        const [sessionRes, courseRes] = await Promise.all([
+                            supabaseClient.from('sessions').select('*').eq('session_delivery_mode', 'Virtual').gte('session_date', todayISO).order('session_date', { ascending: true }),
+                            supabaseClient.from('courses').select('*')
+                        ]);
+                        if (sessionRes.error) throw sessionRes.error;
+                        if (courseRes.error) throw courseRes.error;
+                        setUpcomingData(combineSessionsAndCourses(sessionRes.data, courseRes.data));
+                    } catch (err) {
+                        console.error('Error fetching upcoming sessions from Supabase:', err);
+                        setUpcomingData([]);
+                    }
+                })();
             }, []);
 
             // Swap the document title while printing so browsers that still show a
@@ -1342,6 +1457,20 @@
                 setActiveTab(null);
             };
 
+            // === TODAY / TOMORROW ANNOUNCEMENT (platform-wide, any Virtual session) ===
+            const todayTomorrowSessions = useMemo(() => {
+                const today = new Date();
+                const tomorrow = new Date(today);
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                const todayISO = toISODateString(today);
+                const tomorrowISO = toISODateString(tomorrow);
+
+                return upcomingData
+                    .filter(session => session.date === todayISO || session.date === tomorrowISO)
+                    .map(session => ({ ...session, isToday: session.date === todayISO }))
+                    .sort((a, b) => (a.startTimestamp || 0) - (b.startTimestamp || 0));
+            }, [upcomingData]);
+
             // === PATHWAY STATUS (drives summary strip + Pathway tab) ===
             const pathwayStatus = useMemo(() => {
                 if (!results || !results.sessions) return null;
@@ -1408,23 +1537,10 @@
 
                 if (dovetailCount < 10) {
                     const upcomingDovetailSessions = upcomingData
-                        .filter(row => {
-                            const name = row['Session Name'] && row['Session Name'].trim();
-                            const matchesName = remainingDovetails.some(d => name && name.toLowerCase().includes(d.toLowerCase().split(':')[0].toLowerCase()));
-                            if (!matchesName) return false;
-                            const dateStr = row['Date'] && row['Date'].trim();
-                            return isFutureOrToday(parseDate(dateStr));
+                        .filter(session => {
+                            const name = session.name && session.name.trim();
+                            return remainingDovetails.some(d => name && name.toLowerCase().includes(d.toLowerCase().split(':')[0].toLowerCase()));
                         })
-                        .map(row => ({
-                            date: (row['Date'] && row['Date'].trim()) || 'TBA',
-                            name: row['Session Name'] && row['Session Name'].trim(),
-                            district: (row['HOSTING DISTRICT'] && row['HOSTING DISTRICT'].trim()) || '',
-                            time: row['Time'] || '',
-                            venue: row['Venue'] || '',
-                            link: row['Registration Link'] || row['Pre-Register'] || '',
-                            description: row['Session Desciption'] || '',
-                            level: row['Developmental Level'] || ''
-                        }))
                         .sort((a, b) => parseDate(a.date) - parseDate(b.date))
                         .slice(0, 8);
 
@@ -1461,6 +1577,24 @@
                     });
                 }
 
+                // Next 3 upcoming sessions the participant hasn't attended before,
+                // shown regardless of any overlap with the Dovetail suggestion above.
+                const attendedNames = new Set(
+                    (results ? results.allSessions : []).map(s => s['Session Name'] && s['Session Name'].trim().toLowerCase()).filter(Boolean)
+                );
+                const notYetAttended = upcomingData
+                    .filter(session => session.name && !attendedNames.has(session.name.trim().toLowerCase()))
+                    .sort((a, b) => parseDate(a.date) - parseDate(b.date))
+                    .slice(0, 3);
+
+                if (notYetAttended.length > 0) {
+                    items.push({
+                        icon: '🔭', title: 'Explore More Upcoming Sessions',
+                        description: 'A few upcoming sessions you haven\'t attended yet — worth a look if any fit your interests or schedule.',
+                        type: 'info', sessions: notYetAttended
+                    });
+                }
+
                 if (pathwayStatus.hasAdoption && !hasDigitalSkills) {
                     items.push({
                         icon: '📖', title: 'Next: Digital Skills Course',
@@ -1486,7 +1620,7 @@
                 }
 
                 return items;
-            }, [pathwayStatus, upcomingData]);
+            }, [pathwayStatus, upcomingData, results]);
 
             // === HISTORY TAB: filtering, grouping, metrics ===
             const filteredSessions = useMemo(() => {
@@ -1566,6 +1700,32 @@
                     e('div', { className: "h-1.5 w-full bg-gradient-to-r from-wcg-blue to-wcg-green2" })
                 ),
 
+                todayTomorrowSessions.length > 0 && e('div', { className: "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 no-print" },
+                    e('div', { className: "bg-blue-50 border border-blue-200 rounded-xl p-4" },
+                        e('div', { className: "flex items-start gap-3" },
+                            e('span', { className: "text-2xl flex-shrink-0" }, "📢"),
+                            e('div', { className: "flex-1 min-w-0" },
+                                e('h3', { className: "font-bold text-wcg-dark text-sm mb-2" }, "Sessions Running Today & Tomorrow"),
+                                e('div', { className: "space-y-1.5" },
+                                    todayTomorrowSessions.map((session, idx) => e('div', {
+                                        key: idx,
+                                        className: "flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 text-xs bg-white rounded-lg px-3 py-2 border border-blue-100"
+                                    },
+                                        e('span', null,
+                                            e('span', { className: `inline-block px-1.5 py-0.5 rounded font-bold mr-2 ${session.isToday ? 'bg-wcg-red text-white' : 'bg-wcg-yellow text-gray-900'}` }, session.isToday ? 'TODAY' : 'TOMORROW'),
+                                            e('span', { className: "font-semibold text-wcg-blue" }, session.name), ' — ', session.time || 'TBA', ' • ', session.district
+                                        ),
+                                        session.joinLink && e('a', {
+                                            href: session.joinLink, target: "_blank", rel: "noopener noreferrer",
+                                            className: "inline-flex items-center gap-1 text-wcg-blue font-bold hover:underline flex-shrink-0"
+                                        }, "Join Link →")
+                                    ))
+                                )
+                            )
+                        )
+                    )
+                ),
+
                 e('div', { className: "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 print-full-width" },
                     !results ? (
                         // === LOGIN / SEARCH FORM ===
@@ -1613,8 +1773,7 @@
                                 ),
                                 e('div', { className: "mb-6 bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-xs text-yellow-800" },
                                     e('strong', null, "DISCLAIMER:"),
-                                    " This record is generated from self-captured attendance data. Every effort is made to ensure accuracy; discrepancies may occur due to manual entry errors. Please ensure consistency in your submissions to maintain an accurate transformation profile.",
-                                    e('br'), e('strong', null, "Data last updated:"), ' ' + DATA_LAST_UPDATED
+                                    " This record is generated from self-captured attendance data. Every effort is made to ensure accuracy; discrepancies may occur due to manual entry errors. Please ensure consistency in your submissions to maintain an accurate transformation profile."
                                 ),
                                 searchError && e('div', { className: 'mb-4 bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700' }, searchError),
                                 e('button', {
@@ -1652,8 +1811,7 @@
                                         e('div', null,
                                             e('h2', { className: "text-2xl font-bold text-wcg-dark" }, results.profile.name),
                                             e('p', { className: "text-gray-600" }, e('span', { className: "font-semibold" }, "School:"), " ", results.profile.school),
-                                            e('p', { className: "text-gray-600" }, e('span', { className: "font-semibold" }, "District:"), " ", results.profile.district),
-                                            e('p', { className: "text-xs text-gray-400 mt-1" }, "Data last updated: " + DATA_LAST_UPDATED)
+                                            e('p', { className: "text-gray-600" }, e('span', { className: "font-semibold" }, "District:"), " ", results.profile.district)
                                         ),
                                         e('div', { className: "flex items-center gap-3" },
                                             pathwayStatus && e('button', {
