@@ -343,7 +343,7 @@
     'Teacher Assistant',
     'None of the above'
         ];
-        const STATIC_DISTRICT_OPTIONS = ['Head Office', 'Not Applicable'];
+        const STATIC_DISTRICT_OPTIONS = ['HEAD OFFICE', 'NOT APPLICABLE'];
         const NON_SCHOOL_OPTIONS = ['Not Applicable', 'School not in list'];
         const POPIA_URL = 'https://qrgo.page.link/svhMU';
 
@@ -817,7 +817,7 @@
 
             const schoolOptions = useMemo(() => {
                 if (!fields.district) return [];
-                if (fields.district === 'Head Office' || fields.district === 'Not Applicable') {
+                if (fields.district === 'HEAD OFFICE' || fields.district === 'NOT APPLICABLE') {
                     return NON_SCHOOL_OPTIONS;
                 }
                 const inDistrict = schools
@@ -883,7 +883,7 @@
         function ProfileForm({ schools, schoolsLoading, schoolsError, districtOptions, initial, onSave, onCancel }) {
             const [fields, setFields] = useState(() => fieldsFromProfile(initial));
             const [attempted, setAttempted] = useState(false);
-            const updateField = (key, value) => setFields(prev => ({ ...prev, [key]: value, ...(key === 'district' ? { school: '' } : {}) }));
+            const updateField = (key, value) => setFields(prev => ({ ...prev, [key]: value, ...(key === 'district' ? { school: (value === 'HEAD OFFICE' || value === 'NOT APPLICABLE') ? 'Not Applicable' : '' } : {}) }));
             const errors = getFieldErrors(fields);
             const canSave = Object.keys(errors).length === 0;
 
