@@ -1459,20 +1459,6 @@ const todayISO = toISODateString(testAnchor);
                 setActiveTab(null);
             };
 
-            // === TODAY / TOMORROW ANNOUNCEMENT (platform-wide, any Virtual session) ===
-            const todayTomorrowSessions = useMemo(() => {
-                const today = new Date();
-                const tomorrow = new Date(today);
-                tomorrow.setDate(tomorrow.getDate() - 2);
-                const todayISO = toISODateString(today);
-                const tomorrowISO = toISODateString(tomorrow);
-
-                return upcomingData
-                    .filter(session => session.date === todayISO || session.date === tomorrowISO)
-                    .map(session => ({ ...session, isToday: session.date === todayISO }))
-                    .sort((a, b) => (a.startTimestamp || 0) - (b.startTimestamp || 0));
-            }, [upcomingData]);
-
             // === PATHWAY STATUS (drives summary strip + Pathway tab) ===
             const pathwayStatus = useMemo(() => {
                 if (!results || !results.sessions) return null;
@@ -1702,32 +1688,6 @@ const todayISO = toISODateString(testAnchor);
                     e('div', { className: "h-1.5 w-full bg-gradient-to-r from-wcg-blue to-wcg-green2" })
                 ),
 
-                todayTomorrowSessions.length > 0 && e('div', { className: "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 no-print" },
-                    e('div', { className: "bg-blue-50 border border-blue-200 rounded-xl p-4" },
-                        e('div', { className: "flex items-start gap-3" },
-                            e('span', { className: "text-2xl flex-shrink-0" }, "📢"),
-                            e('div', { className: "flex-1 min-w-0" },
-                                e('h3', { className: "font-bold text-wcg-dark text-sm mb-2" }, "Sessions Running Today & Tomorrow"),
-                                e('div', { className: "space-y-1.5" },
-                                    todayTomorrowSessions.map((session, idx) => e('div', {
-                                        key: idx,
-                                        className: "flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 text-xs bg-white rounded-lg px-3 py-2 border border-blue-100"
-                                    },
-                                        e('span', null,
-                                            e('span', { className: `inline-block px-1.5 py-0.5 rounded font-bold mr-2 ${session.isToday ? 'bg-wcg-red text-white' : 'bg-wcg-yellow text-gray-900'}` }, session.isToday ? 'TODAY' : 'TOMORROW'),
-                                            e('span', { className: "font-semibold text-wcg-blue" }, session.name), ' — ', session.time || 'TBA', ' • ', session.district
-                                        ),
-                                        session.joinLink && e('a', {
-                                            href: session.joinLink, target: "_blank", rel: "noopener noreferrer",
-                                            className: "inline-flex items-center gap-1 text-wcg-blue font-bold hover:underline flex-shrink-0"
-                                        }, "Join Link →")
-                                    ))
-                                )
-                            )
-                        )
-                    )
-                ),
-
                 e('div', { className: "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 print-full-width" },
                     !results ? (
                         // === LOGIN / SEARCH FORM ===
@@ -1927,7 +1887,6 @@ const todayISO = toISODateString(testAnchor);
                                         e('strong', null, "DISCLAIMER:"),
                                         " This record is generated from self-captured attendance data. Every effort is made to ensure accuracy; discrepancies may occur due to manual entry errors. Please ensure consistency in your submissions to maintain an accurate transformation profile."
                                     ),
-                                    e('p', { className: "font-medium text-gray-400" }, "Attendance data is updated at the beginning of each month.")
                                 )
                             ),
 
