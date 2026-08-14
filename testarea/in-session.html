@@ -72,7 +72,7 @@
         // Column order on the sheet side should match this key order.
         function buildAttendancePayload(profile, sessionKey, sessionRecord, eventFields = {}) {
             return {
-                timestamp: new Date().toISOString(),
+                timestamp: formatSASTTimestamp(),
                 sessionKey: sessionKey.trim(),
                 sessionTitle: sessionRecord ? sessionRecord.session_title : '',
                 sessionDeliveryMode: sessionRecord ? sessionRecord.session_delivery_mode : '',
@@ -151,6 +151,21 @@
             const dateString = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
             return { dateString, epochMsShiftedToSAST: sastMs };
         }
+        // Formats "now" as 'DD/MM/YYYY HH:MM:SS' in SAST, matching the
+        // default timestamp format the sheet already uses elsewhere
+        // (e.g. from Google Forms responses) — e.g. '14/08/2026 14:06:48'.
+        function formatSASTTimestamp() {
+            const { epochMsShiftedToSAST } = getSASTNowParts();
+            const d = new Date(epochMsShiftedToSAST);
+            const dd = String(d.getUTCDate()).padStart(2, '0');
+            const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
+            const yyyy = d.getUTCFullYear();
+            const hh = String(d.getUTCHours()).padStart(2, '0');
+            const min = String(d.getUTCMinutes()).padStart(2, '0');
+            const ss = String(d.getUTCSeconds()).padStart(2, '0');
+            return `${dd}/${mm}/${yyyy} ${hh}:${min}:${ss}`;
+        }
+        
 
         // Converts a session's stored session_date ('YYYY-MM-DD') and
         // session_start_time ('HH:MM' or 'HH:MM:SS'), which are captured
