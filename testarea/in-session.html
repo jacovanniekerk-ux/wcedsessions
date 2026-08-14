@@ -57,13 +57,20 @@
         // Me", "Who has access: Anyone"). Until then this is a dead
         // link and submitAttendanceRecord() below will fail — that's
         // expected for now.
+        //
+        // NOTE: buildAttendancePayload() now also writes accommodation,
+        // dietaryRequirement, and dietaryOther columns (only populated
+        // when the session's delivery mode is 'Event' — see
+        // EVENT_DELIVERY_MODE below). Add matching columns on the
+        // sheet side in that order.
         // ------------------------------------------------------------
         const SHEET_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzYMuNE4VbkieLyY_7OpCWG5Eyz3LcK9Xh-dH3VQxp7G-cIOgi_ge_Rc3_Pji8xO3cKLQ/exec';
 
         // Builds the flat record that gets written to the sheet: every
-        // profile field, plus the Session ID Key and a capture timestamp.
+        // profile field, plus the Session ID Key, a capture timestamp,
+        // and (when applicable) the 'Event' mode extra fields.
         // Column order on the sheet side should match this key order.
-        function buildAttendancePayload(profile, sessionKey, sessionRecord) {
+        function buildAttendancePayload(profile, sessionKey, sessionRecord, eventFields = {}) {
             return {
                 timestamp: new Date().toISOString(),
                 sessionKey: sessionKey.trim(),
@@ -84,7 +91,10 @@
                 sector: profile.sector,
                 sace: profile.sace,
                 persal: profile.persal,
-                idNumber: profile.idNumber
+                idNumber: profile.idNumber,
+                accommodation: eventFields.accommodation ? eventFields.accommodation.trim() : '',
+                dietaryRequirement: eventFields.dietary || '',
+                dietaryOther: eventFields.dietary === 'Other' ? (eventFields.dietaryOther || '').trim() : ''
             };
         }
 
@@ -96,8 +106,8 @@
         // 'real' application/json request gets blocked by the browser
         // before it's even sent. Sending text/plain avoids the preflight;
         // the Apps Script side just needs to JSON.parse(e.postData.contents).
-        async function submitAttendanceRecord(profile, sessionKey, sessionRecord) {
-            const payload = buildAttendancePayload(profile, sessionKey, sessionRecord);
+        async function submitAttendanceRecord(profile, sessionKey, sessionRecord, eventFields) {
+            const payload = buildAttendancePayload(profile, sessionKey, sessionRecord, eventFields);
             const response = await fetch(SHEET_WEB_APP_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -322,6 +332,18 @@
         const NON_SCHOOL_OPTIONS = ['Not Applicable', 'School not in list'];
         const POPIA_URL = 'https://qrgo.page.link/svhMU';
 
+        // ------------------------------------------------------------
+        // 'Event' delivery-mode extra fields (accommodation + dietary).
+        // Only shown/collected when the confirmed session's
+        // session_delivery_mode matches this, case-insensitively.
+        // ------------------------------------------------------------
+        const EVENT_DELIVERY_MODE = 'Event';
+        const DIETARY_OPTIONS = ['Halaal', 'Vegetarian', 'None', 'Other'];
+
+        function isEventDeliveryMode(mode) {
+            return (mode || '').trim().toLowerCase() === EVENT_DELIVERY_MODE.toLowerCase();
+        }
+
         // ============================================================
         // LOCAL "DEVICE PROFILE" STORAGE
         // Not authentication — just remembers who last used this
@@ -330,6 +352,7 @@
         // ============================================================
         const PROFILES_KEY = 'iat_profiles';
         const ACTIVE_PROFILE_KEY = 'iat_active_profile_id';
+        const WELCOME_SEEN_KEY = 'iat_welcome_seen';
 
         function loadProfiles() {
             try {
@@ -485,6 +508,21 @@
             );
         }
 
+        function TextAreaField({ label, value, onChange, placeholder, required = false, helperText, error, rows = 3 }) {
+            const hasError = !!error;
+            return e('div', { className: 'mb-5' },
+                e('label', { className: 'block text-base font-semibold text-gray-700 mb-1.5' }, label, required ? e('span', { className: 'text-wcg-red' }, ' *') : null),
+                e('textarea', {
+                    value, placeholder, rows,
+                    onChange: (ev) => onChange(ev.target.value),
+                    className: `w-full px-4 py-3.5 rounded-xl border-2 focus:outline-none text-base transition-colors resize-y ${hasError ? 'border-wcg-red focus:border-wcg-red' : 'border-gray-200 focus:border-wcg-brightblue'}`
+                }),
+                hasError
+                    ? e('p', { className: 'text-sm text-wcg-red mt-1.5 font-medium' }, error)
+                    : (helperText ? e('p', { className: 'text-sm text-gray-400 mt-1.5' }, helperText) : null)
+            );
+        }
+
         function SectionHeading({ children }) {
             return e('h3', { className: 'text-sm font-bold uppercase tracking-wide text-wcg-blue mt-3 mb-4 pb-1.5 border-b-2 border-gray-100' }, children);
         }
@@ -556,6 +594,25 @@
             );
         }
 
+        // First-visit welcome message. Shown once per device — App checks
+        // WELCOME_SEEN_KEY in localStorage on mount and sets it once
+        // dismissed, so this never appears again on that device.
+        function FirstVisitWelcomeModal({ onDismiss }) {
+            return e(Modal, { onClose: onDismiss },
+                e('h3', { className: 'text-lg font-bold text-wcg-dark mb-3' }, 'Welcome to the eTPD Registration Portal'),
+                e('p', { className: 'text-sm text-gray-600 mb-4 leading-relaxed' },
+                    'Welcome to the new eTPD Registration Portal. This platform is in the testing phase and will only be used for the Cyber Wellness Summit, however it will be integrated into future TPD use and your profile will be saved for this.'
+                ),
+                e('p', { className: 'text-xs text-gray-400 mb-5 leading-relaxed' },
+                    'Profiles created on this platform are stored on your local device only, to help keep your data secure.'
+                ),
+                e('button', {
+                    type: 'button', onClick: onDismiss,
+                    className: 'w-full px-4 py-3 rounded-xl font-bold text-sm text-white bg-wcg-blue hover:brightness-95 transition-colors'
+                }, 'Got it')
+            );
+        }
+
         // Confirmation modal shown once a Session ID Key passes all
         // guard-rail checks. Deliberately shows only the minimal set of
         // fields requested — no coordinator, date, or time — to keep the
@@ -624,6 +681,41 @@
             );
         }
 
+        // Extra fields captured only when the confirmed session's delivery
+        // mode is 'Event' (see isEventDeliveryMode). Accommodation is a
+        // free-text area for the attendee to describe what they need —
+        // the placeholder/helper copy below is a starting point, edit it
+        // to whatever guidance text you want shown. Dietary requirement
+        // is a required select with a fillable 'Other' option, mirroring
+        // the race/raceOther pattern used elsewhere in this form.
+        function EventExtraFields({ accommodation, onAccommodationChange, dietary, onDietaryChange, dietaryOther, onDietaryOtherChange, attempted }) {
+            return e('div', { className: 'border-2 border-gray-200 rounded-xl p-4 mb-5 bg-gray-50' },
+                e('p', { className: 'text-sm font-bold uppercase tracking-wide text-wcg-blue mb-4' }, 'Event Details'),
+                e(TextAreaField, {
+                    label: 'Do you require accommodation?',
+                    value: accommodation,
+                    onChange: onAccommodationChange,
+                    placeholder: '',
+                    helperText: 'Provide any accommodation details or requirements.'
+                }),
+                e(SelectField, {
+                    label: 'Dietary requirements',
+                    value: dietary,
+                    onChange: onDietaryChange,
+                    options: DIETARY_OPTIONS,
+                    required: true,
+                    error: attempted && !dietary ? 'Please select a dietary requirement' : undefined
+                }),
+                dietary === 'Other' ? e(TextField, {
+                    label: 'Please specify',
+                    value: dietaryOther,
+                    onChange: onDietaryOtherChange,
+                    required: true,
+                    error: attempted && !dietaryOther.trim() ? 'Please specify your dietary requirement' : undefined
+                }) : null
+            );
+        }
+
         // Shown on every screen, per the POPIA requirement that this
         // notice remains visible on the form at all times.
         function PopiaFooter() {
@@ -632,6 +724,9 @@
                     'POPIA Disclaimer: Training provided by WCED eLearning Directorate collects and processes personal and special information as stipulated in the Protection of Personal Information Notice available ',
                     e('a', { href: POPIA_URL, target: '_blank', rel: 'noopener noreferrer', className: 'underline hover:text-gray-600' }, 'here'),
                     '.'
+                ),
+                e('p', { className: 'text-xs leading-relaxed text-gray-400 mt-2' },
+                    'Profiles created on this platform are stored on your local device only and are not saved on any external server, to help protect your data privacy.'
                 )
             );
         }
@@ -839,11 +934,17 @@
             const [sessionConfirmed, setSessionConfirmed] = useState(false);
             const [showSessionModal, setShowSessionModal] = useState(false);
             const [acknowledged, setAcknowledged] = useState(false);
+            const [accommodation, setAccommodation] = useState('');
+            const [dietary, setDietary] = useState('');
+            const [dietaryOther, setDietaryOther] = useState('');
             const [submitted, setSubmitted] = useState(false);
             const [submitting, setSubmitting] = useState(false);
             const [submitError, setSubmitError] = useState(null);
             const fullName = fullNameOf(profile);
             const idLine = profile.persal ? `PERSAL ${profile.persal}` : `ID ${profile.idNumber}`;
+
+            const isEventSession = sessionStatus === 'ok' && isEventDeliveryMode(sessionRecord?.session_delivery_mode);
+            const eventFieldsOk = !isEventSession || (!!dietary && (dietary !== 'Other' || !!dietaryOther.trim()));
 
             // Any change to the key (or a fresh lookup result) invalidates
             // a previous confirmation — the person must re-confirm. A
@@ -853,13 +954,13 @@
                 setShowSessionModal(sessionStatus === 'ok');
             }, [sessionKey, sessionStatus]);
 
-            const canSubmit = sessionStatus === 'ok' && sessionConfirmed && acknowledged && !submitting;
+            const canSubmit = sessionStatus === 'ok' && sessionConfirmed && acknowledged && eventFieldsOk && !submitting;
 
             const handleSubmit = async () => {
                 setSubmitting(true);
                 setSubmitError(null);
                 try {
-                    await submitAttendanceRecord(profile, sessionKey, sessionRecord);
+                    await submitAttendanceRecord(profile, sessionKey, sessionRecord, { accommodation, dietary, dietaryOther });
                     setSubmitted(true);
                 } catch (err) {
                     console.error('Error writing attendance to sheet:', err);
@@ -886,7 +987,10 @@
                     ? e('div', { className: 'text-center bg-green-50 border-2 border-green-200 rounded-xl p-5' },
                         e('p', { className: 'text-base font-semibold text-green-800' }, 'Attendance captured (prototype only — not yet saved anywhere).'),
                         e('button', {
-                            onClick: () => { setSubmitted(false); setSessionKey(''); setSessionConfirmed(false); setAcknowledged(false); },
+                            onClick: () => {
+                                setSubmitted(false); setSessionKey(''); setSessionConfirmed(false); setAcknowledged(false);
+                                setAccommodation(''); setDietary(''); setDietaryOther('');
+                            },
                             className: 'text-sm font-semibold text-wcg-brightblue hover:underline mt-3'
                         }, 'Capture another session')
                     )
@@ -895,6 +999,12 @@
                             value: sessionKey, onChange: setSessionKey,
                             status: sessionStatus, confirmed: sessionConfirmed
                         }),
+                        isEventSession ? e(EventExtraFields, {
+                            accommodation, onAccommodationChange: setAccommodation,
+                            dietary, onDietaryChange: setDietary,
+                            dietaryOther, onDietaryOtherChange: setDietaryOther,
+                            attempted: true
+                        }) : null,
                         e(AcknowledgementConsent, { checked: acknowledged, onChange: setAcknowledged }),
                         submitError ? e('p', { className: 'text-sm text-wcg-red font-medium mb-4' }, submitError) : null,
                         e('button', {
@@ -924,6 +1034,9 @@
             const [sessionConfirmed, setSessionConfirmed] = useState(false);
             const [showSessionModal, setShowSessionModal] = useState(false);
             const [acknowledged, setAcknowledged] = useState(false);
+            const [accommodation, setAccommodation] = useState('');
+            const [dietary, setDietary] = useState('');
+            const [dietaryOther, setDietaryOther] = useState('');
             const [submitted, setSubmitted] = useState(false);
             const [submitting, setSubmitting] = useState(false);
             const [submitError, setSubmitError] = useState(null);
@@ -936,7 +1049,9 @@
             const errors = getFieldErrors(fields);
             const profileOk = Object.keys(errors).length === 0;
             const sessionOk = sessionStatus === 'ok' && sessionConfirmed;
-            const canSubmit = profileOk && sessionOk && acknowledged && !submitting;
+            const isEventSession = sessionStatus === 'ok' && isEventDeliveryMode(sessionRecord?.session_delivery_mode);
+            const eventFieldsOk = !isEventSession || (!!dietary && (dietary !== 'Other' || !!dietaryOther.trim()));
+            const canSubmit = profileOk && sessionOk && acknowledged && eventFieldsOk && !submitting;
 
             if (submitted) {
                 return e('div', { className: 'text-center bg-green-50 border-2 border-green-200 rounded-xl p-5' },
@@ -946,11 +1061,11 @@
             }
 
             const handleSubmitClick = async () => {
-                if (!profileOk || !sessionOk || !acknowledged) { setAttempted(true); return; }
+                if (!profileOk || !sessionOk || !acknowledged || !eventFieldsOk) { setAttempted(true); return; }
                 setSubmitting(true);
                 setSubmitError(null);
                 try {
-                    await submitAttendanceRecord(buildProfileRecord(fields), sessionKey, sessionRecord);
+                    await submitAttendanceRecord(buildProfileRecord(fields), sessionKey, sessionRecord, { accommodation, dietary, dietaryOther });
                     setSubmitted(true);
                 } catch (err) {
                     console.error('Error writing attendance to sheet:', err);
@@ -969,6 +1084,12 @@
                 attempted && !sessionKey.trim() ? e('p', { className: 'text-sm text-wcg-red font-medium -mt-3 mb-4' }, 'Session ID Key is required') : null,
                 attempted && sessionKey.trim() && sessionStatus !== 'ok' ? e('p', { className: 'text-sm text-wcg-red font-medium -mt-3 mb-4' }, 'Please enter a valid Session ID Key.') : null,
                 attempted && sessionStatus === 'ok' && !sessionConfirmed ? e('p', { className: 'text-sm text-wcg-red font-medium -mt-3 mb-4' }, 'Please confirm the session details above.') : null,
+                isEventSession ? e(EventExtraFields, {
+                    accommodation, onAccommodationChange: setAccommodation,
+                    dietary, onDietaryChange: setDietary,
+                    dietaryOther, onDietaryOtherChange: setDietaryOther,
+                    attempted
+                }) : null,
                 e(AcknowledgementConsent, { checked: acknowledged, onChange: setAcknowledged }),
                 attempted && !profileOk ? e('p', { className: 'text-sm text-wcg-red font-medium mb-4' }, 'Please complete the highlighted fields before capturing attendance.') : null,
                 submitError ? e('p', { className: 'text-sm text-wcg-red font-medium mb-4' }, submitError) : null,
@@ -1003,6 +1124,27 @@
             const [schools, setSchools] = useState([]);
             const [schoolsLoading, setSchoolsLoading] = useState(true);
             const [schoolsError, setSchoolsError] = useState(null);
+
+            // First-visit welcome — shown once per device, tracked via
+            // WELCOME_SEEN_KEY in localStorage.
+            const [showFirstVisitWelcome, setShowFirstVisitWelcome] = useState(false);
+            useEffect(() => {
+                try {
+                    if (!localStorage.getItem(WELCOME_SEEN_KEY)) {
+                        setShowFirstVisitWelcome(true);
+                    }
+                } catch (err) {
+                    console.error('Could not read welcome-seen flag', err);
+                }
+            }, []);
+            const dismissFirstVisitWelcome = () => {
+                try {
+                    localStorage.setItem(WELCOME_SEEN_KEY, '1');
+                } catch (err) {
+                    console.error('Could not save welcome-seen flag', err);
+                }
+                setShowFirstVisitWelcome(false);
+            };
 
             useEffect(() => {
                 async function fetchSchools() {
@@ -1089,6 +1231,7 @@
             };
 
             return e('div', { className: 'min-h-screen flex flex-col' },
+                showFirstVisitWelcome ? e(FirstVisitWelcomeModal, { onDismiss: dismissFirstVisitWelcome }) : null,
                 e('header', { className: 'bg-white shadow-sm border-b-4 border-wcg-blue' },
                     e('div', { className: 'max-w-5xl mx-auto px-4 sm:px-6 py-4 flex items-center gap-3' },
                         e('img', { src: 'header.png', alt: 'WCED Header', className: 'h-10 sm:h-12', onError: (ev) => { ev.target.style.display = 'none'; } }),
