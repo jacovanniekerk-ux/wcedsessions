@@ -1371,7 +1371,9 @@
             useEffect(() => {
                 (async () => {
                     try {
-                        const todayISO = toISODateString(new Date());
+                        const testAnchor = new Date();
+testAnchor.setDate(testAnchor.getDate() - 2);
+const todayISO = toISODateString(testAnchor);
                         const [sessionRes, courseRes] = await Promise.all([
                             supabaseClient.from('sessions').select('*').eq('session_delivery_mode', 'Virtual').gte('session_date', todayISO).order('session_date', { ascending: true }),
                             supabaseClient.from('courses').select('*')
@@ -1461,7 +1463,7 @@
             const todayTomorrowSessions = useMemo(() => {
                 const today = new Date();
                 const tomorrow = new Date(today);
-                tomorrow.setDate(tomorrow.getDate() + 1);
+                tomorrow.setDate(tomorrow.getDate() - 2);
                 const todayISO = toISODateString(today);
                 const tomorrowISO = toISODateString(tomorrow);
 
