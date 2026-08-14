@@ -666,17 +666,21 @@
 
         // Required consent + acknowledgement, shown whenever a Session ID
         // Key is being captured — this is not part of the stored profile.
-        function AcknowledgementConsent({ checked, onChange }) {
-            return e('div', { className: 'border-2 border-gray-200 rounded-xl p-4 mb-5 bg-gray-50' },
-                e('label', { className: 'flex items-start gap-3 cursor-pointer' },
+        function AcknowledgementConsent({ showPresence, presenceChecked, onPresenceChange, participationChecked, onParticipationChange }) {
+            return e('div', { className: 'border-2 border-gray-200 rounded-xl p-4 mb-5 bg-gray-50 space-y-4' },
+                showPresence ? e('label', { className: 'flex items-start gap-3 cursor-pointer' },
                     e('input', {
-                        type: 'checkbox', checked, onChange: (ev) => onChange(ev.target.checked),
+                        type: 'checkbox', checked: presenceChecked, onChange: (ev) => onPresenceChange(ev.target.checked),
                         className: 'mt-1 h-5 w-5 accent-wcg-brightblue', required: true
                     }),
-                    e('div', { className: 'text-sm text-gray-600 space-y-1.5' },
-                        e('p', null, 'I acknowledge that I am present at the session I complete this form for.'),
-                        e('p', null, 'I willingly participate in the training provided by WCED eLearning and give consent for information provided to be used according to the POPIA Disclaimer on this page. I confirm that my information is accurate.')
-                    )
+                    e('p', { className: 'text-sm text-gray-600' }, 'I acknowledge that I am present at the session I complete this form for.')
+                ) : null,
+                e('label', { className: 'flex items-start gap-3 cursor-pointer' },
+                    e('input', {
+                        type: 'checkbox', checked: participationChecked, onChange: (ev) => onParticipationChange(ev.target.checked),
+                        className: 'mt-1 h-5 w-5 accent-wcg-brightblue', required: true
+                    }),
+                    e('p', { className: 'text-sm text-gray-600' }, 'I willingly participate in the training provided by WCED eLearning and give consent for information provided to be used according to the POPIA Disclaimer on this page. I confirm that my information is accurate.')
                 )
             );
         }
@@ -933,7 +937,8 @@
             const { status: sessionStatus, session: sessionRecord, timingReason } = useSessionLookup(sessionKey);
             const [sessionConfirmed, setSessionConfirmed] = useState(false);
             const [showSessionModal, setShowSessionModal] = useState(false);
-            const [acknowledged, setAcknowledged] = useState(false);
+            const [presenceAcknowledged, setPresenceAcknowledged] = useState(false);
+            const [participationAcknowledged, setParticipationAcknowledged] = useState(false);
             const [accommodation, setAccommodation] = useState('');
             const [dietary, setDietary] = useState('');
             const [dietaryOther, setDietaryOther] = useState('');
@@ -945,6 +950,8 @@
 
             const isEventSession = sessionStatus === 'ok' && isEventDeliveryMode(sessionRecord?.session_delivery_mode);
             const eventFieldsOk = !isEventSession || (!!dietary && (dietary !== 'Other' || !!dietaryOther.trim()));
+            const showPresence = sessionStatus === 'ok' && isTimeSensitiveMode(sessionRecord?.session_delivery_mode);
+            const acknowledged = participationAcknowledged && (!showPresence || presenceAcknowledged);
 
             // Any change to the key (or a fresh lookup result) invalidates
             // a previous confirmation — the person must re-confirm. A
@@ -988,7 +995,8 @@
                         e('p', { className: 'text-base font-semibold text-green-800' }, 'Attendance captured (prototype only — not yet saved anywhere).'),
                         e('button', {
                             onClick: () => {
-                                setSubmitted(false); setSessionKey(''); setSessionConfirmed(false); setAcknowledged(false);
+                                setSubmitted(false); setSessionKey(''); setSessionConfirmed(false);
+                                setPresenceAcknowledged(false); setParticipationAcknowledged(false);
                                 setAccommodation(''); setDietary(''); setDietaryOther('');
                             },
                             className: 'text-sm font-semibold text-wcg-brightblue hover:underline mt-3'
@@ -1005,7 +1013,11 @@
                             dietaryOther, onDietaryOtherChange: setDietaryOther,
                             attempted: true
                         }) : null,
-                        e(AcknowledgementConsent, { checked: acknowledged, onChange: setAcknowledged }),
+                        e(AcknowledgementConsent, {
+                            showPresence,
+                            presenceChecked: presenceAcknowledged, onPresenceChange: setPresenceAcknowledged,
+                            participationChecked: participationAcknowledged, onParticipationChange: setParticipationAcknowledged
+                        }),
                         submitError ? e('p', { className: 'text-sm text-wcg-red font-medium mb-4' }, submitError) : null,
                         e('button', {
                             disabled: !canSubmit,
@@ -1033,7 +1045,8 @@
             const { status: sessionStatus, session: sessionRecord, timingReason } = useSessionLookup(sessionKey);
             const [sessionConfirmed, setSessionConfirmed] = useState(false);
             const [showSessionModal, setShowSessionModal] = useState(false);
-            const [acknowledged, setAcknowledged] = useState(false);
+            const [presenceAcknowledged, setPresenceAcknowledged] = useState(false);
+            const [participationAcknowledged, setParticipationAcknowledged] = useState(false);
             const [accommodation, setAccommodation] = useState('');
             const [dietary, setDietary] = useState('');
             const [dietaryOther, setDietaryOther] = useState('');
@@ -1051,6 +1064,8 @@
             const sessionOk = sessionStatus === 'ok' && sessionConfirmed;
             const isEventSession = sessionStatus === 'ok' && isEventDeliveryMode(sessionRecord?.session_delivery_mode);
             const eventFieldsOk = !isEventSession || (!!dietary && (dietary !== 'Other' || !!dietaryOther.trim()));
+            const showPresence = sessionStatus === 'ok' && isTimeSensitiveMode(sessionRecord?.session_delivery_mode);
+            const acknowledged = participationAcknowledged && (!showPresence || presenceAcknowledged);
             const canSubmit = profileOk && sessionOk && acknowledged && eventFieldsOk && !submitting;
 
             if (submitted) {
@@ -1090,7 +1105,11 @@
                     dietaryOther, onDietaryOtherChange: setDietaryOther,
                     attempted
                 }) : null,
-                e(AcknowledgementConsent, { checked: acknowledged, onChange: setAcknowledged }),
+                e(AcknowledgementConsent, {
+                    showPresence,
+                    presenceChecked: presenceAcknowledged, onPresenceChange: setPresenceAcknowledged,
+                    participationChecked: participationAcknowledged, onParticipationChange: setParticipationAcknowledged
+                }),
                 attempted && !profileOk ? e('p', { className: 'text-sm text-wcg-red font-medium mb-4' }, 'Please complete the highlighted fields before capturing attendance.') : null,
                 submitError ? e('p', { className: 'text-sm text-wcg-red font-medium mb-4' }, submitError) : null,
                 e('div', { className: 'flex gap-3 mt-2' },
