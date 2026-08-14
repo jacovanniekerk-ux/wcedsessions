@@ -1012,7 +1012,7 @@
                 ),
                 submitted
                     ? e('div', { className: 'text-center bg-green-50 border-2 border-green-200 rounded-xl p-5' },
-                        e('p', { className: 'text-base font-semibold text-green-800' }, 'Attendance captured (prototype only — not yet saved anywhere).'),
+                        e('p', { className: 'text-base font-semibold text-green-800' }, showPresence ? 'Attendance captured.' : 'Registration captured.'),
                         e('button', {
                             onClick: () => {
                                 setSubmitted(false); setSessionKey(''); setSessionConfirmed(false);
@@ -1090,7 +1090,7 @@
 
             if (submitted) {
                 return e('div', { className: 'text-center bg-green-50 border-2 border-green-200 rounded-xl p-5' },
-                    e('p', { className: 'text-base font-semibold text-green-800' }, 'Attendance captured (prototype only — not yet saved anywhere).'),
+                    e('p', { className: 'text-base font-semibold text-green-800' }, showPresence ? 'Attendance captured.' : 'Registration captured.'),
                     e('button', { onClick: onBack, className: 'text-sm font-semibold text-wcg-brightblue hover:underline mt-3' }, 'Done')
                 );
             }
