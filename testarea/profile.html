@@ -560,7 +560,7 @@
                 src: badgeSrc,
                 alt: `Transformation Agent — Level ${badgeNumber}`,
                 title: `Transformation Agent — Level ${badgeNumber}`,
-                className: 'h-10 w-10 sm:h-12 sm:w-12 spark-glow rounded-full'
+                className: 'h-16 w-16 sm:h-20 sm:w-20 spark-glow rounded-xl flex-shrink-0'
             });
             if (!toolLink) {
                 return img;
@@ -1824,17 +1824,18 @@ const todayISO = toISODateString(testAnchor);
                                 // Profile + always-visible summary strip
                                 e('div', { className: "bg-white rounded-2xl shadow-lg p-6 no-print" },
                                     e('div', { className: "flex flex-col sm:flex-row justify-between items-start gap-4 mb-6" },
-                                        e('div', null,
-                                            e('div', { className: "flex items-center gap-3" },
+                                        e('div', { className: "flex items-start gap-4" },
+                                            transformerRecord && pathwayStatus && e(TransformationAgentBadge, {
+                                                sparkCount: pathwayStatus.totalSparks,
+                                                toolLink: transformerRecord.tool_link
+                                            }),
+                                            e('div', null,
                                                 e('h2', { className: "text-2xl font-bold text-wcg-dark" }, results.profile.name),
-                                                transformerRecord && pathwayStatus && e(TransformationAgentBadge, {
-                                                    sparkCount: pathwayStatus.totalSparks,
-                                                    toolLink: transformerRecord.tool_link
-                                                })
-                                            ),
-                                            e('p', { className: "text-gray-600" }, e('span', { className: "font-semibold" }, "School:"), " ", results.profile.school),
-                                            e('p', { className: "text-gray-600" }, e('span', { className: "font-semibold" }, "District:"), " ", results.profile.district)
+                                                e('p', { className: "text-gray-600" }, e('span', { className: "font-semibold" }, "School:"), " ", results.profile.school),
+                                                e('p', { className: "text-gray-600" }, e('span', { className: "font-semibold" }, "District:"), " ", results.profile.district)
+                                            )
                                         ),
+                                  
                                         e('div', { className: "flex items-center gap-3" },
                                             pathwayStatus && e('button', {
                                                 onClick: () => setActiveTab('pathway'),
