@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>In-Session Attendance - WCED Professional Development</title>
+    <title>Registration - WCED eLearning Professional Development</title>
     <link rel="icon" type="image/png" href="favicon.png">
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -16,11 +16,11 @@
                 extend: {
                     colors: {
                         'wcg-green': '#8FAD15',
-                        'wcg-yellow': '#FDB913',
-                        'wcg-red': '#E30613',
+                        'wcg-yellow': '#FFC600',
+                        'wcg-red': '#BA0C2F',
                         'wcg-blue': '#001489',
                         'wcg-brightblue': '#007DBA',
-                        'wcg-purple': '#672D82',
+                        'wcg-purple': '#890C58',
                         'wcg-pink': '#C8126E',
                         'wcg-dark': '#1a1a1a',
                     }
@@ -80,8 +80,7 @@
                 surname: profile.surname,
                 firstName: profile.firstName,
                 email: profile.email,
-                race: profile.race,
-                raceOther: profile.raceOther,
+                race: profile.race === 'Other' ? `Other: ${(profile.raceOther || '').trim()}` : profile.race,
                 gender: profile.gender,
                 disability: profile.disability,
                 district: profile.district,
@@ -93,8 +92,7 @@
                 persal: profile.persal,
                 idNumber: profile.idNumber,
                 accommodation: eventFields.accommodation ? eventFields.accommodation.trim() : '',
-                dietaryRequirement: eventFields.dietary || '',
-                dietaryOther: eventFields.dietary === 'Other' ? (eventFields.dietaryOther || '').trim() : ''
+                dietaryRequirement: eventFields.dietary === 'Other' ? `Other: ${(eventFields.dietaryOther || '').trim()}` : (eventFields.dietary || ''),
             };
         }
 
@@ -766,9 +764,9 @@
         // the `href`/`label` values in MENU_LINKS as real pages exist.
         // ============================================================
         const MENU_LINKS = [
-            { label: 'Link 1', href: '#' },
-            { label: 'Link 2', href: '#' },
-            { label: 'Link 3', href: '#' }
+            { label: 'Home', href: 'index.html' },
+            { label: 'Upcoming Sessions', href: 'sessions.html' },
+            { label: 'Attendance Record', href: 'profile.html' }
         ];
 
         function BurgerMenu({ links = MENU_LINKS }) {
@@ -1274,7 +1272,6 @@
                 e('header', { className: 'bg-white shadow-sm border-b-4 border-wcg-blue' },
                     e('div', { className: 'max-w-5xl mx-auto px-4 sm:px-6 py-4 flex items-center gap-3' },
                         e('img', { src: 'header.png', alt: 'WCED Header', className: 'h-10 sm:h-12', onError: (ev) => { ev.target.style.display = 'none'; } }),
-                        e('span', { className: 'font-bold text-wcg-dark text-base sm:text-lg' }, 'In-Session Attendance'),
                         e(BurgerMenu)
                     )
                 ),
