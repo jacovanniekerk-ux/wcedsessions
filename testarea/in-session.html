@@ -149,6 +149,12 @@
             const dateString = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
             return { dateString, epochMsShiftedToSAST: sastMs };
         }
+        // Reads a query-string parameter from the current URL, e.g.
+        // in-session.html?idkey=1234 -> getQueryParam('idkey') === '1234'
+        function getQueryParam(name) {
+            return new URLSearchParams(window.location.search).get(name) || '';
+        }
+        
         // Formats "now" as 'DD/MM/YYYY HH:MM:SS' in SAST, matching the
         // default timestamp format the sheet already uses elsewhere
         // (e.g. from Google Forms responses) — e.g. '14/08/2026 14:06:48'.
@@ -951,7 +957,7 @@
         // Welcome screen — active profile + Session ID Key capture
         // ============================================================
         function WelcomeScreen({ profile, onEditProfile, onLogout }) {
-            const [sessionKey, setSessionKey] = useState('');
+            const [sessionKey, setSessionKey] = useState(() => getQueryParam('idkey'));
             const { status: sessionStatus, session: sessionRecord, timingReason } = useSessionLookup(sessionKey);
             const [sessionConfirmed, setSessionConfirmed] = useState(false);
             const [showSessionModal, setShowSessionModal] = useState(false);
@@ -1059,7 +1065,7 @@
             const [fields, setFields] = useState(() => emptyFields());
             const [attempted, setAttempted] = useState(false);
             const updateField = (key, value) => setFields(prev => ({ ...prev, [key]: value, ...(key === 'district' ? { school: '' } : {}) }));
-            const [sessionKey, setSessionKey] = useState('');
+            const [sessionKey, setSessionKey] = useState(() => getQueryParam('idkey'));
             const { status: sessionStatus, session: sessionRecord, timingReason } = useSessionLookup(sessionKey);
             const [sessionConfirmed, setSessionConfirmed] = useState(false);
             const [showSessionModal, setShowSessionModal] = useState(false);
