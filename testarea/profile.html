@@ -15,12 +15,12 @@
             theme: {
                 extend: {
                     colors: {
-                        'wcg-green': '#76B82A',
+                        'wcg-green': '#8FAD15',
                         'wcg-green2': '#8FAD15',
-                        'wcg-yellow': '#FDB913',
-                        'wcg-red': '#E30613',
+                        'wcg-yellow': '#FFC600',
+                        'wcg-red': '#BA0C2F',
                         'wcg-blue': '#001489',
-                        'wcg-purple': '#672D82',
+                        'wcg-purple': '#890C58',
                         'wcg-pink': '#C8126E',
                         'wcg-dark': '#1a1a1a',
                         'wcg-gray': '#666666'
@@ -140,6 +140,25 @@
                 .eq(column, key);
             if (error) throw error;
             return (rows || []).map(mapRowToRecord);
+        }
+
+        // Looks up a single teacher in the 'transformers' table using the
+        // same credential (ID or PERSAL) they logged in with. Only the
+        // credential is used to match — full_name is not required to match,
+        // per product decision (ID/PERSAL alone is considered sufficient).
+        // Returns the row (with tool_link) if found, otherwise null.
+        async function fetchTransformerRecord(searchType, key) {
+            const column = searchType === 'id' ? 'id_number' : 'persal';
+            const { data: rows, error } = await supabaseClient
+                .from('transformers')
+                .select('*')
+                .eq(column, key)
+                .limit(1);
+            if (error) {
+                console.error('Error fetching transformer record from Supabase:', error);
+                return null;
+            }
+            return (rows && rows[0]) || null;
         }
 
         // ============================================================
@@ -530,6 +549,31 @@
         }
 
         // === NAV MENU ===
+        // Clickable Transformation Agent badge shown next to the teacher's
+        // name. `sparkCount` is clamped to the 1–5 range that the badge
+        // images cover (TA1.png … TA5.png); a teacher confirmed as a TA
+        // but with 0 calculated Sparks still gets the TA1 badge as a floor.
+        function TransformationAgentBadge({ sparkCount, toolLink }) {
+            const badgeNumber = Math.min(5, Math.max(1, sparkCount || 1));
+            const badgeSrc = `imgs/badges/TA${badgeNumber}.png`;
+            const img = e('img', {
+                src: badgeSrc,
+                alt: `Transformation Agent — Level ${badgeNumber}`,
+                title: `Transformation Agent — Level ${badgeNumber}`,
+                className: 'h-10 w-10 sm:h-12 sm:w-12 spark-glow rounded-full'
+            });
+            if (!toolLink) {
+                return img;
+            }
+            return e('a', {
+                href: toolLink,
+                target: '_blank',
+                rel: 'noopener noreferrer',
+                title: `Transformation Agent — Level ${badgeNumber}. Click to open your tool.`,
+                className: 'inline-block flex-shrink-0 hover:scale-105 transition-transform'
+            }, img);
+        }
+
         function Menu() {
             const [isOpen, setIsOpen] = useState(false);
 
@@ -1358,6 +1402,7 @@
             const [searchValue, setSearchValue] = useState('');
             const [acknowledged, setAcknowledged] = useState(false);
             const [results, setResults] = useState(null);
+            const [transformerRecord, setTransformerRecord] = useState(null);
             const [upcomingData, setUpcomingData] = useState([]);
             const [activeTab, setActiveTab] = useState(null);
             const [selectedMilestone, setSelectedMilestone] = useState(null);
@@ -1415,12 +1460,16 @@ const todayISO = toISODateString(testAnchor);
                         const saved = JSON.parse(localStorage.getItem('wced_pd_credentials') || 'null');
                         if (saved && saved.searchType && saved.searchValue) {
                             const searchKey = saved.searchValue.trim();
-                            const records = await fetchRecordsByKey(saved.searchType, searchKey);
+                            const [records, transformer] = await Promise.all([
+                                fetchRecordsByKey(saved.searchType, searchKey),
+                                fetchTransformerRecord(saved.searchType, searchKey)
+                            ]);
                             if (records.length > 0) {
                                 setSearchType(saved.searchType);
                                 setSearchValue(saved.searchValue);
                                 setAcknowledged(true);
                                 setResults(buildResultsFromRecords(records));
+                                setTransformerRecord(transformer);
                                 setFilters({ level: '', district: '', mode: '', category: '' });
                             }
                         }
@@ -1438,8 +1487,12 @@ const todayISO = toISODateString(testAnchor);
                 setSearching(true);
                 setSearchError('');
                 try {
-                    const records = await fetchRecordsByKey(searchType, searchKey);
+                    const [records, transformer] = await Promise.all([
+                        fetchRecordsByKey(searchType, searchKey),
+                        fetchTransformerRecord(searchType, searchKey)
+                    ]);
                     setResults(buildResultsFromRecords(records));
+                    setTransformerRecord(transformer);
                     setFilters({ level: '', district: '', mode: '', category: '' });
                     setActiveTab(null);
                     localStorage.setItem('wced_pd_credentials', JSON.stringify({ searchType, searchValue: searchKey }));
@@ -1454,6 +1507,7 @@ const todayISO = toISODateString(testAnchor);
             const handleLogout = () => {
                 localStorage.removeItem('wced_pd_credentials');
                 setResults(null);
+                setTransformerRecord(null);
                 setSearchValue('');
                 setAcknowledged(false);
                 setActiveTab(null);
@@ -1771,7 +1825,13 @@ const todayISO = toISODateString(testAnchor);
                                 e('div', { className: "bg-white rounded-2xl shadow-lg p-6 no-print" },
                                     e('div', { className: "flex flex-col sm:flex-row justify-between items-start gap-4 mb-6" },
                                         e('div', null,
-                                            e('h2', { className: "text-2xl font-bold text-wcg-dark" }, results.profile.name),
+                                            e('div', { className: "flex items-center gap-3" },
+                                                e('h2', { className: "text-2xl font-bold text-wcg-dark" }, results.profile.name),
+                                                transformerRecord && pathwayStatus && e(TransformationAgentBadge, {
+                                                    sparkCount: pathwayStatus.totalSparks,
+                                                    toolLink: transformerRecord.tool_link
+                                                })
+                                            ),
                                             e('p', { className: "text-gray-600" }, e('span', { className: "font-semibold" }, "School:"), " ", results.profile.school),
                                             e('p', { className: "text-gray-600" }, e('span', { className: "font-semibold" }, "District:"), " ", results.profile.district)
                                         ),
