@@ -1,0 +1,1509 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registration - WCED eLearning Professional Development</title>
+    <link rel="icon" type="image/png" href="favicon.png">
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'wcg-green': '#8FAD15',
+                        'wcg-yellow': '#FFC600',
+                        'wcg-red': '#BA0C2F',
+                        'wcg-blue': '#001489',
+                        'wcg-brightblue': '#007DBA',
+                        'wcg-purple': '#890C58',
+                        'wcg-pink': '#C8126E',
+                        'wcg-dark': '#1a1a1a',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade-in-up { animation: fadeInUp 0.25s ease-out; }
+        .wcg-top-accent { background: linear-gradient(90deg, #001489 0%, #8FAD15 100%); }
+    </style>
+</head>
+
+<body class="bg-gray-50 min-h-screen">
+    <div id="root"></div>
+
+    <script>
+        const { useState, useEffect, useMemo, useRef } = React;
+        const e = React.createElement;
+
+        // ============================================================
+        // SUPABASE CONFIG — same project as the My PD app
+        // ============================================================
+        const SUPABASE_URL = 'https://cftpufjzwpmhgzdcgpjb.supabase.co';
+        const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_b1H_5DJYLQSrr83T_dvz6A_2UAqOVg4';
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+
+        // ------------------------------------------------------------
+        // GOOGLE SHEETS WRITE TARGET
+        // Paste the deployed Google Apps Script Web App URL here once
+        // it exists (Deploy > New deployment > Web app, "Execute as:
+        // Me", "Who has access: Anyone"). Until then this is a dead
+        // link and submitAttendanceRecord() below will fail — that's
+        // expected for now.
+        //
+        // There is only ONE Web App URL/deployment. The two-sheet
+        // split (see SHEET_TARGET_* below) is handled entirely on
+        // the Apps Script side by branching on the `sheetTarget`
+        // field in the posted payload — this client just tells it
+        // which bucket the record belongs in. Example doGet/doPost
+        // routing on the Apps Script side:
+        //
+        //   function doPost(e) {
+        //     const payload = JSON.parse(e.postData.contents);
+        //     const ss = SpreadsheetApp.getActiveSpreadsheet();
+        //     const sheetName = payload.sheetTarget === 'group_a'
+        //       ? 'Hybrid_Selfpaced_Event'
+        //       : 'Virtual_F2F';
+        //     const sheet = ss.getSheetByName(sheetName);
+        //     sheet.appendRow([ payload.timestamp, payload.sessionKey, ... ]);
+        //     return ContentService.createTextOutput('OK');
+        //   }
+        //
+        // (Rename the two sheet names above to whatever the actual
+        // tabs/sheets are called on your side.)
+        //
+        // NOTE: buildAttendancePayload() writes the following columns,
+        // in this order — keep the sheet's header row (and the Apps
+        // Script's appendRow column order) in sync with this list:
+        //   timestamp, sessionKey, sessionTitle, sessionDeliveryMode,
+        //   sessionDate, surname, firstName, email, race, gender,
+        //   disability, district, school, officeType, designation,
+        //   sector, sace, persal, idNumber, accommodation,
+        //   dietaryRequirement, hostingUnit, facilitator,
+        //   developmentalLevel, circuit, quintile, schoolType,
+        //   sheetTarget
+        // accommodation/dietaryRequirement are only populated when the
+        // session's delivery mode is 'Event' (see EVENT_DELIVERY_MODE).
+        // ------------------------------------------------------------
+        const SHEET_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzYMuNE4VbkieLyY_7OpCWG5Eyz3LcK9Xh-dH3VQxp7G-cIOgi_ge_Rc3_Pji8xO3cKLQ/exec';
+
+        // ------------------------------------------------------------
+        // TWO-SHEET ROUTING
+        // Delivery modes fall into one of two buckets. sheetTarget is
+        // computed here and passed along in the payload so the Apps
+        // Script can route the row to the right sheet — see the
+        // routing example in the comment block above.
+        // ------------------------------------------------------------
+        const SHEET_TARGET_GROUP_A_MODES = ['Hybrid', 'Self-paced', 'Event'];
+        const SHEET_TARGET_GROUP_B_MODES = ['Virtual', 'Face-to-Face', 'Virtual (non-provincial)', 'Transformation Agent (F2F)'];
+
+        function getSheetTarget(mode) {
+            const normalized = (mode || '').trim().toLowerCase();
+            if (SHEET_TARGET_GROUP_A_MODES.some(m => m.toLowerCase() === normalized)) return 'group_a';
+            if (SHEET_TARGET_GROUP_B_MODES.some(m => m.toLowerCase() === normalized)) return 'group_b';
+            return ''; // unrecognised delivery mode — Apps Script should decide what to do (e.g. a fallback/catch-all sheet)
+        }
+
+        // Builds the flat record that gets written to the sheet: every
+        // profile field, plus the Session ID Key, a capture timestamp,
+        // and (when applicable) the 'Event' mode extra fields.
+        // Column order on the sheet side should match this key order.
+        function buildAttendancePayload(profile, sessionKey, sessionRecord, eventFields = {}, schoolRecord = null) {
+            return {
+                timestamp: formatSASTTimestamp(),
+                sessionKey: sessionKey.trim(),
+                sessionTitle: sessionRecord ? sessionRecord.session_title : '',
+                sessionDeliveryMode: sessionRecord ? sessionRecord.session_delivery_mode : '',
+                sessionDate: sessionRecord ? sessionRecord.session_date : '',
+                surname: profile.surname,
+                firstName: profile.firstName,
+                email: profile.email,
+                race: profile.race === 'Other' ? `Other: ${(profile.raceOther || '').trim()}` : profile.race,
+                gender: profile.gender,
+                disability: profile.disability,
+                district: profile.district,
+                school: profile.school,
+                officeType: profile.officeType,
+                designation: profile.designation,
+                sector: profile.sector,
+                sace: profile.sace,
+                persal: profile.persal,
+                idNumber: profile.idNumber,
+                accommodation: eventFields.accommodation ? eventFields.accommodation.trim() : '',
+                dietaryRequirement: eventFields.dietary === 'Other' ? `Other: ${(eventFields.dietaryOther || '').trim()}` : (eventFields.dietary || ''),
+                // --- sessions table extras ---
+                hostingUnit: sessionRecord ? (sessionRecord.hosting_unit || '') : '',
+                facilitator: sessionRecord ? (sessionRecord.facilitator || '') : '',
+                // --- courses table (matched on session_title === course_title) ---
+                developmentalLevel: sessionRecord ? (sessionRecord.developmental_level || '') : '',
+                // --- schools table (matched on School_Name === profile.school) ---
+                circuit: schoolRecord ? (schoolRecord.circuit || '') : '',
+                quintile: schoolRecord ? (schoolRecord.quintile || '') : '',
+                schoolType: schoolRecord ? (schoolRecord.schoolType || '') : '',
+                // --- routing for the two-sheet split, see getSheetTarget() ---
+                sheetTarget: getSheetTarget(sessionRecord ? sessionRecord.session_delivery_mode : ''),
+            };
+        }
+
+        // POSTs one attendance record to the Apps Script Web App, which
+        // will append it as a row on the Google Sheet.
+        //
+        // NOTE: Content-Type is deliberately 'text/plain'. Apps Script
+        // Web Apps don't handle CORS preflight (OPTIONS) requests, so a
+        // 'real' application/json request gets blocked by the browser
+        // before it's even sent. Sending text/plain avoids the preflight;
+        // the Apps Script side just needs to JSON.parse(e.postData.contents).
+        async function submitAttendanceRecord(profile, sessionKey, sessionRecord, eventFields, schoolRecord) {
+            const payload = buildAttendancePayload(profile, sessionKey, sessionRecord, eventFields, schoolRecord);
+            const response = await fetch(SHEET_WEB_APP_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify(payload)
+            });
+            if (!response.ok) {
+                throw new Error(`Sheet write failed with status ${response.status}`);
+            }
+            return payload;
+        }
+
+        // ============================================================
+        // SESSION ID KEY — Supabase 'sessions' table lookup + guard rails
+        // ============================================================
+        const SESSIONS_TABLE_NAME = 'sessions';
+        const SESSIONS_COLUMNS = 'id_key, session_title, hosting_unit, hosting_coordinator, session_date, session_start_time, facilitator, session_delivery_mode';
+
+        // ------------------------------------------------------------
+        // COURSES TABLE — matched on course_title === session_title,
+        // to pull in developmental_level for the sheet payload.
+        // ADJUST these to match your actual Supabase courses table.
+        // ------------------------------------------------------------
+        const COURSES_TABLE_NAME = 'courses';
+        const COURSE_TITLE_COLUMN = 'course_title';
+        const DEVELOPMENTAL_LEVEL_COLUMN = 'developmental_level';
+
+        // Looks up developmental_level for the course whose course_title
+        // matches the given session_title. Returns '' (not throws) on
+        // no match or error, since this is supplementary data — a
+        // missing course match shouldn't block registration.
+        async function lookupDevelopmentalLevel(sessionTitle) {
+            if (!sessionTitle) return '';
+            try {
+                const { data, error } = await supabaseClient
+                    .from(COURSES_TABLE_NAME)
+                    .select(DEVELOPMENTAL_LEVEL_COLUMN)
+                    .eq(COURSE_TITLE_COLUMN, sessionTitle)
+                    .maybeSingle();
+                if (error) throw error;
+                return data ? (data[DEVELOPMENTAL_LEVEL_COLUMN] || '') : '';
+            } catch (err) {
+                console.error('Error looking up course developmental level:', err);
+                return '';
+            }
+        }
+
+        // Delivery modes whose ID Keys are date- and time-sensitive.
+        // Everything else (e.g. multi-day / pre-register courses) is
+        // only date-gated (must be captured on or before session_date).
+        const TIME_SENSITIVE_DELIVERY_MODES = [
+            'Virtual',
+            'Virtual (non-provincial)',
+            'Transformation Agent (F2F)',
+            'Face-to-Face'
+        ];
+
+        function isTimeSensitiveMode(mode) {
+            const normalized = (mode || '').trim().toLowerCase();
+            return TIME_SENSITIVE_DELIVERY_MODES.some(m => m.toLowerCase() === normalized);
+        }
+
+        // South Africa is UTC+2 year-round (no DST), so the offset is
+        // always fixed. Rather than fight the browser's local timezone,
+        // we shift the current UTC epoch by +2h and then read it back
+        // out with the UTC getters — that gives us SAST wall-clock
+        // values regardless of where the device itself is set to.
+        function getSASTNowParts() {
+            const sastMs = Date.now() + 2 * 60 * 60 * 1000;
+            const d = new Date(sastMs);
+            const dateString = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
+            return { dateString, epochMsShiftedToSAST: sastMs };
+        }
+        // Reads a query-string parameter from the current URL, e.g.
+        // in-session.html?idkey=1234 -> getQueryParam('idkey') === '1234'
+        function getQueryParam(name) {
+            return new URLSearchParams(window.location.search).get(name) || '';
+        }
+        
+        // Formats "now" as 'DD/MM/YYYY HH:MM:SS' in SAST, matching the
+        // default timestamp format the sheet already uses elsewhere
+        // (e.g. from Google Forms responses) — e.g. '14/08/2026 14:06:48'.
+        function formatSASTTimestamp() {
+            const { epochMsShiftedToSAST } = getSASTNowParts();
+            const d = new Date(epochMsShiftedToSAST);
+            const dd = String(d.getUTCDate()).padStart(2, '0');
+            const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
+            const yyyy = d.getUTCFullYear();
+            const hh = String(d.getUTCHours()).padStart(2, '0');
+            const min = String(d.getUTCMinutes()).padStart(2, '0');
+            const ss = String(d.getUTCSeconds()).padStart(2, '0');
+            return `${dd}/${mm}/${yyyy} ${hh}:${min}:${ss}`;
+        }
+        
+
+        // Converts a session's stored session_date ('YYYY-MM-DD') and
+        // session_start_time ('HH:MM' or 'HH:MM:SS'), which are captured
+        // in SAST wall-clock time, into a true UTC epoch millisecond
+        // value so it can be compared directly against Date.now().
+        function sessionStartEpochMs(sessionDate, sessionStartTime) {
+            const [y, m, d] = (sessionDate || '').split('-').map(Number);
+            const timeParts = (sessionStartTime || '00:00').split(':').map(Number);
+            const hh = timeParts[0] || 0, mm = timeParts[1] || 0, ss = timeParts[2] || 0;
+            if (!y || !m || !d) return NaN;
+            return Date.UTC(y, m - 1, d, hh, mm, ss) - 2 * 60 * 60 * 1000;
+        }
+
+        // Applies the guard-rail rules for a looked-up session row.
+        // Returns { valid: true } or { valid: false, reason: '...' }.
+        function validateSessionTiming(session) {
+            const { dateString: todaySAST } = getSASTNowParts();
+
+            if (isTimeSensitiveMode(session.session_delivery_mode)) {
+                // Rule: must be captured on the same calendar day as the session.
+                if (session.session_date !== todaySAST) {
+                    return {
+                        valid: false,
+                        reason: `This session is scheduled for ${session.session_date}, not today. This ID Key can only be used on the day of the session.`
+                    };
+                }
+                // Rule: window is 30 minutes before start to 150 minutes after start.
+                const startMs = sessionStartEpochMs(session.session_date, session.session_start_time);
+                const diffMinutes = (Date.now() - startMs) / 60000;
+                if (Number.isNaN(diffMinutes)) {
+                    return { valid: false, reason: 'This session\u2019s start time could not be read. Please check with your facilitator.' };
+                }
+                if (diffMinutes < -30) {
+                    return {
+                        valid: false,
+                        reason: `Registration for this session opens 30 minutes before its ${session.session_start_time} start time. Please try again closer to the start.`
+                    };
+                }
+                if (diffMinutes > 150) {
+                    return {
+                        valid: false,
+                        reason: `The registration window for this session has closed (it closes 2 hours 30 minutes after its ${session.session_start_time} start time).`
+                    };
+                }
+                return { valid: true };
+            }
+
+            // Not time/date sensitive — acts as a pre-register and may be
+            // captured any day up to and including the session date.
+            if (todaySAST > session.session_date) {
+                return {
+                    valid: false,
+                    reason: `This session's registration date (${session.session_date}) has already passed.`
+                };
+            }
+            return { valid: true };
+        }
+
+        // Looks up a session by its 4-digit ID Key. Returns the row, or
+        // null if no session matches.
+        async function lookupSessionByKey(idKey) {
+            const { data, error } = await supabaseClient
+                .from(SESSIONS_TABLE_NAME)
+                .select(SESSIONS_COLUMNS)
+                .eq('id_key', idKey)
+                .maybeSingle();
+            if (error) throw error;
+            return data;
+        }
+
+        // React hook: given a raw Session ID Key string, debounces,
+        // validates the 4-digit format, looks the key up in Supabase,
+        // and applies the date/time guard rails above.
+        // status: 'idle' | 'format' | 'checking' | 'notfound' | 'error' | 'timing_invalid' | 'ok'
+        function useSessionLookup(sessionKeyRaw) {
+            const [status, setStatus] = useState('idle');
+            const [session, setSession] = useState(null);
+            const [timingReason, setTimingReason] = useState(null);
+
+            useEffect(() => {
+                const trimmed = (sessionKeyRaw || '').trim();
+                setSession(null);
+                setTimingReason(null);
+
+                if (!trimmed) { setStatus('idle'); return; }
+                if (!/^\d{4}$/.test(trimmed)) { setStatus('format'); return; }
+
+                let cancelled = false;
+                setStatus('checking');
+                const handle = setTimeout(async () => {
+                    try {
+                        const data = await lookupSessionByKey(trimmed);
+                        if (cancelled) return;
+                        if (!data) { setStatus('notfound'); return; }
+                        // Supplementary courses-table lookup (developmental_level).
+                        // Non-fatal if it fails — see lookupDevelopmentalLevel().
+                        const developmentalLevel = await lookupDevelopmentalLevel(data.session_title);
+                        if (cancelled) return;
+                        const dataWithCourse = { ...data, developmental_level: developmentalLevel };
+                        const timing = validateSessionTiming(dataWithCourse);
+                        setSession(dataWithCourse);
+                        if (!timing.valid) {
+                            setTimingReason(timing.reason);
+                            setStatus('timing_invalid');
+                        } else {
+                            setStatus('ok');
+                        }
+                    } catch (err) {
+                        console.error('Error looking up Session ID Key:', err);
+                        if (!cancelled) setStatus('error');
+                    }
+                }, 400);
+
+                return () => { cancelled = true; clearTimeout(handle); };
+            }, [sessionKeyRaw]);
+
+            return { status, session, timingReason };
+        }
+
+        // ------------------------------------------------------------
+        // ADJUST THESE to match your actual Supabase schools table.
+        // This is the only piece of real backend wiring in this
+        // prototype — everything else (submitting attendance) is
+        // stubbed out on purpose until this screen is signed off.
+        // ------------------------------------------------------------
+        const SCHOOLS_TABLE_NAME = 'schools';
+        const SCHOOL_NAME_COLUMN = 'School_Name';
+        const DISTRICT_COLUMN = 'Education_District';
+        // Extra columns needed only for the sheet payload — NOT part of
+        // the bulk school-list fetch (that list can be ~2000 rows and is
+        // downloaded on every app load for the School dropdown, so we
+        // keep it to just name+district). These are instead fetched as
+        // a single targeted row lookup, only at submit time, for only
+        // the one school actually being submitted — see
+        // lookupSchoolExtras() below.
+        const CIRCUIT_COLUMN = 'Circuit';
+        const QUINTILE_COLUMN = 'Quintile';
+        const SCHOOL_TYPE_COLUMN = 'School_Type';
+
+        // Single-row lookup: given an exact school name, fetches just
+        // that school's Circuit/Quintile/School_Type. Called once at
+        // submit time rather than being bundled into the bulk school
+        // list fetch, to avoid downloading those 3 extra columns for
+        // ~2000 rows on every app load when at most one row is needed.
+        // Non-fatal on error/no-match — returns nulls rather than
+        // throwing, since this is supplementary data.
+        async function lookupSchoolExtras(schoolName) {
+            const empty = { circuit: '', quintile: '', schoolType: '' };
+            if (!schoolName) return empty;
+            try {
+                const { data, error } = await supabaseClient
+                    .from(SCHOOLS_TABLE_NAME)
+                    .select(`${CIRCUIT_COLUMN}, ${QUINTILE_COLUMN}, ${SCHOOL_TYPE_COLUMN}`)
+                    .eq(SCHOOL_NAME_COLUMN, schoolName)
+                    .maybeSingle();
+                if (error) throw error;
+                if (!data) return empty;
+                return {
+                    circuit: data[CIRCUIT_COLUMN] || '',
+                    quintile: data[QUINTILE_COLUMN] || '',
+                    schoolType: data[SCHOOL_TYPE_COLUMN] || ''
+                };
+            } catch (err) {
+                console.error('Error looking up school circuit/quintile/type:', err);
+                return empty;
+            }
+        }
+
+        // Supabase/PostgREST caps a single request at a fixed number of
+        // rows (commonly 1000) regardless of table size. With ~1,600
+        // WCED schools in total, a single unpaged select silently
+        // dropped everything past that cap — which is why schools later
+        // in the alphabet (e.g. "Worcester Gymnasium", "Zwelethemba")
+        // were missing from some districts. This pages through the
+        // table with .range() until every row has been fetched.
+        async function fetchAllRows(table, columns, pageSize = 1000) {
+            let all = [];
+            let from = 0;
+            while (true) {
+                const { data, error } = await supabaseClient
+                    .from(table)
+                    .select(columns)
+                    .range(from, from + pageSize - 1);
+                if (error) throw error;
+                if (!data || data.length === 0) break;
+                all = all.concat(data);
+                if (data.length < pageSize) break;
+                from += pageSize;
+            }
+            return all;
+        }
+
+        // ============================================================
+        // Static field option lists (HR / POPIA requirements)
+        // ============================================================
+        const RACE_OPTIONS = ['African', 'Coloured', 'Indian', 'White', 'Other'];
+        const GENDER_OPTIONS = ['Male', 'Female'];
+        const DISABILITY_OPTIONS = ['Yes', 'No'];
+        const OFFICE_TYPE_OPTIONS = ['School-based', 'Office-based', 'Other'];
+        // NOTE: the brief listed this field as "Education / Public" with no
+        // option wording given. Implemented as a sector choice between
+        // Education Department staff and (other) Public Service staff —
+        // adjust the labels below if a different meaning was intended.
+        const SECTOR_OPTIONS = ['Education', 'Public'];
+        const DESIGNATION_OPTIONS = [
+            'Admin Clerk',
+    'Admin Officer',
+    'Assistant Director (ASD)',
+    'Chief Education Specialist (CES)',
+    'Departmental Head',
+    'Deputy Chief Education Specialist (DCES)',
+    'Deputy Director (DD)',
+    'Deputy Principal',
+    'Director (DIR)',
+    'Principal',
+    'Senior Education Specialist (SES)',
+    'Social Worker',
+    'Teacher',
+    'Teacher Assistant',
+    'None of the above'
+        ];
+        const STATIC_DISTRICT_OPTIONS = ['HEAD OFFICE', 'NOT APPLICABLE'];
+        const NON_SCHOOL_OPTIONS = ['Not Applicable', 'School not in list'];
+        const POPIA_URL = 'https://qrgo.page.link/svhMU';
+
+        // ------------------------------------------------------------
+        // 'Event' delivery-mode extra fields (accommodation + dietary).
+        // Only shown/collected when the confirmed session's
+        // session_delivery_mode matches this, case-insensitively.
+        // ------------------------------------------------------------
+        const EVENT_DELIVERY_MODE = 'Event';
+        const DIETARY_OPTIONS = ['Halaal', 'Vegetarian', 'None', 'Other'];
+
+        function isEventDeliveryMode(mode) {
+            return (mode || '').trim().toLowerCase() === EVENT_DELIVERY_MODE.toLowerCase();
+        }
+
+        // ============================================================
+        // LOCAL "DEVICE PROFILE" STORAGE
+        // Not authentication — just remembers who last used this
+        // device so they don't have to retype their details every
+        // session. Supports more than one saved profile per device.
+        // ============================================================
+        const PROFILES_KEY = 'iat_profiles';
+        const ACTIVE_PROFILE_KEY = 'iat_active_profile_id';
+        const WELCOME_SEEN_KEY = 'iat_welcome_seen';
+
+        function loadProfiles() {
+            try {
+                const raw = localStorage.getItem(PROFILES_KEY);
+                return raw ? JSON.parse(raw) : [];
+            } catch (err) {
+                console.error('Could not read saved profiles', err);
+                return [];
+            }
+        }
+
+        function saveProfiles(profiles) {
+            try {
+                localStorage.setItem(PROFILES_KEY, JSON.stringify(profiles));
+            } catch (err) {
+                console.error('Could not save profiles', err);
+            }
+        }
+
+        function getActiveProfileId() {
+            return localStorage.getItem(ACTIVE_PROFILE_KEY);
+        }
+
+        function setActiveProfileId(id) {
+            localStorage.setItem(ACTIVE_PROFILE_KEY, id);
+        }
+
+        function clearActiveProfileId() {
+            localStorage.removeItem(ACTIVE_PROFILE_KEY);
+        }
+
+        // ============================================================
+        // Profile field helpers
+        // ============================================================
+        function emptyFields() {
+            return {
+                surname: '', firstName: '', email: '',
+                race: '', raceOther: '',
+                gender: '', disability: '',
+                district: '', school: '',
+                officeType: '', designation: '', sector: '',
+                sace: '', persal: '', idNumber: ''
+            };
+        }
+
+        function fieldsFromProfile(p) {
+            if (!p) return emptyFields();
+            return {
+                surname: p.surname || '', firstName: p.firstName || '', email: p.email || '',
+                race: p.race || '', raceOther: p.raceOther || '',
+                gender: p.gender || '', disability: p.disability || '',
+                district: p.district || '', school: p.school || '',
+                officeType: p.officeType || '', designation: p.designation || '', sector: p.sector || '',
+                sace: p.sace || '', persal: p.persal || '', idNumber: p.idNumber || ''
+            };
+        }
+
+        function isValidEmail(value) {
+            return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((value || '').trim());
+        }
+
+        function isValidPersal(value) {
+            // Optional field, but when provided it must be exactly 8 digits.
+            return !value || /^\d{8}$/.test(value);
+        }
+
+        // Returns a map of fieldKey -> error message (only for invalid/empty
+        // required fields). Used both to gate saving and to drive the
+        // subtle red-outline validation cues once a save has been attempted.
+        function getFieldErrors(f) {
+            const errors = {};
+            if (!f.surname.trim()) errors.surname = 'Surname is required';
+            if (!f.firstName.trim()) errors.firstName = 'First name is required';
+            if (!isValidEmail(f.email)) errors.email = 'Enter a valid email address';
+            if (!f.race) errors.race = 'Please select an option';
+            if (f.race === 'Other' && !f.raceOther.trim()) errors.raceOther = 'Please specify';
+            if (!f.gender) errors.gender = 'Please select an option';
+            if (!f.disability) errors.disability = 'Please select an option';
+            if (!f.district) errors.district = 'Please select a district';
+            if (!f.school) errors.school = 'Please select a school';
+            if (!f.officeType) errors.officeType = 'Please select an option';
+            if (!f.designation) errors.designation = 'Please select an option';
+            if (!f.sector) errors.sector = 'Please select an option';
+            if (!isValidPersal(f.persal)) errors.persal = 'PERSAL number must be exactly 8 digits';
+            if (isValidPersal(f.persal) && !f.persal.trim() && !f.idNumber.trim()) {
+                errors.idNumber = 'Provide a PERSAL number or an ID/Passport number';
+            }
+            return errors;
+        }
+
+        function isProfileComplete(f) {
+            return Object.keys(getFieldErrors(f)).length === 0;
+        }
+
+        function buildProfileRecord(f, existingId) {
+            return {
+                id: existingId || `p_${Date.now()}`,
+                surname: f.surname.trim().toUpperCase(),
+                firstName: f.firstName.trim().toUpperCase(),
+                email: f.email.trim(),
+                race: f.race,
+                raceOther: f.race === 'Other' ? f.raceOther.trim() : '',
+                gender: f.gender,
+                disability: f.disability,
+                district: f.district,
+                school: f.school,
+                officeType: f.officeType,
+                designation: f.designation,
+                sector: f.sector,
+                sace: f.sace.trim(),
+                persal: f.persal.trim(),
+                idNumber: f.idNumber.trim()
+            };
+        }
+
+        function fullNameOf(p) {
+            return `${p.firstName || ''} ${p.surname || ''}`.trim();
+        }
+
+        // ============================================================
+        // Small reusable bits
+        // ============================================================
+        function TextField({ label, value, onChange, placeholder, type = 'text', required = false, helperText, error, maxLength, inputMode }) {
+            const hasError = !!error;
+            return e('div', { className: 'mb-5' },
+                e('label', { className: 'block text-base font-semibold text-gray-700 mb-1.5' }, label, required ? e('span', { className: 'text-wcg-red' }, ' *') : null),
+                e('input', {
+                    type, value, placeholder, maxLength, inputMode,
+                    onChange: (ev) => onChange(ev.target.value),
+                    className: `w-full px-4 py-3.5 rounded-xl border-2 focus:outline-none text-base transition-colors ${hasError ? 'border-wcg-red focus:border-wcg-red' : 'border-gray-200 focus:border-wcg-brightblue'}`
+                }),
+                hasError
+                    ? e('p', { className: 'text-sm text-wcg-red mt-1.5 font-medium' }, error)
+                    : (helperText ? e('p', { className: 'text-sm text-gray-400 mt-1.5' }, helperText) : null)
+            );
+        }
+
+        function SelectField({ label, value, onChange, options, required = false, placeholder = 'Select…', disabled = false, helperText, error }) {
+            const hasError = !!error;
+            return e('div', { className: 'mb-5' },
+                e('label', { className: 'block text-base font-semibold text-gray-700 mb-1.5' }, label, required ? e('span', { className: 'text-wcg-red' }, ' *') : null),
+                e('select', {
+                    value, disabled,
+                    onChange: (ev) => onChange(ev.target.value),
+                    className: `w-full px-4 py-3.5 rounded-xl border-2 focus:outline-none text-base bg-white transition-colors disabled:bg-gray-100 ${hasError ? 'border-wcg-red focus:border-wcg-red' : 'border-gray-200 focus:border-wcg-brightblue'}`
+                },
+                    e('option', { value: '' }, placeholder),
+                    options.map(opt => e('option', { key: opt, value: opt }, opt))
+                ),
+                hasError
+                    ? e('p', { className: 'text-sm text-wcg-red mt-1.5 font-medium' }, error)
+                    : (helperText ? e('p', { className: 'text-sm text-gray-400 mt-1.5' }, helperText) : null)
+            );
+        }
+
+        function TextAreaField({ label, value, onChange, placeholder, required = false, helperText, error, rows = 3 }) {
+            const hasError = !!error;
+            return e('div', { className: 'mb-5' },
+                e('label', { className: 'block text-base font-semibold text-gray-700 mb-1.5' }, label, required ? e('span', { className: 'text-wcg-red' }, ' *') : null),
+                e('textarea', {
+                    value, placeholder, rows,
+                    onChange: (ev) => onChange(ev.target.value),
+                    className: `w-full px-4 py-3.5 rounded-xl border-2 focus:outline-none text-base transition-colors resize-y ${hasError ? 'border-wcg-red focus:border-wcg-red' : 'border-gray-200 focus:border-wcg-brightblue'}`
+                }),
+                hasError
+                    ? e('p', { className: 'text-sm text-wcg-red mt-1.5 font-medium' }, error)
+                    : (helperText ? e('p', { className: 'text-sm text-gray-400 mt-1.5' }, helperText) : null)
+            );
+        }
+
+        function SectionHeading({ children }) {
+            return e('h3', { className: 'text-sm font-bold uppercase tracking-wide text-wcg-blue mt-3 mb-4 pb-1.5 border-b-2 border-gray-100' }, children);
+        }
+
+        // Generic type-to-search select, used for the School field (which
+        // can have hundreds of entries once the district is chosen).
+        function SearchableSelect({ label, options, loading, error, value, onChange, required = false, placeholder = 'Start typing to search…', disabledMessage = 'No options available', validationError }) {
+            const [query, setQuery] = useState('');
+            const [open, setOpen] = useState(false);
+            const wrapperRef = useRef(null);
+
+            useEffect(() => {
+                function handleClickOutside(ev) {
+                    if (wrapperRef.current && !wrapperRef.current.contains(ev.target)) setOpen(false);
+                }
+                document.addEventListener('mousedown', handleClickOutside);
+                return () => document.removeEventListener('mousedown', handleClickOutside);
+            }, []);
+
+            const filtered = useMemo(() => {
+                if (!query) return options.slice(0, 100);
+                return options.filter(o => o.toLowerCase().includes(query.toLowerCase())).slice(0, 100);
+            }, [options, query]);
+
+            const disabled = loading || !!error || options.length === 0;
+            const hasValidationError = !!validationError;
+
+            return e('div', { className: 'mb-5 relative', ref: wrapperRef },
+                e('label', { className: 'block text-base font-semibold text-gray-700 mb-1.5' }, label, required ? e('span', { className: 'text-wcg-red' }, ' *') : null),
+                e('input', {
+                    type: 'text',
+                    value: open ? query : (value || ''),
+                    placeholder: loading ? 'Loading…' : (disabled ? disabledMessage : placeholder),
+                    disabled,
+                    onFocus: () => { setQuery(''); setOpen(true); },
+                    onChange: (ev) => setQuery(ev.target.value),
+                    className: `w-full px-4 py-3.5 rounded-xl border-2 focus:outline-none text-base disabled:bg-gray-100 transition-colors ${hasValidationError ? 'border-wcg-red focus:border-wcg-red' : 'border-gray-200 focus:border-wcg-brightblue'}`
+                }),
+                error ? e('p', { className: 'text-sm text-wcg-red mt-1.5' }, error)
+                    : (hasValidationError ? e('p', { className: 'text-sm text-wcg-red mt-1.5 font-medium' }, validationError) : null),
+                open && !disabled ? e('div', { className: 'absolute z-10 mt-1 w-full max-h-56 overflow-y-auto bg-white border-2 border-gray-200 rounded-xl shadow-lg' },
+                    filtered.length === 0
+                        ? e('div', { className: 'px-4 py-3 text-base text-gray-400' }, 'No matching options')
+                        : filtered.map((o, idx) => e('button', {
+                            key: idx, type: 'button',
+                            onClick: () => { onChange(o); setOpen(false); },
+                            className: 'block w-full text-left px-4 py-2.5 text-base hover:bg-blue-50 border-b border-gray-100 last:border-b-0'
+                        }, o))
+                ) : null
+            );
+        }
+
+        // Formats a stored 'HH:MM' / 'HH:MM:SS' time as 'HH:MM' for display.
+        function formatSessionTime(t) {
+            return (t || '').slice(0, 5);
+        }
+
+        // Generic modal overlay. Renders centered, dims the background,
+        // and closes on backdrop click. Kept intentionally simple/reusable.
+        function Modal({ onClose, children }) {
+            return e('div', {
+                className: 'fixed inset-0 bg-black/50 flex items-center justify-center px-4 z-50',
+                onClick: onClose
+            },
+                e('div', {
+                    className: 'bg-white rounded-2xl shadow-xl p-6 sm:p-7 max-w-sm w-full animate-fade-in-up',
+                    onClick: (ev) => ev.stopPropagation()
+                }, children)
+            );
+        }
+
+        // First-visit welcome message. Shown once per device — App checks
+        // WELCOME_SEEN_KEY in localStorage on mount and sets it once
+        // dismissed, so this never appears again on that device.
+        function FirstVisitWelcomeModal({ onDismiss }) {
+            return e(Modal, { onClose: onDismiss },
+                e('h3', { className: 'text-lg font-bold text-wcg-dark mb-3' }, 'Welcome to the eTPD Registration Portal'),
+                e('p', { className: 'text-sm text-gray-600 mb-4 leading-relaxed' },
+                    'Welcome to the new eTPD Registration Portal. This platform is in the testing phase and will only be used for the Cyber Effect Summit and Adoption Strategy registrations. It will be integrated into future TPD use soon and your profile will be saved for this.'
+                ),
+                e('p', { className: 'text-xs text-gray-400 mb-5 leading-relaxed' },
+                    'Profiles created on this platform are stored on your local device only, to help keep your data secure.'
+                ),
+                e('button', {
+                    type: 'button', onClick: onDismiss,
+                    className: 'w-full px-4 py-3 rounded-xl font-bold text-sm text-white bg-wcg-blue hover:brightness-95 transition-colors'
+                }, 'Got it')
+            );
+        }
+
+        // Confirmation modal shown once a Session ID Key passes all
+        // guard-rail checks. Deliberately shows only the minimal set of
+        // fields requested — no coordinator, date, or time — to keep the
+        // pop-up clean.
+        function SessionConfirmModal({ session, onConfirm, onReject }) {
+            return e(Modal, { onClose: onReject },
+                e('h3', { className: 'text-lg font-bold text-wcg-dark mb-4' }, 'Confirm your session'),
+                e('dl', { className: 'text-base text-gray-700 space-y-2.5 mb-6' },
+                    e('div', null, e('dt', { className: 'text-xs font-semibold uppercase tracking-wide text-gray-400' }, 'Session Name'), e('dd', { className: 'font-medium text-wcg-dark' }, session.session_title || '\u2014')),
+                    e('div', null, e('dt', { className: 'text-xs font-semibold uppercase tracking-wide text-gray-400' }, 'Hosting District'), e('dd', { className: 'font-medium text-wcg-dark' }, session.hosting_unit || '\u2014')),
+                    e('div', null, e('dt', { className: 'text-xs font-semibold uppercase tracking-wide text-gray-400' }, 'Facilitator'), e('dd', { className: 'font-medium text-wcg-dark' }, session.facilitator || '\u2014'))
+                ),
+                e('div', { className: 'flex gap-3' },
+                    e('button', {
+                        type: 'button', onClick: onReject,
+                        className: 'flex-1 px-3 py-3 rounded-xl font-semibold text-sm border-2 border-gray-300 text-gray-600 hover:border-gray-400 transition-colors'
+                    }, 'Not my session'),
+                    e('button', {
+                        type: 'button', onClick: onConfirm,
+                        className: 'flex-1 px-3 py-3 rounded-xl font-bold text-sm text-white bg-wcg-green hover:brightness-95 transition-colors'
+                    }, 'Yes, this is my session')
+                )
+            );
+        }
+
+        // Session ID Key field: the person types a 4-digit key, it's
+        // looked up against Supabase in real time and the date/time
+        // guard rails are applied. Any failure (not found, wrong day,
+        // outside the window) surfaces as one generic message — no
+        // details about the session or the reason are revealed. On
+        // success a confirmation modal is shown by the parent screen.
+        function SessionKeyField({ value, onChange, status, confirmed }) {
+            const showGenericError = status === 'notfound' || status === 'timing_invalid' || status === 'error';
+            return e('div', { className: 'mb-5' },
+                e(TextField, {
+                    label: 'Session ID Key',
+                    value,
+                    onChange: (v) => onChange(v.replace(/\D/g, '').slice(0, 4)),
+                    placeholder: 'e.g. 0472',
+                    required: true,
+                    inputMode: 'numeric',
+                    maxLength: 4,
+                    helperText: (status === 'idle' || status === 'format') ? '4-digit code provided by your facilitator' : undefined,
+                    error: (status === 'format' && value) ? 'Session ID Key must be exactly 4 digits' : undefined
+                }),
+                status === 'checking' ? e('p', { className: 'text-sm text-gray-400 -mt-3 mb-1' }, 'Checking session\u2026') : null,
+                showGenericError ? e('p', { className: 'text-sm text-wcg-red font-medium -mt-3 mb-1' }, 'Invalid or inactive key. Please check with your facilitator.') : null,
+                status === 'ok' && confirmed ? e('p', { className: 'text-sm text-green-700 font-semibold -mt-3 mb-1' }, '\u2713 Session confirmed') : null
+            );
+        }
+
+        // Required consent + acknowledgement, shown whenever a Session ID
+        // Key is being captured — this is not part of the stored profile.
+        function AcknowledgementConsent({ showPresence, presenceChecked, onPresenceChange, participationChecked, onParticipationChange }) {
+            return e('div', { className: 'border-2 border-gray-200 rounded-xl p-4 mb-5 bg-gray-50 space-y-4' },
+                showPresence ? e('label', { className: 'flex items-start gap-3 cursor-pointer' },
+                    e('input', {
+                        type: 'checkbox', checked: presenceChecked, onChange: (ev) => onPresenceChange(ev.target.checked),
+                        className: 'mt-1 h-5 w-5 accent-wcg-brightblue', required: true
+                    }),
+                    e('p', { className: 'text-sm text-gray-600' }, 'I acknowledge that I am present at the session I complete this form for.')
+                ) : null,
+                e('label', { className: 'flex items-start gap-3 cursor-pointer' },
+                    e('input', {
+                        type: 'checkbox', checked: participationChecked, onChange: (ev) => onParticipationChange(ev.target.checked),
+                        className: 'mt-1 h-5 w-5 accent-wcg-brightblue', required: true
+                    }),
+                    e('p', { className: 'text-sm text-gray-600' }, 'I willingly participate in the training provided by WCED eLearning and give consent for information provided to be used according to the POPIA Disclaimer on this page. I confirm that my information is accurate.')
+                )
+            );
+        }
+
+        // Extra fields captured only when the confirmed session's delivery
+        // mode is 'Event' (see isEventDeliveryMode). Accommodation is a
+        // free-text area for the attendee to describe what they need —
+        // the placeholder/helper copy below is a starting point, edit it
+        // to whatever guidance text you want shown. Dietary requirement
+        // is a required select with a fillable 'Other' option, mirroring
+        // the race/raceOther pattern used elsewhere in this form.
+        function EventExtraFields({ accommodation, onAccommodationChange, dietary, onDietaryChange, dietaryOther, onDietaryOtherChange, attempted }) {
+            return e('div', { className: 'border-2 border-gray-200 rounded-xl p-4 mb-5 bg-gray-50' },
+                e('p', { className: 'text-sm font-bold uppercase tracking-wide text-wcg-blue mb-4' }, 'Event Details'),
+                e(SelectField, {
+                    label: 'Do you require accommodation?',
+                    value: accommodation,
+                    onChange: onAccommodationChange,
+                    options: ['Yes', 'No'],
+                    required: true,
+                    error: attempted && !accommodation ? 'Please select an option' : undefined
+                }),
+                e('p', { className: 'text-sm text-gray-600 mb-4 leading-relaxed' },
+                    'Accommodation is available to attendees travelling more than 100km to the venue (200km+ round trip).'
+                ),
+                     
+                e(SelectField, {
+                    label: 'Dietary requirements',
+                    value: dietary,
+                    onChange: onDietaryChange,
+                    options: DIETARY_OPTIONS,
+                    required: true,
+                    error: attempted && !dietary ? 'Please select a dietary requirement' : undefined
+                }),
+                dietary === 'Other' ? e(TextField, {
+                    label: 'Please specify',
+                    value: dietaryOther,
+                    onChange: onDietaryOtherChange,
+                    required: true,
+                    error: attempted && !dietaryOther.trim() ? 'Please specify your dietary requirement' : undefined
+                }) : null
+            );
+        }
+
+        // Shown on every screen, per the POPIA requirement that this
+        // notice remains visible on the form at all times.
+        function PopiaFooter() {
+            return e('div', { className: 'max-w-xl w-full mx-auto mt-6 px-2 text-center' },
+                e('p', { className: 'text-xs leading-relaxed text-gray-400' },
+                    'POPIA Disclaimer: Training provided by WCED eLearning Directorate collects and processes personal and special information as stipulated in the Protection of Personal Information Notice available ',
+                    e('a', { href: POPIA_URL, target: '_blank', rel: 'noopener noreferrer', className: 'underline hover:text-gray-600' }, 'here'),
+                    '.'
+                ),
+                e('p', { className: 'text-xs leading-relaxed text-gray-400 mt-2' },
+                    'Profiles created on this platform are stored on your local device only and are not saved on any external server, to help protect your data privacy.'
+                )
+            );
+        }
+
+        // Small colour accent strip used at the top of each card.
+        function TopAccent() {
+            return e('div', { className: 'h-1 rounded-full bg-wcg-blue mb-5 -mt-1' });
+        }
+
+        // ============================================================
+        // Burger menu — sits in the header, gives quick access to other
+        // parts of the wider system. Placeholder links for now; swap
+        // the `href`/`label` values in MENU_LINKS as real pages exist.
+        // ============================================================
+        const MENU_LINKS = [
+            { label: 'Home', href: 'index.html' },
+            { label: 'Upcoming Sessions', href: 'sessions.html' },
+            { label: 'Attendance Record', href: 'profile.html' }
+        ];
+
+        function BurgerMenu({ links = MENU_LINKS }) {
+            const [open, setOpen] = useState(false);
+            const wrapperRef = useRef(null);
+
+            useEffect(() => {
+                function handleClickOutside(ev) {
+                    if (wrapperRef.current && !wrapperRef.current.contains(ev.target)) setOpen(false);
+                }
+                document.addEventListener('mousedown', handleClickOutside);
+                return () => document.removeEventListener('mousedown', handleClickOutside);
+            }, []);
+
+            return e('div', { className: 'relative', ref: wrapperRef },
+                e('button', {
+                    type: 'button',
+                    onClick: () => setOpen(o => !o),
+                    'aria-label': 'Open menu',
+                    'aria-expanded': open,
+                    className: 'w-11 h-11 flex flex-col items-center justify-center gap-1.5 rounded-lg hover:bg-gray-100 transition-colors'
+                },
+                    e('span', { className: 'block w-6 h-0.5 bg-wcg-dark rounded-full' }),
+                    e('span', { className: 'block w-6 h-0.5 bg-wcg-dark rounded-full' }),
+                    e('span', { className: 'block w-6 h-0.5 bg-wcg-dark rounded-full' })
+                ),
+                open ? e('div', {
+                    className: 'absolute right-0 mt-2 w-48 bg-white border-2 border-gray-100 rounded-xl shadow-lg py-2 z-40 animate-fade-in-up'
+                },
+                    links.map((link, idx) => e('a', {
+                        key: idx,
+                        href: link.href,
+                        className: 'block px-4 py-2.5 text-base font-medium text-gray-700 hover:bg-blue-50 hover:text-wcg-blue transition-colors'
+                    }, link.label))
+                ) : null
+            );
+        }
+
+        // ============================================================
+        // The full set of profile fields, shared by:
+        //  - the device profile setup / edit form
+        //  - the shared-device (no saved profile) capture form
+        // ============================================================
+        function ProfileFieldsForm({ fields, updateField, schools, schoolsLoading, schoolsError, districtOptions, errors }) {
+            const fieldErrors = errors || {};
+
+            const schoolOptions = useMemo(() => {
+                if (!fields.district) return [];
+                if (fields.district === 'HEAD OFFICE' || fields.district === 'NOT APPLICABLE') {
+                    return NON_SCHOOL_OPTIONS;
+                }
+                const inDistrict = schools
+                    .filter(s => s.district === fields.district)
+                    .map(s => s.name)
+                    .filter(Boolean)
+                    .sort((a, b) => a.localeCompare(b));
+                return ['District Officials', ...inDistrict, 'School not in list'];
+            }, [fields.district, schools]);
+
+            const handlePersalChange = (v) => updateField('persal', v.replace(/\D/g, '').slice(0, 8));
+
+            return e(React.Fragment, null,
+                e(SectionHeading, null, 'Personal details'),
+                e('div', { className: 'grid grid-cols-1 sm:grid-cols-2 gap-x-4' },
+                    e(TextField, { label: 'Surname', value: fields.surname, onChange: v => updateField('surname', v), required: true, placeholder: 'e.g. ADAMS', error: fieldErrors.surname }),
+                    e(TextField, { label: 'First Name', value: fields.firstName, onChange: v => updateField('firstName', v), required: true, placeholder: 'e.g. JANE', error: fieldErrors.firstName })
+                ),
+                e(TextField, { label: 'Email Address', value: fields.email, onChange: v => updateField('email', v), type: 'email', required: true, placeholder: 'name@example.com', error: fieldErrors.email }),
+                e(SelectField, { label: 'Race (HR requirement)', value: fields.race, onChange: v => updateField('race', v), options: RACE_OPTIONS, required: true, error: fieldErrors.race }),
+                fields.race === 'Other' ? e(TextField, { label: 'Please specify race', value: fields.raceOther, onChange: v => updateField('raceOther', v), required: true, error: fieldErrors.raceOther }) : null,
+                e('div', { className: 'grid grid-cols-1 sm:grid-cols-2 gap-x-4' },
+                    e(SelectField, { label: 'Gender (HR requirement)', value: fields.gender, onChange: v => updateField('gender', v), options: GENDER_OPTIONS, required: true, error: fieldErrors.gender }),
+                    e(SelectField, { label: 'Disability (HR requirement)', value: fields.disability, onChange: v => updateField('disability', v), options: DISABILITY_OPTIONS, required: true, error: fieldErrors.disability })
+                ),
+
+                e(SectionHeading, null, 'Employment details'),
+                e(SelectField, {
+                    label: 'District', value: fields.district, onChange: v => updateField('district', v),
+                    options: districtOptions, required: true,
+                    placeholder: schoolsLoading ? 'Loading districts…' : 'Select district…',
+                    error: fieldErrors.district
+                }),
+                e(SearchableSelect, {
+                    label: 'School', options: schoolOptions, loading: schoolsLoading, error: schoolsError,
+                    value: fields.school, onChange: v => updateField('school', v), required: true,
+                    disabledMessage: fields.district ? 'No schools found for this district' : 'Select a district first',
+                    validationError: fieldErrors.school
+                }),
+                e(SelectField, { label: 'Office / School based', value: fields.officeType, onChange: v => updateField('officeType', v), options: OFFICE_TYPE_OPTIONS, required: true, error: fieldErrors.officeType }),
+                e(SelectField, { label: 'Designation', value: fields.designation, onChange: v => updateField('designation', v), options: DESIGNATION_OPTIONS, required: true, error: fieldErrors.designation }),
+                e(SelectField, { label: 'Education / Public', value: fields.sector, onChange: v => updateField('sector', v), options: SECTOR_OPTIONS, required: true, error: fieldErrors.sector }),
+
+                e(SectionHeading, null, 'Identification'),
+                e(TextField, { label: 'SACE Number', value: fields.sace, onChange: v => updateField('sace', v), placeholder: 'Optional, but recommended' }),
+                e(TextField, {
+                    label: 'PERSAL Number', value: fields.persal, onChange: handlePersalChange,
+                    placeholder: '8 digit number', inputMode: 'numeric', maxLength: 8,
+                    error: fieldErrors.persal, helperText: fieldErrors.persal ? undefined : 'If you have one, please provide it — 8 digits, numbers only'
+                }),
+                e(TextField, {
+                    label: 'ID / Passport Number', value: fields.idNumber, onChange: v => updateField('idNumber', v),
+                    required: !fields.persal.trim(), placeholder: 'Required if you do not have a PERSAL number',
+                    error: fieldErrors.idNumber
+                }),
+                e('p', { className: 'text-sm text-gray-400 -mt-3 mb-4' }, 'Attendance records are grouped by PERSAL number first, and by ID/Passport number where no PERSAL number is provided.')
+            );
+        }
+
+        // ============================================================
+        // Profile setup / edit form (device profile)
+        // ============================================================
+        function ProfileForm({ schools, schoolsLoading, schoolsError, districtOptions, initial, onSave, onCancel }) {
+            const [fields, setFields] = useState(() => fieldsFromProfile(initial));
+            const [attempted, setAttempted] = useState(false);
+            const updateField = (key, value) => setFields(prev => ({ ...prev, [key]: value, ...(key === 'district' ? { school: (value === 'HEAD OFFICE' || value === 'NOT APPLICABLE') ? 'Not Applicable' : '' } : {}) }));
+            const errors = getFieldErrors(fields);
+            const canSave = Object.keys(errors).length === 0;
+
+            const handleSaveClick = () => {
+                if (canSave) {
+                    onSave(buildProfileRecord(fields, initial?.id));
+                } else {
+                    setAttempted(true);
+                }
+            };
+
+            return e('div', { className: 'bg-white rounded-2xl shadow-lg p-7 sm:p-9 max-w-xl w-full animate-fade-in-up' },
+                e(TopAccent),
+                e('h2', { className: 'text-2xl font-bold text-wcg-dark mb-1' }, initial ? 'View / Edit Profile' : 'Set Up Your Profile'),
+                e('p', { className: 'text-base text-gray-500 mb-6' }, "These details are stored on this device only, so you don't need to retype them every session."),
+                e(ProfileFieldsForm, { fields, updateField, schools, schoolsLoading, schoolsError, districtOptions, errors: attempted ? errors : {} }),
+                attempted && !canSave ? e('p', { className: 'text-sm text-wcg-red font-medium mb-4' }, 'Please complete the highlighted fields before saving.') : null,
+                e('div', { className: 'flex gap-3 mt-6' },
+                    onCancel ? e('button', {
+                        onClick: onCancel,
+                        className: 'flex-1 px-4 py-3.5 rounded-xl font-semibold text-base border-2 border-gray-200 text-gray-600 hover:border-gray-300 transition-colors'
+                    }, 'Cancel') : null,
+                    e('button', {
+                        onClick: handleSaveClick,
+                        className: `flex-1 px-4 py-3.5 rounded-xl font-semibold text-base text-white transition-colors shadow ${canSave ? 'bg-wcg-blue hover:bg-wcg-brightblue' : 'bg-gray-300 hover:bg-gray-400'}`
+                    }, 'Save Profile')
+                )
+            );
+        }
+
+        // ============================================================
+        // Profile switcher — pick between saved profiles, or add new
+        // ============================================================
+        function ProfileSwitcher({ profiles, onSelect, onAddNew, onDelete, onCancel }) {
+            return e('div', { className: 'bg-white rounded-2xl shadow-lg p-7 sm:p-9 max-w-xl w-full animate-fade-in-up' },
+                e(TopAccent),
+                e('h2', { className: 'text-2xl font-bold text-wcg-dark mb-1' }, 'Switch Profile'),
+                e('p', { className: 'text-base text-gray-500 mb-6' }, 'Select a saved profile for this device, or add a new one.'),
+                e('div', { className: 'space-y-2 mb-4' },
+                    profiles.map(p => e('div', {
+                        key: p.id,
+                        className: 'flex items-center gap-3 border-2 border-gray-200 rounded-xl px-4 py-3.5 hover:border-wcg-brightblue transition-colors'
+                    },
+                        e('button', { onClick: () => onSelect(p.id), className: 'flex-1 text-left' },
+                            e('div', { className: 'font-semibold text-base text-wcg-dark' }, fullNameOf(p)),
+                            e('div', { className: 'text-sm text-gray-500' }, `${p.persal ? 'PERSAL ' + p.persal : 'ID ' + p.idNumber} · ${p.school}`)
+                        ),
+                        e('button', {
+                            onClick: () => onDelete(p.id),
+                            title: 'Remove this profile from the device',
+                            className: 'text-gray-400 hover:text-wcg-red text-sm font-semibold px-2 py-1'
+                        }, 'Remove')
+                    ))
+                ),
+                e('button', {
+                    onClick: onAddNew,
+                    className: 'w-full px-4 py-3.5 rounded-xl font-semibold text-base border-2 border-dashed border-gray-300 text-gray-500 hover:border-wcg-brightblue hover:text-wcg-brightblue transition-colors mb-3'
+                }, '+ Add New Profile'),
+                onCancel ? e('button', {
+                    onClick: onCancel,
+                    className: 'w-full px-4 py-2 text-sm text-gray-400 hover:text-gray-600'
+                }, 'Cancel') : null
+            );
+        }
+
+        // ============================================================
+        // Welcome screen — active profile + Session ID Key capture
+        // ============================================================
+        function WelcomeScreen({ profile, onEditProfile, onLogout }) {
+            const [sessionKey, setSessionKey] = useState(() => getQueryParam('idkey'));
+            const { status: sessionStatus, session: sessionRecord, timingReason } = useSessionLookup(sessionKey);
+            const [sessionConfirmed, setSessionConfirmed] = useState(false);
+            const [showSessionModal, setShowSessionModal] = useState(false);
+            const [presenceAcknowledged, setPresenceAcknowledged] = useState(false);
+            const [participationAcknowledged, setParticipationAcknowledged] = useState(false);
+            const [accommodation, setAccommodation] = useState('');
+            const [dietary, setDietary] = useState('');
+            const [dietaryOther, setDietaryOther] = useState('');
+            const [submitted, setSubmitted] = useState(false);
+            const [submitting, setSubmitting] = useState(false);
+            const [submitError, setSubmitError] = useState(null);
+            const fullName = fullNameOf(profile);
+            const idLine = profile.persal ? `PERSAL ${profile.persal}` : `ID ${profile.idNumber}`;
+
+            const isEventSession = sessionStatus === 'ok' && isEventDeliveryMode(sessionRecord?.session_delivery_mode);
+            const eventFieldsOk = !isEventSession || (!!dietary && (dietary !== 'Other' || !!dietaryOther.trim()));
+            const showPresence = sessionStatus === 'ok' && isTimeSensitiveMode(sessionRecord?.session_delivery_mode);
+            const acknowledged = participationAcknowledged && (!showPresence || presenceAcknowledged);
+
+            // Any change to the key (or a fresh lookup result) invalidates
+            // a previous confirmation — the person must re-confirm. A
+            // successful lookup automatically pops the confirmation modal.
+            useEffect(() => {
+                setSessionConfirmed(false);
+                setShowSessionModal(sessionStatus === 'ok');
+            }, [sessionKey, sessionStatus]);
+
+            const canSubmit = sessionStatus === 'ok' && sessionConfirmed && acknowledged && eventFieldsOk && !submitting;
+
+            const handleSubmit = async () => {
+                setSubmitting(true);
+                setSubmitError(null);
+                try {
+                    const schoolExtras = await lookupSchoolExtras(profile.school);
+                    await submitAttendanceRecord(profile, sessionKey, sessionRecord, { accommodation, dietary, dietaryOther }, schoolExtras);
+                    setSubmitted(true);
+                } catch (err) {
+                    console.error('Error writing attendance to sheet:', err);
+                    setSubmitError('Could not save your attendance. Please check your connection and try again.');
+                } finally {
+                    setSubmitting(false);
+                }
+            };
+
+            return e('div', { className: 'bg-white rounded-2xl shadow-lg p-7 sm:p-9 max-w-xl w-full animate-fade-in-up' },
+                e(TopAccent),
+                e('div', { className: 'text-center mb-6' },
+                    e('div', { className: 'w-16 h-16 rounded-full bg-wcg-blue text-white flex items-center justify-center text-3xl font-bold mx-auto mb-3' },
+                        (fullName || '?').charAt(0)
+                    ),
+                    e('h2', { className: 'text-2xl font-bold text-wcg-dark' }, `Welcome back, ${fullName}`),
+                    e('p', { className: 'text-base text-gray-500 mt-1' }, `${idLine} · ${profile.school}`),
+                    e('div', { className: 'flex items-center justify-center gap-4 mt-3' },
+                        e('button', { onClick: onEditProfile, className: 'text-sm font-semibold text-wcg-blue hover:underline' }, 'View / edit profile'),
+                        e('button', { onClick: onLogout, className: 'text-sm font-semibold text-gray-400 hover:underline' }, 'Log out')
+                    )
+                ),
+                submitted
+                    ? e('div', { className: 'text-center bg-green-50 border-2 border-green-200 rounded-xl p-5' },
+                        e('p', { className: 'text-base font-semibold text-green-800' }, showPresence ? 'Attendance captured.' : 'Registration captured.'),
+                        e('button', {
+                            onClick: () => {
+                                setSubmitted(false); setSessionKey(''); setSessionConfirmed(false);
+                                setPresenceAcknowledged(false); setParticipationAcknowledged(false);
+                                setAccommodation(''); setDietary(''); setDietaryOther('');
+                            },
+                            className: 'text-sm font-semibold text-wcg-brightblue hover:underline mt-3'
+                        }, 'Capture another session')
+                    )
+                    : e(React.Fragment, null,
+                        e(SessionKeyField, {
+                            value: sessionKey, onChange: setSessionKey,
+                            status: sessionStatus, confirmed: sessionConfirmed
+                        }),
+                        isEventSession ? e(EventExtraFields, {
+                            accommodation, onAccommodationChange: setAccommodation,
+                            dietary, onDietaryChange: setDietary,
+                            dietaryOther, onDietaryOtherChange: setDietaryOther,
+                            attempted: true
+                        }) : null,
+                        e(AcknowledgementConsent, {
+                            showPresence,
+                            presenceChecked: presenceAcknowledged, onPresenceChange: setPresenceAcknowledged,
+                            participationChecked: participationAcknowledged, onParticipationChange: setParticipationAcknowledged
+                        }),
+                        submitError ? e('p', { className: 'text-sm text-wcg-red font-medium mb-4' }, submitError) : null,
+                        e('button', {
+                            disabled: !canSubmit,
+                            onClick: handleSubmit,
+                            className: `w-full px-4 py-3.5 rounded-xl font-bold text-base text-white transition-colors shadow ${canSubmit ? 'bg-wcg-green hover:brightness-95' : 'bg-gray-300 cursor-not-allowed'}`
+                        }, submitting ? 'Saving…' : 'Capture Attendance'),
+                        showSessionModal && sessionRecord ? e(SessionConfirmModal, {
+                            session: sessionRecord,
+                            onConfirm: () => { setSessionConfirmed(true); setShowSessionModal(false); },
+                            onReject: () => { setSessionKey(''); setSessionConfirmed(false); setShowSessionModal(false); }
+                        }) : null
+                    )
+            );
+        }
+
+        // ============================================================
+        // Shared-device capture — full profile fields collected fresh
+        // each time, never saved to this device, plus Session ID Key.
+        // ============================================================
+        function SharedDeviceCapture({ schools, schoolsLoading, schoolsError, districtOptions, onBack }) {
+            const [fields, setFields] = useState(() => emptyFields());
+            const [attempted, setAttempted] = useState(false);
+            const updateField = (key, value) => setFields(prev => ({ ...prev, [key]: value, ...(key === 'district' ? { school: '' } : {}) }));
+            const [sessionKey, setSessionKey] = useState(() => getQueryParam('idkey'));
+            const { status: sessionStatus, session: sessionRecord, timingReason } = useSessionLookup(sessionKey);
+            const [sessionConfirmed, setSessionConfirmed] = useState(false);
+            const [showSessionModal, setShowSessionModal] = useState(false);
+            const [presenceAcknowledged, setPresenceAcknowledged] = useState(false);
+            const [participationAcknowledged, setParticipationAcknowledged] = useState(false);
+            const [accommodation, setAccommodation] = useState('');
+            const [dietary, setDietary] = useState('');
+            const [dietaryOther, setDietaryOther] = useState('');
+            const [submitted, setSubmitted] = useState(false);
+            const [submitting, setSubmitting] = useState(false);
+            const [submitError, setSubmitError] = useState(null);
+
+            useEffect(() => {
+                setSessionConfirmed(false);
+                setShowSessionModal(sessionStatus === 'ok');
+            }, [sessionKey, sessionStatus]);
+
+            const errors = getFieldErrors(fields);
+            const profileOk = Object.keys(errors).length === 0;
+            const sessionOk = sessionStatus === 'ok' && sessionConfirmed;
+            const isEventSession = sessionStatus === 'ok' && isEventDeliveryMode(sessionRecord?.session_delivery_mode);
+            const eventFieldsOk = !isEventSession || (!!dietary && (dietary !== 'Other' || !!dietaryOther.trim()));
+            const showPresence = sessionStatus === 'ok' && isTimeSensitiveMode(sessionRecord?.session_delivery_mode);
+            const acknowledged = participationAcknowledged && (!showPresence || presenceAcknowledged);
+            const canSubmit = profileOk && sessionOk && acknowledged && eventFieldsOk && !submitting;
+
+            if (submitted) {
+                return e('div', { className: 'text-center bg-green-50 border-2 border-green-200 rounded-xl p-5' },
+                    e('p', { className: 'text-base font-semibold text-green-800' }, showPresence ? 'Attendance captured.' : 'Registration captured.'),
+                    e('button', { onClick: onBack, className: 'text-sm font-semibold text-wcg-brightblue hover:underline mt-3' }, 'Done')
+                );
+            }
+
+            const handleSubmitClick = async () => {
+                if (!profileOk || !sessionOk || !acknowledged || !eventFieldsOk) { setAttempted(true); return; }
+                setSubmitting(true);
+                setSubmitError(null);
+                try {
+                    const schoolExtras = await lookupSchoolExtras(fields.school);
+                    await submitAttendanceRecord(buildProfileRecord(fields), sessionKey, sessionRecord, { accommodation, dietary, dietaryOther }, schoolExtras);
+                    setSubmitted(true);
+                } catch (err) {
+                    console.error('Error writing attendance to sheet:', err);
+                    setSubmitError('Could not save your attendance. Please check your connection and try again.');
+                } finally {
+                    setSubmitting(false);
+                }
+            };
+
+            return e(React.Fragment, null,
+                e(ProfileFieldsForm, { fields, updateField, schools, schoolsLoading, schoolsError, districtOptions, errors: attempted ? errors : {} }),
+                e(SessionKeyField, {
+                    value: sessionKey, onChange: setSessionKey,
+                    status: sessionStatus, confirmed: sessionConfirmed
+                }),
+                attempted && !sessionKey.trim() ? e('p', { className: 'text-sm text-wcg-red font-medium -mt-3 mb-4' }, 'Session ID Key is required') : null,
+                attempted && sessionKey.trim() && sessionStatus !== 'ok' ? e('p', { className: 'text-sm text-wcg-red font-medium -mt-3 mb-4' }, 'Please enter a valid Session ID Key.') : null,
+                attempted && sessionStatus === 'ok' && !sessionConfirmed ? e('p', { className: 'text-sm text-wcg-red font-medium -mt-3 mb-4' }, 'Please confirm the session details above.') : null,
+                isEventSession ? e(EventExtraFields, {
+                    accommodation, onAccommodationChange: setAccommodation,
+                    dietary, onDietaryChange: setDietary,
+                    dietaryOther, onDietaryOtherChange: setDietaryOther,
+                    attempted
+                }) : null,
+                e(AcknowledgementConsent, {
+                    showPresence,
+                    presenceChecked: presenceAcknowledged, onPresenceChange: setPresenceAcknowledged,
+                    participationChecked: participationAcknowledged, onParticipationChange: setParticipationAcknowledged
+                }),
+                attempted && !profileOk ? e('p', { className: 'text-sm text-wcg-red font-medium mb-4' }, 'Please complete the highlighted fields before capturing attendance.') : null,
+                submitError ? e('p', { className: 'text-sm text-wcg-red font-medium mb-4' }, submitError) : null,
+                e('div', { className: 'flex gap-3 mt-2' },
+                    e('button', {
+                        onClick: onBack,
+                        className: 'flex-1 px-4 py-3.5 rounded-xl font-semibold text-base border-2 border-gray-200 text-gray-600 hover:border-gray-300 transition-colors'
+                    }, 'Back'),
+                    e('button', {
+                        onClick: handleSubmitClick,
+                        className: `flex-1 px-4 py-3.5 rounded-xl font-bold text-base text-white transition-colors shadow ${canSubmit ? 'bg-wcg-green hover:brightness-95' : 'bg-gray-300 hover:bg-gray-400'}`
+                    }, submitting ? 'Saving…' : 'Capture Attendance')
+                ),
+                showSessionModal && sessionRecord ? e(SessionConfirmModal, {
+                    session: sessionRecord,
+                    onConfirm: () => { setSessionConfirmed(true); setShowSessionModal(false); },
+                    onReject: () => { setSessionKey(''); setSessionConfirmed(false); setShowSessionModal(false); }
+                }) : null
+            );
+        }
+
+        // ============================================================
+        // Root app
+        // ============================================================
+        function App() {
+            // 'deviceCheck' | 'sharedForm' | 'profileSetup' | 'profileSwitch' | 'welcome'
+            const [screen, setScreen] = useState('deviceCheck');
+            const [profiles, setProfiles] = useState(() => loadProfiles());
+            const [activeProfile, setActiveProfileState] = useState(null);
+            const [editingExisting, setEditingExisting] = useState(false);
+
+            const [schools, setSchools] = useState([]);
+            const [schoolsLoading, setSchoolsLoading] = useState(false);
+            const [schoolsError, setSchoolsError] = useState(null);
+
+            // First-visit welcome — shown once per device, tracked via
+            // WELCOME_SEEN_KEY in localStorage.
+            const [showFirstVisitWelcome, setShowFirstVisitWelcome] = useState(false);
+            useEffect(() => {
+                try {
+                    if (!localStorage.getItem(WELCOME_SEEN_KEY)) {
+                        setShowFirstVisitWelcome(true);
+                    }
+                } catch (err) {
+                    console.error('Could not read welcome-seen flag', err);
+                }
+            }, []);
+            const dismissFirstVisitWelcome = () => {
+                try {
+                    localStorage.setItem(WELCOME_SEEN_KEY, '1');
+                } catch (err) {
+                    console.error('Could not save welcome-seen flag', err);
+                }
+                setShowFirstVisitWelcome(false);
+            };
+
+            // ------------------------------------------------------------
+            // Schools list (~2000 rows) is only needed for the School
+            // dropdown on the profile setup/edit form and the shared-
+            // device form — NOT for a returning user who lands straight
+            // on the Welcome screen with an existing saved profile. So
+            // this is fetched lazily, on demand, via ensureSchoolsLoaded()
+            // rather than unconditionally on app mount. schoolsFetchedRef
+            // guards against re-fetching it more than once per session
+            // (e.g. if the user bounces between profileSetup/sharedForm
+            // and other screens).
+            // ------------------------------------------------------------
+            const schoolsFetchedRef = useRef(false);
+
+            async function ensureSchoolsLoaded() {
+                if (schoolsFetchedRef.current) return;
+                schoolsFetchedRef.current = true;
+                setSchoolsLoading(true);
+                setSchoolsError(null);
+                try {
+                    const rows = await fetchAllRows(SCHOOLS_TABLE_NAME, `${SCHOOL_NAME_COLUMN}, ${DISTRICT_COLUMN}`);
+                    const cleaned = rows
+                        .map(row => ({ name: row[SCHOOL_NAME_COLUMN], district: row[DISTRICT_COLUMN] }))
+                        .filter(row => !!row.name);
+                    setSchools(cleaned);
+                } catch (err) {
+                    console.error('Error fetching schools from Supabase:', err);
+                    setSchoolsError('Could not load the school list. You can still complete this once the connection is set up.');
+                    schoolsFetchedRef.current = false; // allow a retry on the next navigation into a screen that needs it
+                } finally {
+                    setSchoolsLoading(false);
+                }
+            }
+
+            const districtOptions = useMemo(() => {
+                const real = Array.from(new Set(schools.map(s => s.district).filter(Boolean)))
+                    .sort((a, b) => a.localeCompare(b));
+                return [...real, ...STATIC_DISTRICT_OPTIONS];
+            }, [schools]);
+
+            const chooseDevice = (isOwn) => {
+                if (!isOwn) {
+                    ensureSchoolsLoaded();
+                    setScreen('sharedForm');
+                    return;
+                }
+                const currentProfiles = loadProfiles();
+                if (currentProfiles.length === 0) {
+                    ensureSchoolsLoaded();
+                    setEditingExisting(false);
+                    setScreen('profileSetup');
+                    return;
+                }
+                const activeId = getActiveProfileId();
+                const found = currentProfiles.find(p => p.id === activeId) || currentProfiles[0];
+                setActiveProfileState(found);
+                setScreen('welcome');
+            };
+
+            const handleSaveProfile = (profile) => {
+                const current = loadProfiles();
+                const withoutThis = current.filter(p => p.id !== profile.id);
+                const updated = [...withoutThis, profile];
+                saveProfiles(updated);
+                setProfiles(updated);
+                setActiveProfileId(profile.id);
+                setActiveProfileState(profile);
+                setScreen('welcome');
+            };
+
+            const handleSelectProfile = (id) => {
+                const current = loadProfiles();
+                const found = current.find(p => p.id === id);
+                if (!found) return;
+                setActiveProfileId(id);
+                setActiveProfileState(found);
+                setScreen('welcome');
+            };
+
+            const handleDeleteProfile = (id) => {
+                const current = loadProfiles().filter(p => p.id !== id);
+                saveProfiles(current);
+                setProfiles(current);
+                if (id === activeProfile?.id) setActiveProfileState(null);
+                if (current.length === 0) {
+                    ensureSchoolsLoaded();
+                    setScreen('profileSetup');
+                }
+            };
+
+            const handleEditProfile = () => {
+                ensureSchoolsLoaded();
+                setEditingExisting(true);
+                setScreen('profileSetup');
+            };
+
+            const handleLogout = () => {
+                clearActiveProfileId();
+                setActiveProfileState(null);
+                setScreen('profileSwitch');
+            };
+
+            return e('div', { className: 'min-h-screen flex flex-col' },
+                showFirstVisitWelcome ? e(FirstVisitWelcomeModal, { onDismiss: dismissFirstVisitWelcome }) : null,
+                e('header', { className: 'bg-white shadow-sm' },
+                    e('div', { className: 'max-w-5xl mx-auto px-4 sm:px-6 py-4 flex items-center gap-3' },
+                        e('img', { src: 'header.png', alt: 'WCED Header', className: 'h-10 sm:h-12', onError: (ev) => { ev.target.style.display = 'none'; } }),
+                        e('div', { className: 'ml-auto flex items-center gap-1' },
+                        e('a', {
+                            href: 'sessions.html', title: 'Upcoming Sessions', 'aria-label': 'Upcoming Sessions',
+                            className: 'w-11 h-11 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors text-wcg-dark'
+                        },
+                            e('svg', { viewBox: '0 0 24 24', className: 'w-6 h-6', fill: 'currentColor' },
+                                e('path', { d: 'M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zm0-12H5V6h14v2z' })
+                            )
+                        ),
+                        e('a', {
+                            href: 'profile.html', title: 'My Profile', 'aria-label': 'My Profile',
+                            className: 'w-11 h-11 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors text-wcg-dark'
+                        },
+                            e('svg', { viewBox: '0 0 24 24', className: 'w-6 h-6', fill: 'currentColor' },
+                                e('path', { d: 'M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z' })
+                            )
+                        ),
+                        e(BurgerMenu)
+                    )
+                    ),
+                    e('div', { className: 'h-1.5 wcg-top-accent' }),
+                ),
+                e('div', { className: 'flex-1 flex flex-col items-center justify-center px-4 py-10' },
+
+                    screen === 'deviceCheck' ? e('div', { className: 'bg-white rounded-2xl shadow-lg p-7 sm:p-9 max-w-xl w-full text-center animate-fade-in-up' },
+                        e(TopAccent),
+                        e('h2', { className: 'text-2xl font-bold text-wcg-dark mb-2' }, 'Is this your device?'),
+                        e('p', { className: 'text-base text-gray-500 mb-6' }, "So we know whether to remember your details for next time."),
+                        e('div', { className: 'grid grid-cols-1 sm:grid-cols-2 gap-3' },
+                            e('button', {
+                                onClick: () => chooseDevice(true),
+                                className: 'px-4 py-4 rounded-xl font-bold text-base bg-wcg-blue text-white hover:bg-wcg-blue transition-colors shadow'
+                            }, 'This is my device'),
+                            e('button', {
+                                onClick: () => chooseDevice(false),
+                                className: 'px-4 py-4 rounded-xl font-bold text-base border-2 border-gray-200 text-gray-700 hover:border-wcg-blue transition-colors'
+                            }, 'Shared device')
+                        )
+                    ) : null,
+
+                    screen === 'sharedForm' ? e('div', { className: 'bg-white rounded-2xl shadow-lg p-7 sm:p-9 max-w-xl w-full animate-fade-in-up' },
+                        e(TopAccent),
+                        e('h2', { className: 'text-2xl font-bold text-wcg-dark mb-1' }, 'Capture Attendance'),
+                        e('p', { className: 'text-base text-gray-500 mb-6' }, "Shared device — please complete your details for this session."),
+                        e(SharedDeviceCapture, {
+                            schools, schoolsLoading, schoolsError, districtOptions,
+                            onBack: () => setScreen('deviceCheck')
+                        })
+                    ) : null,
+
+                    screen === 'profileSetup' ? e(ProfileForm, {
+                        schools, schoolsLoading, schoolsError, districtOptions,
+                        initial: editingExisting ? activeProfile : null,
+                        onSave: handleSaveProfile,
+                        onCancel: profiles.length > 0 ? () => setScreen(activeProfile ? 'welcome' : 'profileSwitch') : null
+                    }) : null,
+
+                    screen === 'profileSwitch' ? e(ProfileSwitcher, {
+                        profiles,
+                        onSelect: handleSelectProfile,
+                        onAddNew: () => { ensureSchoolsLoaded(); setEditingExisting(false); setScreen('profileSetup'); },
+                        onDelete: handleDeleteProfile,
+                        onCancel: activeProfile ? () => setScreen('welcome') : null
+                    }) : null,
+
+                    screen === 'welcome' && activeProfile ? e(WelcomeScreen, {
+                        profile: activeProfile,
+                        onEditProfile: handleEditProfile,
+                        onLogout: handleLogout
+                    }) : null,
+
+                    e(PopiaFooter)
+                )
+            );
+        }
+
+        ReactDOM.createRoot(document.getElementById('root')).render(e(App));
+    </script>
+</body>
+
+</html>
