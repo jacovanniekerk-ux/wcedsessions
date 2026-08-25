@@ -39,16 +39,16 @@
 <body class="bg-gray-50 min-h-screen">
     <div id="root"></div>
 
+    <script src="shared.js"></script>
     <script>
-        const { useState, useEffect, useMemo, useRef } = React;
-        const e = React.createElement;
-
-        // ============================================================
-        // SUPABASE CONFIG — same project as the My PD app
-        // ============================================================
-        const SUPABASE_URL = 'https://cftpufjzwpmhgzdcgpjb.supabase.co';
-        const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_b1H_5DJYLQSrr83T_dvz6A_2UAqOVg4';
-        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+        // React hooks/e, Supabase client, SESSIONS_TABLE_NAME/COLUMNS,
+        // getQueryParam, getSASTNowParts, normalizeIdForDedup,
+        // makeSubmissionId, profile localStorage helpers (loadProfiles/
+        // saveProfiles/getActiveProfileId/setActiveProfileId/
+        // clearActiveProfileId/PROFILES_KEY/ACTIVE_PROFILE_KEY), and
+        // fullNameOf now live in shared.js (loaded above), so both this
+        // file and pre-register.html use one copy. Everything below
+        // that's specific to the attendance-capture flow stays here.
 
         // ------------------------------------------------------------
         // GOOGLE SHEETS WRITE TARGET
@@ -62,44 +62,35 @@
         // split (see SHEET_TARGET_* below) is handled entirely on
         // the Apps Script side by branching on the `sheetTarget`
         // field in the posted payload — this client just tells it
-        // which bucket the record belongs in. Example doGet/doPost
-        // routing on the Apps Script side:
-        //
-        //   function doPost(e) {
-        //     const payload = JSON.parse(e.postData.contents);
-        //     const ss = SpreadsheetApp.getActiveSpreadsheet();
-        //     const sheetName = payload.sheetTarget === 'group_a'
-        //       ? 'Hybrid_Selfpaced_Event'
-        //       : 'Virtual_F2F';
-        //     const sheet = ss.getSheetByName(sheetName);
-        //     sheet.appendRow([ payload.timestamp, payload.sessionKey, ... ]);
-        //     return ContentService.createTextOutput('OK');
-        //   }
-        //
-        // (Rename the two sheet names above to whatever the actual
-        // tabs/sheets are called on your side.)
+        // which bucket the record belongs in.
         //
         // NOTE: buildAttendancePayload() writes the following columns,
         // in this order — keep the sheet's header row (and the Apps
-        // Script's appendRow column order) in sync with this list:
-        //   timestamp, sessionKey, sessionTitle, sessionDeliveryMode,
-        //   sessionDate, surname, firstName, email, race, gender,
-        //   disability, district, school, officeType, designation,
-        //   sector, sace, persal, idNumber, accommodation,
-        //   dietaryRequirement, hostingUnit, facilitator,
+        // Script's HEADER_TO_KEY mapping) in sync with this list:
+        //   submissionId, timestamp, sessionKey, sessionTitle,
+        //   sessionDeliveryMode, sessionDate, surname, firstName,
+        //   email, race, gender, disability, district, school,
+        //   officeType, designation, sector, sace, persal, idNumber,
+        //   accommodation, dietaryRequirement, hostingUnit, facilitator,
         //   developmentalLevel, circuit, quintile, schoolType,
         //   sheetTarget
         // accommodation/dietaryRequirement are only populated when the
         // session's delivery mode is 'Event' (see EVENT_DELIVERY_MODE).
+        //
+        // submissionId is deterministic — computed from (PERSAL or ID
+        // Number) + Session ID Key, the SAME every time for a given
+        // person + session regardless of device or page reload — see
+        // makeSubmissionId() in shared.js. The Apps Script side uses it
+        // to skip writing a duplicate row if the same person/session
+        // combination is submitted more than once, from any device.
         // ------------------------------------------------------------
-        const SHEET_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzYMuNE4VbkieLyY_7OpCWG5Eyz3LcK9Xh-dH3VQxp7G-cIOgi_ge_Rc3_Pji8xO3cKLQ/exec';
+        const SHEET_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwqbzxi2uKBIBfrJR2ewebxnsDOi6PJAVb1liIyBaa5GKmB6zxN1blQBkJdBVB6CzQkug/exec';
 
         // ------------------------------------------------------------
         // TWO-SHEET ROUTING
         // Delivery modes fall into one of two buckets. sheetTarget is
         // computed here and passed along in the payload so the Apps
-        // Script can route the row to the right sheet — see the
-        // routing example in the comment block above.
+        // Script can route the row to the right sheet.
         // ------------------------------------------------------------
         const SHEET_TARGET_GROUP_A_MODES = ['Hybrid', 'Self-paced', 'Event'];
         const SHEET_TARGET_GROUP_B_MODES = ['Virtual', 'Face-to-Face', 'Virtual (non-provincial)', 'Transformation Agent (F2F)'];
@@ -115,8 +106,17 @@
         // profile field, plus the Session ID Key, a capture timestamp,
         // and (when applicable) the 'Event' mode extra fields.
         // Column order on the sheet side should match this key order.
+        //
+        // submissionId: deterministic per (person, session) — see
+        // makeSubmissionId() below. The SAME person registering for the
+        // SAME session always produces the SAME id, regardless of
+        // device, browser, or page reload, so the Apps Script side can
+        // detect "this person already registered for this session" and
+        // skip writing a duplicate row — see isDuplicateSubmission() in
+        // the Apps Script.
         function buildAttendancePayload(profile, sessionKey, sessionRecord, eventFields = {}, schoolRecord = null) {
             return {
+                submissionId: makeSubmissionId(profile, sessionKey),
                 timestamp: formatSASTTimestamp(),
                 sessionKey: sessionKey.trim(),
                 sessionTitle: sessionRecord ? sessionRecord.session_title : '',
@@ -141,7 +141,7 @@
                 // --- sessions table extras ---
                 hostingUnit: sessionRecord ? (sessionRecord.hosting_unit || '') : '',
                 facilitator: sessionRecord ? (sessionRecord.facilitator || '') : '',
-                // --- courses table (matched on session_title === course_title) ---
+                // --- courses table (matched on session_title === course_name) ---
                 developmentalLevel: sessionRecord ? (sessionRecord.developmental_level || '') : '',
                 // --- schools table (matched on School_Name === profile.school) ---
                 circuit: schoolRecord ? (schoolRecord.circuit || '') : '',
@@ -152,6 +152,24 @@
             };
         }
 
+        // Wraps fetch() with a per-attempt timeout, since a hung/slow
+        // mobile connection can otherwise leave the person staring at
+        // "Saving…" indefinitely before eventually erroring out anyway.
+        async function fetchWithTimeout(url, options, timeoutMs) {
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), timeoutMs);
+            try {
+                return await fetch(url, { ...options, signal: controller.signal });
+            } finally {
+                clearTimeout(timer);
+            }
+        }
+
+        const SUBMIT_RETRY_ATTEMPTS = 3;
+        const SUBMIT_RETRY_TIMEOUT_MS = 12000;
+        const SUBMIT_RETRY_DELAY_MS = 1500;
+        function wait(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
+
         // POSTs one attendance record to the Apps Script Web App, which
         // will append it as a row on the Google Sheet.
         //
@@ -160,35 +178,56 @@
         // 'real' application/json request gets blocked by the browser
         // before it's even sent. Sending text/plain avoids the preflight;
         // the Apps Script side just needs to JSON.parse(e.postData.contents).
+        //
+        // RELIABILITY NOTE: Apps Script keeps executing (and writes the
+        // row) even if the client's connection drops before the response
+        // arrives — so a "failed" fetch here does NOT necessarily mean
+        // the row wasn't written. This retries automatically on network
+        // failure/timeout (a transient blip often just works on retry).
+        // Every attempt carries the SAME deterministic submissionId (see
+        // makeSubmissionId), so the Apps Script side can silently no-op
+        // any resubmission — whether it's an automatic retry here, a
+        // manual resubmit on the same device, or a fresh attempt from a
+        // completely different device — that turns out to have already
+        // succeeded, instead of writing a second row.
         async function submitAttendanceRecord(profile, sessionKey, sessionRecord, eventFields, schoolRecord) {
             const payload = buildAttendancePayload(profile, sessionKey, sessionRecord, eventFields, schoolRecord);
-            const response = await fetch(SHEET_WEB_APP_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                body: JSON.stringify(payload)
-            });
-            if (!response.ok) {
-                throw new Error(`Sheet write failed with status ${response.status}`);
+            let lastError = null;
+            for (let attempt = 1; attempt <= SUBMIT_RETRY_ATTEMPTS; attempt++) {
+                try {
+                    const response = await fetchWithTimeout(SHEET_WEB_APP_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                        body: JSON.stringify(payload)
+                    }, SUBMIT_RETRY_TIMEOUT_MS);
+                    if (!response.ok) {
+                        throw new Error(`Sheet write failed with status ${response.status}`);
+                    }
+                    return payload;
+                } catch (err) {
+                    lastError = err;
+                    if (attempt < SUBMIT_RETRY_ATTEMPTS) {
+                        await wait(SUBMIT_RETRY_DELAY_MS);
+                    }
+                }
             }
-            return payload;
+            throw lastError;
         }
 
         // ============================================================
         // SESSION ID KEY — Supabase 'sessions' table lookup + guard rails
+        // (SESSIONS_TABLE_NAME/SESSIONS_COLUMNS now in shared.js)
         // ============================================================
-        const SESSIONS_TABLE_NAME = 'sessions';
-        const SESSIONS_COLUMNS = 'id_key, session_title, hosting_unit, hosting_coordinator, session_date, session_start_time, facilitator, session_delivery_mode';
 
         // ------------------------------------------------------------
-        // COURSES TABLE — matched on course_title === session_title,
+        // COURSES TABLE — matched on course_name === session_title,
         // to pull in developmental_level for the sheet payload.
-        // ADJUST these to match your actual Supabase courses table.
         // ------------------------------------------------------------
         const COURSES_TABLE_NAME = 'courses';
-        const COURSE_TITLE_COLUMN = 'course_title';
+        const COURSE_TITLE_COLUMN = 'course_name';
         const DEVELOPMENTAL_LEVEL_COLUMN = 'developmental_level';
 
-        // Looks up developmental_level for the course whose course_title
+        // Looks up developmental_level for the course whose course_name
         // matches the given session_title. Returns '' (not throws) on
         // no match or error, since this is supplementary data — a
         // missing course match shouldn't block registration.
@@ -223,23 +262,6 @@
             return TIME_SENSITIVE_DELIVERY_MODES.some(m => m.toLowerCase() === normalized);
         }
 
-        // South Africa is UTC+2 year-round (no DST), so the offset is
-        // always fixed. Rather than fight the browser's local timezone,
-        // we shift the current UTC epoch by +2h and then read it back
-        // out with the UTC getters — that gives us SAST wall-clock
-        // values regardless of where the device itself is set to.
-        function getSASTNowParts() {
-            const sastMs = Date.now() + 2 * 60 * 60 * 1000;
-            const d = new Date(sastMs);
-            const dateString = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
-            return { dateString, epochMsShiftedToSAST: sastMs };
-        }
-        // Reads a query-string parameter from the current URL, e.g.
-        // in-session.html?idkey=1234 -> getQueryParam('idkey') === '1234'
-        function getQueryParam(name) {
-            return new URLSearchParams(window.location.search).get(name) || '';
-        }
-        
         // Formats "now" as 'DD/MM/YYYY HH:MM:SS' in SAST, matching the
         // default timestamp format the sheet already uses elsewhere
         // (e.g. from Google Forms responses) — e.g. '14/08/2026 14:06:48'.
@@ -494,43 +516,12 @@
 
         // ============================================================
         // LOCAL "DEVICE PROFILE" STORAGE
-        // Not authentication — just remembers who last used this
-        // device so they don't have to retype their details every
-        // session. Supports more than one saved profile per device.
+        // PROFILES_KEY/ACTIVE_PROFILE_KEY and loadProfiles/saveProfiles/
+        // getActiveProfileId/setActiveProfileId/clearActiveProfileId/
+        // fullNameOf now live in shared.js. WELCOME_SEEN_KEY stays here
+        // since the first-visit welcome modal is specific to this file.
         // ============================================================
-        const PROFILES_KEY = 'iat_profiles';
-        const ACTIVE_PROFILE_KEY = 'iat_active_profile_id';
         const WELCOME_SEEN_KEY = 'iat_welcome_seen';
-
-        function loadProfiles() {
-            try {
-                const raw = localStorage.getItem(PROFILES_KEY);
-                return raw ? JSON.parse(raw) : [];
-            } catch (err) {
-                console.error('Could not read saved profiles', err);
-                return [];
-            }
-        }
-
-        function saveProfiles(profiles) {
-            try {
-                localStorage.setItem(PROFILES_KEY, JSON.stringify(profiles));
-            } catch (err) {
-                console.error('Could not save profiles', err);
-            }
-        }
-
-        function getActiveProfileId() {
-            return localStorage.getItem(ACTIVE_PROFILE_KEY);
-        }
-
-        function setActiveProfileId(id) {
-            localStorage.setItem(ACTIVE_PROFILE_KEY, id);
-        }
-
-        function clearActiveProfileId() {
-            localStorage.removeItem(ACTIVE_PROFILE_KEY);
-        }
 
         // ============================================================
         // Profile field helpers
@@ -616,9 +607,7 @@
             };
         }
 
-        function fullNameOf(p) {
-            return `${p.firstName || ''} ${p.surname || ''}`.trim();
-        }
+        // fullNameOf(p) now lives in shared.js
 
         // ============================================================
         // Small reusable bits
@@ -1147,6 +1136,7 @@
                 submitted
                     ? e('div', { className: 'text-center bg-green-50 border-2 border-green-200 rounded-xl p-5' },
                         e('p', { className: 'text-base font-semibold text-green-800' }, showPresence ? 'Attendance captured.' : 'Registration captured.'),
+                        sessionRecord?.session_title ? e('p', { className: 'text-sm text-green-700 mt-1' }, sessionRecord.session_title) : null,
                         e('button', {
                             onClick: () => {
                                 setSubmitted(false); setSessionKey(''); setSessionConfirmed(false);
@@ -1225,6 +1215,7 @@
             if (submitted) {
                 return e('div', { className: 'text-center bg-green-50 border-2 border-green-200 rounded-xl p-5' },
                     e('p', { className: 'text-base font-semibold text-green-800' }, showPresence ? 'Attendance captured.' : 'Registration captured.'),
+                    sessionRecord?.session_title ? e('p', { className: 'text-sm text-green-700 mt-1' }, sessionRecord.session_title) : null,
                     e('button', { onClick: onBack, className: 'text-sm font-semibold text-wcg-brightblue hover:underline mt-3' }, 'Done')
                 );
             }

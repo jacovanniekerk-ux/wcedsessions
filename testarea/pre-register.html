@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pre-Registration - WCED eLearning Professional Development</title>
+    <link rel="icon" type="image/png" href="favicon.png">
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'wcg-green': '#8FAD15',
+                        'wcg-yellow': '#FFC600',
+                        'wcg-red': '#BA0C2F',
+                        'wcg-blue': '#001489',
+                        'wcg-brightblue': '#007DBA',
+                        'wcg-purple': '#890C58',
+                        'wcg-pink': '#C8126E',
+                        'wcg-dark': '#1a1a1a',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade-in-up { animation: fadeInUp 0.25s ease-out; }
+        .wcg-top-accent { background: linear-gradient(90deg, #001489 0%, #8FAD15 100%); }
+    </style>
+</head>
+
+<body class="bg-gray-50 min-h-screen">
+    <div id="root"></div>
+
+    <script src="shared.js"></script>
+    <script>
+        // React hooks/e, Supabase client, SESSIONS_TABLE_NAME/COLUMNS,
+        // getQueryParam, getSASTNowParts, makeSubmissionId, and the
+        // device-profile localStorage helpers (loadProfiles,
+        // getActiveProfile, fullNameOf, etc.) all come from shared.js —
+        // see that file for the shared setup, and register.html for the
+        // attendance-capture flow this tool's profile data comes from.
+
+        // ============================================================
+        // PRE-REGISTRATIONS — Supabase table + read-only view
+        // ============================================================
+        // Base table (insert-only from this client): submission_id is
+        // the PRIMARY KEY (see makeSubmissionId in shared.js), so a
+        // duplicate (person, session) pre-registration is rejected by
+        // Postgres itself — no app-side dedup logic needed. This client
+        // uses .upsert(..., { ignoreDuplicates: true }) rather than a
+        // plain .insert(), so a conflicting row is silently skipped
+        // instead of failing the whole batch — which also means a
+        // retry after a network error can never create a duplicate.
+        //
+        // Table (run once in the Supabase SQL editor):
+        //   create table pre_registrations (
+        //     submission_id  text primary key,
+        //     session_id_key text not null,
+        //     full_name      text not null,
+        //     email          text not null,
+        //     persal         text,
+        //     id_number      text,
+        //     school         text
+        //   );
+        //
+        // Read-only view (used only for the "already registered" check
+        // below): exposes just submission_id + session_id_key, NOT the
+        // name/email/persal/id_number/school columns. This is
+        // deliberate — the anon/publishable key this page uses is
+        // public, so granting SELECT on the full table would let
+        // anyone with that key read every registrant's personal
+        // details directly via the Supabase REST API, not just through
+        // this UI. The view keeps that surface to the bare minimum
+        // needed for the "is this session already ticked" check.
+        //   create view pre_registrations_public as
+        //     select submission_id, session_id_key from pre_registrations;
+        //
+        // RLS (also run once):
+        //   alter table pre_registrations enable row level security;
+        //   create policy "Allow anon insert" on pre_registrations
+        //     for insert to anon with check (true);
+        //   -- no anon SELECT policy on the base table — the view
+        //   -- above is what this page reads from instead.
+        //   grant select on pre_registrations_public to anon;
+        // ============================================================
+        const PRE_REGISTRATIONS_TABLE_NAME = 'pre_registrations';
+        const PRE_REGISTRATIONS_VIEW_NAME = 'pre_registrations_public';
+
+        // Only this delivery mode can be pre-registered for. Sessions
+        // with a fixed in-person/hybrid/self-paced format are handled
+        // entirely through register.html's own Session ID Key flow.
+        const PRE_REG_DELIVERY_MODE = 'Virtual';
+
+        const POPIA_URL = 'https://qrgo.page.link/svhMU';
+
+        // Fetches upcoming Virtual sessions (session_date strictly
+        // after today, SAST), soonest first.
+        async function fetchUpcomingSessions() {
+            const { dateString: todaySAST } = getSASTNowParts();
+            const { data, error } = await supabaseClient
+                .from(SESSIONS_TABLE_NAME)
+                .select(SESSIONS_COLUMNS)
+                .eq('session_delivery_mode', PRE_REG_DELIVERY_MODE)
+                .gt('session_date', todaySAST)
+                .order('session_date', { ascending: true })
+                .order('session_start_time', { ascending: true });
+            if (error) throw error;
+            return data || [];
+        }
+
+        // Given the active profile and the fetched session list, finds
+        // which of those sessions this profile is already registered
+        // for — by computing the same deterministic submission_id used
+        // at write time for every session, then asking Postgres which
+        // of those IDs already exist. Returns a Set of session_id_key.
+        async function fetchAlreadyRegistered(profile, sessions) {
+            if (!sessions.length) return new Set();
+            const idsToCheck = sessions.map(s => makeSubmissionId(profile, s.id_key));
+            const { data, error } = await supabaseClient
+                .from(PRE_REGISTRATIONS_VIEW_NAME)
+                .select('session_id_key')
+                .in('submission_id', idsToCheck);
+            if (error) throw error;
+            return new Set((data || []).map(row => row.session_id_key));
+        }
+
+        // Writes one pre-registration row per selected session. Uses
+        // upsert+ignoreDuplicates (see the big comment above) so this
+        // is always safe to call again — a session already registered
+        // (by this profile, from any device) is silently skipped
+        // rather than causing an error.
+        async function submitPreRegistrations(profile, selectedSessions) {
+            const rows = selectedSessions.map(session => ({
+                submission_id: makeSubmissionId(profile, session.id_key),
+                session_id_key: session.id_key,
+                full_name: fullNameOf(profile),
+                email: profile.email,
+                persal: profile.persal || null,
+                id_number: profile.idNumber || null,
+                school: profile.school,
+            }));
+            const { error } = await supabaseClient
+                .from(PRE_REGISTRATIONS_TABLE_NAME)
+                .upsert(rows, { onConflict: 'submission_id', ignoreDuplicates: true });
+            if (error) throw error;
+        }
+
+        // Formats a 'YYYY-MM-DD' date string as e.g. '14 Aug 2026'.
+        // Done manually (not via Date + toLocaleDateString) to avoid
+        // any timezone-shift surprises around midnight.
+        const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        function formatDisplayDate(dateStr) {
+            const [y, m, d] = (dateStr || '').split('-').map(Number);
+            if (!y || !m || !d) return dateStr || '';
+            return `${d} ${MONTH_NAMES[m - 1]} ${y}`;
+        }
+
+        function formatDisplayTime(t) {
+            return (t || '').slice(0, 5);
+        }
+
+        function TopAccent() {
+            return e('div', { className: 'h-1 rounded-full bg-wcg-blue mb-5 -mt-1' });
+        }
+
+        function PopiaFooter() {
+            return e('div', { className: 'max-w-xl w-full mx-auto mt-6 px-2 text-center' },
+                e('p', { className: 'text-xs leading-relaxed text-gray-400' },
+                    'POPIA Disclaimer: Training provided by WCED eLearning Directorate collects and processes personal and special information as stipulated in the Protection of Personal Information Notice available ',
+                    e('a', { href: POPIA_URL, target: '_blank', rel: 'noopener noreferrer', className: 'underline hover:text-gray-600' }, 'here'),
+                    '.'
+                )
+            );
+        }
+
+        // One row in the session list. Already-registered sessions are
+        // shown checked, faded, and non-interactive — they can't be
+        // toggled off from here (this tool only adds registrations).
+        function SessionRow({ session, isRegistered, isSelected, onToggle }) {
+            const checked = isRegistered || isSelected;
+            return e('label', {
+                className: `flex items-start gap-3 border-2 rounded-xl px-4 py-3.5 mb-2.5 transition-colors ${isRegistered ? 'border-gray-100 bg-gray-50 opacity-60' : 'border-gray-200 hover:border-wcg-brightblue cursor-pointer'}`
+            },
+                e('input', {
+                    type: 'checkbox',
+                    checked,
+                    disabled: isRegistered,
+                    onChange: () => onToggle(session.id_key),
+                    className: 'mt-1 h-5 w-5 accent-wcg-brightblue flex-shrink-0'
+                }),
+                e('div', { className: 'flex-1' },
+                    e('div', { className: 'font-semibold text-base text-wcg-dark' }, session.session_title || 'Untitled session'),
+                    e('div', { className: 'text-sm text-gray-500 mt-0.5' },
+                        `${formatDisplayDate(session.session_date)}${session.session_start_time ? ' · ' + formatDisplayTime(session.session_start_time) : ''}`
+                    ),
+                    session.facilitator ? e('div', { className: 'text-sm text-gray-400 mt-0.5' }, `Facilitator: ${session.facilitator}`) : null,
+                    isRegistered ? e('div', { className: 'text-sm text-green-700 font-semibold mt-1' }, '\u2713 Already registered') : null
+                )
+            );
+        }
+
+        function NoProfileState() {
+            return e('div', { className: 'bg-white rounded-2xl shadow-lg p-7 sm:p-9 max-w-xl w-full text-center animate-fade-in-up' },
+                e(TopAccent),
+                e('h2', { className: 'text-2xl font-bold text-wcg-dark mb-2' }, 'Set up your profile first'),
+                e('p', { className: 'text-base text-gray-500' },
+                    "We couldn't find a saved profile on this device. Please set one up in the ",
+                    e('a', { href: 'register.html', className: 'font-semibold text-wcg-brightblue hover:underline' }, 'Registration tool'),
+                    ' first — pre-registration reuses those same details.'
+                )
+            );
+        }
+
+        function PreRegisterApp() {
+            const [profile] = useState(() => getActiveProfile());
+            const [sessions, setSessions] = useState([]);
+            const [loading, setLoading] = useState(true);
+            const [loadError, setLoadError] = useState(null);
+            const [registeredKeys, setRegisteredKeys] = useState(new Set());
+            const [selectedKeys, setSelectedKeys] = useState(new Set());
+            const [submitting, setSubmitting] = useState(false);
+            const [submitError, setSubmitError] = useState(null);
+            const [justRegisteredCount, setJustRegisteredCount] = useState(0);
+            const appliedIdKeyParam = useRef(false);
+
+            const loadData = async () => {
+                if (!profile) { setLoading(false); return; }
+                setLoading(true);
+                setLoadError(null);
+                try {
+                    const upcoming = await fetchUpcomingSessions();
+                    const already = await fetchAlreadyRegistered(profile, upcoming);
+                    setSessions(upcoming);
+                    setRegisteredKeys(already);
+
+                    // ?idkey=1234 in the URL pre-selects that session,
+                    // matching the same auto-complete-link pattern
+                    // register.html supports for its Session ID Key
+                    // field. Only applied once per page load.
+                    if (!appliedIdKeyParam.current) {
+                        appliedIdKeyParam.current = true;
+                        const idKeyParam = getQueryParam('idkey').trim();
+                        if (idKeyParam) {
+                            const match = upcoming.find(s => s.id_key === idKeyParam);
+                            if (match && !already.has(match.id_key)) {
+                                setSelectedKeys(new Set([match.id_key]));
+                            }
+                        }
+                    }
+                } catch (err) {
+                    console.error('Error loading upcoming sessions:', err);
+                    setLoadError('Could not load upcoming sessions. Please check your connection and try again.');
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            useEffect(() => { loadData(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+            const toggleSession = (idKey) => {
+                setSelectedKeys(prev => {
+                    const next = new Set(prev);
+                    if (next.has(idKey)) next.delete(idKey); else next.add(idKey);
+                    return next;
+                });
+            };
+
+            const selectableSelectedCount = Array.from(selectedKeys).filter(k => !registeredKeys.has(k)).length;
+
+            const handleRegisterClick = async () => {
+                const toSubmit = sessions.filter(s => selectedKeys.has(s.id_key) && !registeredKeys.has(s.id_key));
+                if (toSubmit.length === 0) return;
+                setSubmitting(true);
+                setSubmitError(null);
+                try {
+                    await submitPreRegistrations(profile, toSubmit);
+                    setRegisteredKeys(prev => {
+                        const next = new Set(prev);
+                        toSubmit.forEach(s => next.add(s.id_key));
+                        return next;
+                    });
+                    setSelectedKeys(new Set());
+                    setJustRegisteredCount(toSubmit.length);
+                } catch (err) {
+                    console.error('Error writing pre-registration:', err);
+                    setSubmitError('Could not save your pre-registration. Please check your connection and try again — it\u2019s safe to retry.');
+                } finally {
+                    setSubmitting(false);
+                }
+            };
+
+            if (!profile) return e(NoProfileState);
+
+            return e('div', { className: 'bg-white rounded-2xl shadow-lg p-7 sm:p-9 max-w-xl w-full animate-fade-in-up' },
+                e(TopAccent),
+                e('h2', { className: 'text-2xl font-bold text-wcg-dark mb-1' }, 'Pre-Register for Sessions'),
+                e('p', { className: 'text-base text-gray-500 mb-1' }, `Registering as: ${fullNameOf(profile)}`),
+                e('p', { className: 'text-sm text-gray-400 mb-6' }, `${profile.email} · ${profile.school}`),
+
+                loading ? e('p', { className: 'text-base text-gray-400 py-6 text-center' }, 'Loading upcoming sessions\u2026') : null,
+
+                loadError ? e('div', { className: 'text-center py-4' },
+                    e('p', { className: 'text-sm text-wcg-red font-medium mb-3' }, loadError),
+                    e('button', {
+                        onClick: loadData,
+                        className: 'px-4 py-2 rounded-xl font-semibold text-sm border-2 border-gray-300 text-gray-600 hover:border-gray-400'
+                    }, 'Try again')
+                ) : null,
+
+                !loading && !loadError && sessions.length === 0 ? e('p', { className: 'text-base text-gray-400 py-6 text-center' },
+                    'No upcoming virtual sessions are open for pre-registration right now.'
+                ) : null,
+
+                !loading && !loadError && sessions.length > 0 ? e('div', { className: 'mb-5' },
+                    sessions.map(session => e(SessionRow, {
+                        key: session.id_key,
+                        session,
+                        isRegistered: registeredKeys.has(session.id_key),
+                        isSelected: selectedKeys.has(session.id_key),
+                        onToggle: toggleSession
+                    }))
+                ) : null,
+
+                justRegisteredCount > 0 ? e('p', { className: 'text-sm text-green-700 font-semibold mb-3' },
+                    `\u2713 Registered for ${justRegisteredCount} session${justRegisteredCount === 1 ? '' : 's'}.`
+                ) : null,
+
+                submitError ? e('p', { className: 'text-sm text-wcg-red font-medium mb-4' }, submitError) : null,
+
+                !loading && !loadError && sessions.length > 0 ? e('button', {
+                    disabled: selectableSelectedCount === 0 || submitting,
+                    onClick: handleRegisterClick,
+                    className: `w-full px-4 py-3.5 rounded-xl font-bold text-base text-white transition-colors shadow ${selectableSelectedCount > 0 && !submitting ? 'bg-wcg-green hover:brightness-95' : 'bg-gray-300 cursor-not-allowed'}`
+                }, submitting ? 'Registering…' : `Register for Selected${selectableSelectedCount > 0 ? ' (' + selectableSelectedCount + ')' : ''}`) : null
+            );
+        }
+
+        function App() {
+            return e('div', { className: 'min-h-screen flex flex-col' },
+                e('header', { className: 'bg-white shadow-sm' },
+                    e('div', { className: 'max-w-5xl mx-auto px-4 sm:px-6 py-4 flex items-center gap-3' },
+                        e('img', { src: 'header.png', alt: 'WCED Header', className: 'h-10 sm:h-12', onError: (ev) => { ev.target.style.display = 'none'; } })
+                    ),
+                    e('div', { className: 'h-1.5 wcg-top-accent' })
+                ),
+                e('div', { className: 'flex-1 flex flex-col items-center justify-center px-4 py-10' },
+                    e(PreRegisterApp),
+                    e(PopiaFooter)
+                )
+            );
+        }
+
+        ReactDOM.createRoot(document.getElementById('root')).render(e(App));
+    </script>
+</body>
+
+</html>
