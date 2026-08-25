@@ -76,7 +76,7 @@ function normalizeIdForDedup(value) {
 // not by resubmitting.
 function makeSubmissionId(profile, sessionKey) {
     const personId = normalizeIdForDedup(profile.persal) || normalizeIdForDedup(profile.idNumber);
-    return `${personId}-${(sessionKey || '').trim()}`;
+    return `${personId}-${String(sessionKey || '').trim()}`;
 }
 
 // ============================================================
