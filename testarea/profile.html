@@ -9,6 +9,7 @@
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="preregister.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -191,15 +192,6 @@
             return isNaN(ts) ? null : ts;
         };
 
-        const encodeForFormEntry = (str) => encodeURI(str).replace(/%20/g, '+');
-
-        const buildRegisterLink = ({ startParts, district, name, id }) => {
-            const dateTimeStr = `${WEEKDAY_NAMES[startParts.weekdayIdx]}, ${MONTH_NAMES[startParts.month - 1]} ${startParts.day} @ ${pad2(startParts.hours)}:${pad2(startParts.minutes)}`;
-            const raw = `${dateTimeStr} - (${(district || '').toUpperCase()}) - ${name} [${id}]`;
-            const encoded = encodeForFormEntry(raw);
-            return `https://docs.google.com/forms/d/e/1FAIpQLScMwanHrYwf9_kOML0icuKE9VfoFXD703of7ETLR5z6ysZoxA/viewform?usp=pp_url&entry.1422040156=${encoded}`;
-        };
-
         const buildGoogleCalendarLink = ({ startParts, endParts, name, description, joinLink }) => {
             const fmt = (p) => `${p.year}${pad2(p.month)}${pad2(p.day)}T${pad2(p.hours)}${pad2(p.minutes)}${pad2(p.seconds)}`;
             const text = `\u{1F4BB} eTPD Webinar: ${name}`;
@@ -241,9 +233,6 @@
                     const district = s.hosting_unit || 'Unspecified';
                     const name = s.session_title || 'Untitled Session';
 
-                    const registerLink = startParts
-                        ? buildRegisterLink({ startParts, district, name, id: s.id_key })
-                        : '';
                     const googleCal = (startParts && endParts)
                         ? buildGoogleCalendarLink({ startParts, endParts, name, description: course.session_desciption, joinLink: s.session_link })
                         : '#';
@@ -259,10 +248,8 @@
                         name,
                         level: course.developmental_level || '',
                         description: course.session_desciption || '',
-                        registerLink,
                         googleCal,
                         outlookCal,
-                        link: registerLink, // SessionDetailModal's "Register Now" button
                         joinLink: s.session_link || '',
                         startTimestamp: startEpoch,
                         endTimestamp: endEpoch
@@ -315,11 +302,9 @@
                 ],
                 availability: {
                     type: 'registration',
-                    registerUrl: 'http://bit.ly/4sgSf9g?r=lp&m=Mma39rNpG6w',
                     waitlistUrl: 'https://docs.google.com/forms/d/e/1FAIpQLSeT-sQEVUDnNQ652jxOLogI6DzXV6ZDv9wCPZSa8VXKjNOKFQ/viewform?usp=pp_url&entry.1581432046=ICT+Adoption+Strategy',
-                    expiryDate: '2026-03-22',
                     activeMessage: 'Registrations are currently open!',
-                    expiredMessage: 'Registrations for the current cohort have closed. Keep an eye on eTPD communications for the next intake, or join the waitlist below.'
+                    expiredMessage: 'There is no upcoming session scheduled right now. Keep an eye on eTPD communications for the next intake, or join the waitlist below.'
                 },
                 next: 'Begin your transformation journey by exploring the digital landscape and understanding how technology can enhance teaching and learning.'
             },
@@ -385,11 +370,9 @@
                 ],
                 availability: {
                     type: 'registration',
-                    registerUrl: 'YOUR_REGISTER_LINK_HERE',
                     waitlistUrl: 'https://docs.google.com/forms/d/e/1FAIpQLSeT-sQEVUDnNQ652jxOLogI6DzXV6ZDv9wCPZSa8VXKjNOKFQ/viewform?usp=pp_url&entry.1581432046=Cyber+Ambassador',
-                    expiryDate: '2026-07-01',
                     activeMessage: 'Registrations are currently open!',
-                    expiredMessage: 'Registrations have closed. Please join the waitlist to be notified of the next intake.'
+                    expiredMessage: 'There is no upcoming session scheduled right now. Please join the waitlist to be notified of the next intake.'
                 },
                 next: 'Become a champion for ethical, human-centered technology integration and support your school community in building a positive digital culture.'
             }
@@ -416,18 +399,22 @@
 
         // Returns the appropriate call-to-action (register or waitlist link)
         // for a milestone's availability info, used by Next Steps suggestions.
-        function getAvailabilityCTA(milestoneId) {
+        //
+        // For 'registration'-type milestones (Adoption Strategy, Cyber Effect
+        // Ambassador), "open" is now determined purely by whether a course
+        // session with a matching title and a future date exists in the
+        // sessions table (milestoneCourseSessions) — courses aren't managed
+        // through session pre-registration, so the CTA points straight at
+        // the register page for that session's id_key.
+        function getAvailabilityCTA(milestoneId, milestoneCourseSessions) {
             const milestone = MILESTONES.find(m => m.id === milestoneId);
             if (!milestone || !milestone.availability) return null;
             const avail = milestone.availability;
-            const now = new Date();
-            now.setHours(0, 0, 0, 0);
 
             if (avail.type === 'registration') {
-                const expiry = new Date(avail.expiryDate + 'T23:59:59');
-                const isOpen = now <= expiry;
-                return isOpen
-                    ? { label: 'Register Now', url: avail.registerUrl, style: 'primary' }
+                const upcoming = milestone.sparkSession ? (milestoneCourseSessions || {})[milestone.sparkSession] : null;
+                return upcoming
+                    ? { label: 'Register Now', url: `register.html?idkey=${encodeURIComponent(upcoming.id_key)}`, style: 'primary' }
                     : { label: 'Join Waitlist', url: avail.waitlistUrl, style: 'secondary' };
             }
             if (avail.type === 'waitlist_only') {
@@ -691,7 +678,7 @@
         }
 
         // === MILESTONE DETAIL MODAL ===
-        function MilestoneModal({ milestone, status, pathwayStatus, onClose }) {
+        function MilestoneModal({ milestone, status, pathwayStatus, milestoneCourseSessions, onClose }) {
             if (!milestone) return null;
 
             // Renders the registration / waitlist / info block for a milestone,
@@ -700,19 +687,15 @@
                 const avail = milestone.availability;
                 if (!avail) return null;
 
-                const now = new Date();
-                now.setHours(0, 0, 0, 0);
-
                 if (avail.type === 'registration') {
-                    const expiry = new Date(avail.expiryDate + 'T23:59:59');
-                    const isOpen = now <= expiry;
+                    const upcoming = milestone.sparkSession ? (milestoneCourseSessions || {})[milestone.sparkSession] : null;
                     return e('div', null,
-                        e('h4', { className: "font-semibold text-gray-900 mb-1" }, isOpen ? 'Registration Open' : 'Registration Closed'),
-                        e('p', { className: "text-sm text-gray-700" }, isOpen ? avail.activeMessage : avail.expiredMessage),
-                        isOpen ? e('div', { className: "mt-3" },
-                            e('p', { className: "text-xs text-gray-500 mb-2" }, `Closes: ${new Date(avail.expiryDate).toLocaleDateString('en-ZA', { day: 'numeric', month: 'long', year: 'numeric' })}`),
+                        e('h4', { className: "font-semibold text-gray-900 mb-1" }, upcoming ? 'Registration Open' : 'Registration Closed'),
+                        e('p', { className: "text-sm text-gray-700" }, upcoming ? avail.activeMessage : avail.expiredMessage),
+                        upcoming ? e('div', { className: "mt-3" },
+                            e('p', { className: "text-xs text-gray-500 mb-2" }, `Next session: ${formatDate(parseDate(upcoming.session_date))}`),
                             e('a', {
-                                href: avail.registerUrl, target: "_blank", rel: "noopener noreferrer",
+                                href: `register.html?idkey=${encodeURIComponent(upcoming.id_key)}`, target: "_blank", rel: "noopener noreferrer",
                                 className: "inline-flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-sm text-white bg-green-600 hover:bg-green-700 transition-colors shadow"
                             }, "Register Now")
                         ) : e('div', { className: "mt-3" },
@@ -857,11 +840,18 @@
                             e('span', { className: "text-xs font-bold text-gray-500 uppercase" }, "Description"),
                             e('p', { className: "text-gray-700 text-sm mt-1" }, session.description || 'No description available.')
                         ),
-                        session.link ? e('div', { className: "pt-4" },
-                            e('a', {
-                                href: session.link, target: "_blank", rel: "noopener noreferrer",
-                                className: "block w-full text-center bg-wcg-blue text-white font-bold py-3 px-4 rounded-xl hover:bg-blue-800 transition-colors shadow-lg"
-                            }, "Register Now")
+                        session.id ? e('div', { className: "pt-4" },
+                            e('button', {
+                                type: "button",
+                                onClick: () => window.PreRegisterWidget.trigger({ idKey: session.id, title: session.name }),
+                                className: "flex items-center justify-center gap-2 w-full text-center bg-wcg-blue text-white font-bold py-3 px-4 rounded-xl hover:bg-blue-800 transition-colors shadow-lg"
+                            },
+                                e('span', null, "Pre-Register"),
+                                e('svg', { xmlns: "http://www.w3.org/2000/svg", width: "16", height: "16", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round" },
+                                    e('line', { x1: "5", y1: "12", x2: "19", y2: "12" }),
+                                    e('polyline', { points: "12 5 19 12 12 19" })
+                                )
+                            )
                         ) : null
                     )
                 )
@@ -1404,12 +1394,20 @@
             const [results, setResults] = useState(null);
             const [transformerRecord, setTransformerRecord] = useState(null);
             const [upcomingData, setUpcomingData] = useState([]);
+            const [milestoneCourseSessions, setMilestoneCourseSessions] = useState({});
             const [activeTab, setActiveTab] = useState(null);
             const [selectedMilestone, setSelectedMilestone] = useState(null);
             const [selectedSession, setSelectedSession] = useState(null);
             const [modalOpen, setModalOpen] = useState({ isOpen: false, type: null });
             const [viewMode, setViewMode] = useState('cards');
             const [filters, setFilters] = useState({ level: '', district: '', mode: '', category: '' });
+
+            // Milestones whose availability is governed by an upcoming course
+            // session (Adoption Strategy, Cyber Effect Ambassador) rather than
+            // the regular session pre-registration flow.
+            const REGISTRATION_COURSE_NAMES = MILESTONES
+                .filter(m => m.availability && m.availability.type === 'registration' && m.sparkSession)
+                .map(m => m.sparkSession);
 
             // Load upcoming (Virtual) sessions from Supabase — used by the
             // Next Steps tab and the today/tomorrow announcement banner.
@@ -1419,16 +1417,30 @@
                         const testAnchor = new Date();
 testAnchor.setDate(testAnchor.getDate() - 2);
 const todayISO = toISODateString(testAnchor);
-                        const [sessionRes, courseRes] = await Promise.all([
+                        const [sessionRes, courseRes, milestoneCourseRes] = await Promise.all([
                             supabaseClient.from('sessions').select('*').eq('session_delivery_mode', 'Virtual').gte('session_date', todayISO).order('session_date', { ascending: true }),
-                            supabaseClient.from('courses').select('*')
+                            supabaseClient.from('courses').select('*'),
+                            REGISTRATION_COURSE_NAMES.length > 0
+                                ? supabaseClient.from('sessions').select('id_key, session_title, session_date').in('session_title', REGISTRATION_COURSE_NAMES).gte('session_date', todayISO).order('session_date', { ascending: true })
+                                : Promise.resolve({ data: [], error: null })
                         ]);
                         if (sessionRes.error) throw sessionRes.error;
                         if (courseRes.error) throw courseRes.error;
+                        if (milestoneCourseRes.error) throw milestoneCourseRes.error;
                         setUpcomingData(combineSessionsAndCourses(sessionRes.data, courseRes.data));
+
+                        // Keep only the soonest upcoming session per course title
+                        // (rows are already sorted ascending by session_date).
+                        const soonestByTitle = {};
+                        (milestoneCourseRes.data || []).forEach(row => {
+                            const title = row.session_title && row.session_title.trim();
+                            if (title && !soonestByTitle[title]) soonestByTitle[title] = row;
+                        });
+                        setMilestoneCourseSessions(soonestByTitle);
                     } catch (err) {
                         console.error('Error fetching upcoming sessions from Supabase:', err);
                         setUpcomingData([]);
+                        setMilestoneCourseSessions({});
                     }
                 })();
             }, []);
@@ -1573,7 +1585,7 @@ const todayISO = toISODateString(testAnchor);
                     items.push({
                         icon: '🧭', title: 'Start Your Journey: ICT Adoption Strategy',
                         description: 'This 12-week, self-paced online course is the starting line for any educator looking to reimagine their approach to technology. Whether you are validating what you already know, picking up new skills, or shifting your mindset, the course offers a broad perspective on the digital landscape and the vision of the Transformation Agenda.\n\nRegardless of your current tech skill level, this foundational step helps you confidently integrate ICT to transform your classroom. By completing the course, you will earn your first Spark—igniting your ongoing pathway as a Transformation Agent.',
-                        type: 'action', ctas: [getAvailabilityCTA('adoption')].filter(Boolean)
+                        type: 'action', ctas: [getAvailabilityCTA('adoption', milestoneCourseSessions)].filter(Boolean)
                     });
                 }
 
@@ -1641,7 +1653,7 @@ const todayISO = toISODateString(testAnchor);
                     items.push({
                         icon: '📖', title: 'Next: Digital Skills Course',
                         description: 'This four-week hybrid course helps educators shift from simply using technology to understanding how students learn with it. By adopting a learner-centred perspective, participants gain the digital wisdom needed to transform technical skills ("what" and "how") into thoughtful pedagogical decisions ("when" and "why").\n\nAs the next step in your learning pathway, this district-hosted course builds directly on your completed milestones. Because cohorts are offered by invitation only each term, join the waitlist today to signal your interest for the upcoming session.',
-                        type: 'invitation', ctas: [getAvailabilityCTA('digitalskills')].filter(Boolean)
+                        type: 'invitation', ctas: [getAvailabilityCTA('digitalskills', milestoneCourseSessions)].filter(Boolean)
                     });
                 }
 
@@ -1649,7 +1661,7 @@ const todayISO = toISODateString(testAnchor);
                     items.push({
                         icon: '🌐', title: 'Next: Cyber Effect Ambassador Course',
                         description: 'Deepen your impact by exploring the ethical, emotional, and behavioural dimensions of technology use. By mastering the 4P Affective Transformation Model—People, Practices, Pedagogy, and Platforms—you will gain the tools to embed cyber wellness, psychological safety, and human-centred design into your educational environment.\n\nAs the next step in your learning pathway, this course empowers you to champion a positive, reflective digital culture across your community.',
-                        type: 'invitation', ctas: [getAvailabilityCTA('cybereffect')].filter(Boolean)
+                        type: 'invitation', ctas: [getAvailabilityCTA('cybereffect', milestoneCourseSessions)].filter(Boolean)
                     });
                 }
 
@@ -1662,7 +1674,7 @@ const todayISO = toISODateString(testAnchor);
                 }
 
                 return items;
-            }, [pathwayStatus, upcomingData, results]);
+            }, [pathwayStatus, upcomingData, milestoneCourseSessions, results]);
 
             // === HISTORY TAB: filtering, grouping, metrics ===
             const filteredSessions = useMemo(() => {
@@ -1728,6 +1740,7 @@ const todayISO = toISODateString(testAnchor);
             }
 
             return e('div', { className: "min-h-screen bg-gray-50" },
+                e(window.PreRegisterWidget.Provider),
                 e('header', { className: "bg-white shadow-sm no-print" },
                     e('div', { className: "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center" },
                         e('img', { src: "header.png", alt: "WCED Header", className: "h-12 sm:h-16" }),
@@ -1748,7 +1761,7 @@ const todayISO = toISODateString(testAnchor);
                         e('div', { className: "max-w-2xl mx-auto animate-fade-in-up" },
                             e('div', { className: "bg-white rounded-2xl shadow-lg p-8" },
                                 e('div', { className: "text-center mb-8" },
-                                    e('h1', { className: "text-3xl font-bold text-wcg-dark mb-2" }, "My eLearning Proffesional Development"),
+                                    e('h1', { className: "text-3xl font-bold text-wcg-dark mb-2" }, "My eLearning Professional Development"),
                                     e('p', { className: "text-gray-600" }, "Track your progress on the Adoption & Transformation Pathway and view your full session history.")
                                 ),
                                 e('div', { className: "mb-6" },
@@ -1955,6 +1968,7 @@ const todayISO = toISODateString(testAnchor);
                                 milestone: MILESTONES[selectedMilestone],
                                 status: pathwayStatus.milestoneStatuses[selectedMilestone],
                                 pathwayStatus,
+                                milestoneCourseSessions,
                                 onClose: () => setSelectedMilestone(null)
                             }) : null,
 
