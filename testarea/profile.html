@@ -131,6 +131,26 @@
             return record;
         }
 
+        // Reads the on-device profile created by the Register page (read-only —
+        // this file never writes to these keys), used to prefill the login form
+        // with a PERSAL/ID number when there's no previous saved login.
+        const DEVICE_PROFILES_KEY = 'iat_profiles';
+        const DEVICE_ACTIVE_PROFILE_KEY = 'iat_active_profile_id';
+        function readDeviceProfile() {
+            try {
+                const raw = localStorage.getItem(DEVICE_PROFILES_KEY);
+                const profiles = raw ? JSON.parse(raw) : [];
+                if (!Array.isArray(profiles) || profiles.length === 0) return null;
+                const activeId = localStorage.getItem(DEVICE_ACTIVE_PROFILE_KEY);
+                const found = profiles.find(p => p.id === activeId) || profiles[0];
+                if (!found || (!found.persal && !found.idNumber)) return null;
+                return { persal: found.persal || '', idNumber: found.idNumber || '' };
+            } catch (err) {
+                console.error('Could not read on-device profile', err);
+                return null;
+            }
+        }
+
         // Queries Supabase for every record matching a given ID or PERSAL
         // number. Only matching rows are ever sent to the browser.
         async function fetchRecordsByKey(searchType, key) {
@@ -1465,7 +1485,9 @@ const todayISO = toISODateString(testAnchor);
                 };
             }, [results]);
 
-            // Auto-login from localStorage
+            // Auto-login from localStorage — falling back to prefilling the
+            // login form (not auto-submitting) from an on-device Register
+            // profile when there's no previous saved login to take precedence.
             useEffect(() => {
                 (async () => {
                     try {
@@ -1483,6 +1505,20 @@ const todayISO = toISODateString(testAnchor);
                                 setResults(buildResultsFromRecords(records));
                                 setTransformerRecord(transformer);
                                 setFilters({ level: '', district: '', mode: '', category: '' });
+                                return;
+                            }
+                        }
+                        // No previous (working) login — prefill from an on-device
+                        // profile if one exists. PERSAL takes precedence over ID
+                        // number, matching how attendance records are grouped.
+                        const device = readDeviceProfile();
+                        if (device) {
+                            if (device.persal) {
+                                setSearchType('persal');
+                                setSearchValue(device.persal);
+                            } else if (device.idNumber) {
+                                setSearchType('id');
+                                setSearchValue(device.idNumber);
                             }
                         }
                     } catch (err) {
