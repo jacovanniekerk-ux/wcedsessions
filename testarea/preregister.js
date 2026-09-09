@@ -39,11 +39,11 @@
  *  - If not accurate (or no device profile exists at all), shows
  *    a small 3-field form (Name, Email, District > School) to
  *    create a TEMPORARY profile, used for pre-registration only.
- *  - Either way, once a profile is loaded for this pre-
- *    registration session it's remembered for the rest of the
- *    browser tab (sessionStorage) — further Pre-Register clicks
- *    just fire off the Supabase write and show a confirmation
- *    toast, no re-asking.
+ *  - Either way, once a profile is loaded it's remembered in
+ *    memory (React state) for the rest of this page view —
+ *    further Pre-Register clicks just fire off the Supabase
+ *    write and show a confirmation toast, no re-asking. A page
+ *    reload clears it; nothing is written to any browser storage.
  *  - Writes { id_key, name, email, school } to the
  *    `session_pre_registrations` Supabase table.
  *
@@ -89,8 +89,6 @@
     const DEVICE_PROFILES_KEY = 'iat_profiles';
     const DEVICE_ACTIVE_PROFILE_KEY = 'iat_active_profile_id';
 
-    // Pre-registration's own (temporary, tab-scoped) profile.
-    const SESSION_PROFILE_KEY = 'iat_prereg_session_profile';
 
     function readDeviceProfile() {
         try {
@@ -109,32 +107,6 @@
         } catch (err) {
             console.error('preregister.js: could not read device profile', err);
             return null;
-        }
-    }
-
-    function loadSessionProfile() {
-        try {
-            const raw = sessionStorage.getItem(SESSION_PROFILE_KEY);
-            return raw ? JSON.parse(raw) : null;
-        } catch (err) {
-            console.error('preregister.js: could not read session profile', err);
-            return null;
-        }
-    }
-
-    function saveSessionProfile(profile) {
-        try {
-            sessionStorage.setItem(SESSION_PROFILE_KEY, JSON.stringify(profile));
-        } catch (err) {
-            console.error('preregister.js: could not save session profile', err);
-        }
-    }
-
-    function clearSessionProfile() {
-        try {
-            sessionStorage.removeItem(SESSION_PROFILE_KEY);
-        } catch (err) {
-            console.error('preregister.js: could not clear session profile', err);
         }
     }
 
@@ -363,7 +335,7 @@
     // Top banner — shows the loaded (real or temp) profile
     // ------------------------------------------------------------
     function Banner({ profile, onSwitch }) {
-        return e('div', { className: 'fixed top-0 inset-x-0 z-[9998] bg-[#001489] text-white text-xs sm:text-sm shadow-md' },
+        return e('div', { className: 'relative z-[9998] bg-[#001489] text-white text-xs sm:text-sm shadow-md' },
             e('div', { className: 'max-w-5xl mx-auto px-4 py-2 flex items-center gap-2 flex-wrap' },
                 e('svg', { xmlns: 'http://www.w3.org/2000/svg', width: '14', height: '14', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: '2.5', strokeLinecap: 'round', strokeLinejoin: 'round', className: 'flex-shrink-0' },
                     e('path', { d: 'M20 6 9 17l-5-5' })
@@ -405,7 +377,7 @@
     let triggerImpl = null;
 
     function Provider() {
-        const [profile, setProfile] = useState(() => loadSessionProfile());
+        const [profile, setProfile] = useState(null);
         const [modal, setModal] = useState(null); // null | 'confirm' | 'tempForm'
         const [candidateDeviceProfile, setCandidateDeviceProfile] = useState(null);
         const [pendingSession, setPendingSession] = useState(null);
@@ -496,7 +468,6 @@
                 school: candidateDeviceProfile.school
             };
             setProfile(p);
-            saveSessionProfile(p);
             setModal(null);
             performRegister(p, pendingSession);
         };
@@ -514,14 +485,12 @@
                 school: fields.school
             };
             setProfile(p);
-            saveSessionProfile(p);
             setModal(null);
             performRegister(p, pendingSession);
         };
 
         const handleSwitch = () => {
             setProfile(null);
-            clearSessionProfile();
         };
 
         return e(React.Fragment, null,
