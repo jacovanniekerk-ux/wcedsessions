@@ -53,6 +53,7 @@
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="preregister.js"></script>
 
     <link href="https://fonts.googleapis.com/css2?family=Didact+Gothic&family=Montserrat:wght@400;600;700&display=swap"
         rel="stylesheet">
@@ -348,17 +349,6 @@
             return isNaN(ts) ? null : ts;
         };
 
-        // Google Forms pre-fill links encode spaces as "+" and only percent-encode
-        // characters like [ ] (i.e. encodeURI() output, with %20 swapped for +).
-        const encodeForFormEntry = (str) => encodeURI(str).replace(/%20/g, '+');
-
-        const buildRegisterLink = ({ startParts, district, name, id }) => {
-            const dateTimeStr = `${WEEKDAY_NAMES[startParts.weekdayIdx]}, ${MONTH_NAMES[startParts.month - 1]} ${startParts.day} @ ${pad2(startParts.hours)}:${pad2(startParts.minutes)}`;
-            const raw = `${dateTimeStr} - (${(district || '').toUpperCase()}) - ${name} [${id}]`;
-            const encoded = encodeForFormEntry(raw);
-            return `https://docs.google.com/forms/d/e/1FAIpQLScMwanHrYwf9_kOML0icuKE9VfoFXD703of7ETLR5z6ysZoxA/viewform?usp=pp_url&entry.1422040156=${encoded}`;
-        };
-
         const buildGoogleCalendarLink = ({ startParts, endParts, name, description, joinLink }) => {
             const fmt = (p) => `${p.year}${pad2(p.month)}${pad2(p.day)}T${pad2(p.hours)}${pad2(p.minutes)}${pad2(p.seconds)}`;
             const text = `\u{1F4BB} eTPD Webinar: ${name}`;
@@ -402,9 +392,6 @@
                     const district = s.hosting_unit || 'Unspecified';
                     const name = s.session_title || 'Untitled Session';
 
-                    const registerLink = startParts
-                        ? buildRegisterLink({ startParts, district, name, id: s.id_key })
-                        : '';
                     const googleCal = (startParts && endParts)
                         ? buildGoogleCalendarLink({ startParts, endParts, name, description: course.session_desciption, joinLink: s.session_link })
                         : '#';
@@ -422,7 +409,6 @@
                         level: course.developmental_level || '',
                         description: course.session_desciption || '',
                         outcomes: course.session_outcomes || '',
-                        registerLink,
                         googleCal,
                         outlookCal,
                         joinLink: s.session_link || '',
@@ -523,9 +509,16 @@
                 }
 
                 return e('div', { className: "grid grid-cols-1 sm:grid-cols-2 gap-3" },
-                    e('a', { href: session.registerLink, target: "_blank", rel: "noopener noreferrer", className: `col-span-1 sm:col-span-2 flex items-center justify-center bg-wcg-blue hover:bg-blue-800 text-white font-bold font-accent py-2.5 px-4 rounded-lg transition-all text-sm shadow-sm hover:shadow ${!session.registerLink ? 'opacity-50 pointer-events-none' : ''}` },
-                        e('span', { className: "mr-2" }, "Register Now"),
-                        e(Icons.ExternalLink)
+                    e('button', {
+                        type: "button",
+                        onClick: () => window.PreRegisterWidget.trigger({ idKey: session.id, title: session.name }),
+                        className: "col-span-1 sm:col-span-2 flex items-center justify-center bg-wcg-blue hover:bg-blue-800 text-white font-bold font-accent py-2.5 px-4 rounded-lg transition-all text-sm shadow-sm hover:shadow"
+                    },
+                        e('span', { className: "mr-2" }, "Pre-Register"),
+                        e('svg', { xmlns: "http://www.w3.org/2000/svg", width: "16", height: "16", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round" },
+                            e('line', { x1: "5", y1: "12", x2: "19", y2: "12" }),
+                            e('polyline', { points: "12 5 19 12 12 19" })
+                        )
                     ),
                     e('a', { href: session.googleCal, target: "_blank", rel: "noreferrer", className: "flex items-center justify-center bg-white border border-gray-200 hover:border-wcg-blue hover:bg-blue-50 text-gray-600 font-medium py-2 px-2 rounded-lg text-xs transition-colors", title: "Add to Google Calendar" },
                         e(Icons.Calendar),
@@ -827,6 +820,7 @@
             );
 
             return e('div', { className: "min-h-screen pb-12 font-sans bg-gray-50" },
+                e(window.PreRegisterWidget.Provider),
                 e('header', { className: "bg-white border-b border-gray-200 sticky top-0 z-30 shadow-sm" },
                     e('div', { className: "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 md:py-4" },
                         e('div', { className: "flex flex-col md:flex-row md:items-center justify-between gap-3 md:gap-6" },
