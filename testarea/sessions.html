@@ -345,8 +345,20 @@
                         className: "col-span-1 sm:col-span-2 flex items-center justify-center bg-wcg-blue hover:bg-blue-800 text-white font-bold font-accent py-2.5 px-4 rounded-lg transition-all text-sm shadow-sm hover:shadow active:scale-95 icon-hover"
                     },
                         e('span', { className: "mr-2" }, "Pre-Register"),
-                        e('svg', { xmlns: "http://www.w3.org/2000/svg", width: "16", height: "16", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round" },
-                            e('path', { d: "M20 6 9 17l-5-5" })
+e('svg', { 
+  xmlns: "http://www.w3.org/2000/svg", 
+  width: "16", 
+  height: "16", 
+  viewBox: "0 0 24 24", 
+  fill: "none", 
+  stroke: "currentColor", 
+  strokeWidth: "2", 
+  strokeLinecap: "round", 
+  strokeLinejoin: "round" 
+}, [
+  e('circle', { cx: "12", cy: "12", r: "10" }),
+  e('path', { d: "m10 8 4 4-4 4" })
+])
                         )
                     ),
                     e('a', { href: session.googleCal, target: "_blank", rel: "noreferrer", className: "flex items-center justify-center bg-white border border-gray-200 hover:border-wcg-blue hover:bg-blue-50 text-gray-600 font-medium py-2 px-2 rounded-lg text-xs transition-colors icon-hover" },
