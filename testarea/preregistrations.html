@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Session Registrations — Admin</title>
+    <link rel="icon" type="image/png" href="favicon.png">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        wcg: {
+                            blue: '#001489',
+                            green2: '#8FAD15',
+                            grey: '#968C83',
+                            red: '#BA0C2F',
+                            yellow: '#FFC600',
+                            green: '#8FAD15',
+                            darkText: '#333333',
+                            lightBg: '#F3F4F6'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Century Gothic', 'Didact Gothic', 'Segoe UI', 'sans-serif'],
+                        accent: ['Gotham', 'Montserrat', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <link href="https://fonts.googleapis.com/css2?family=Didact+Gothic&family=Montserrat:wght@400;600;700&display=swap"
+        rel="stylesheet">
+
+    <style>
+        body {
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        .spin {
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        table th, table td {
+            white-space: nowrap;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50 text-wcg-darkText font-sans">
+
+    <div id="root"></div>
+
+    <script>
+        const { useState, useEffect, useMemo } = React;
+        const e = React.createElement;
+
+        // ---------------------------------------------------------------
+        // Supabase configuration
+        // ---------------------------------------------------------------
+        const SUPABASE_URL = 'https://cftpufjzwpmhgzdcgpjb.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_b1H_5DJYLQSrr83T_dvz6A_2UAqOVg4';
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        const UNKNOWN_DISTRICT = 'Unknown / Other';
+
+        // ---------------------------------------------------------------
+        // Icons
+        // ---------------------------------------------------------------
+        const Icons = {
+            Search: () => e('svg', { xmlns: "http://www.w3.org/2000/svg", width: "18", height: "18", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round" }, e('circle', { cx: "11", cy: "11", r: "8" }), e('path', { d: "m21 21-4.3-4.3" })),
+            Copy: () => e('svg', { xmlns: "http://www.w3.org/2000/svg", width: "16", height: "16", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round" }, e('rect', { width: "14", height: "14", x: "8", y: "8", rx: "2", ry: "2" }), e('path', { d: "M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" })),
+            Download: () => e('svg', { xmlns: "http://www.w3.org/2000/svg", width: "16", height: "16", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round" }, e('path', { d: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" }), e('polyline', { points: "7 10 12 15 17 10" }), e('line', { x1: "12", x2: "12", y1: "15", y2: "3" })),
+            X: () => e('svg', { xmlns: "http://www.w3.org/2000/svg", width: "20", height: "20", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round" }, e('path', { d: "M18 6 6 18" }), e('path', { d: "m6 6 12 12" })),
+            ChevronUp: () => e('svg', { xmlns: "http://www.w3.org/2000/svg", width: "12", height: "12", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "3", strokeLinecap: "round", strokeLinejoin: "round" }, e('path', { d: "m18 15-6-6-6 6" })),
+            ChevronDown: () => e('svg', { xmlns: "http://www.w3.org/2000/svg", width: "12", height: "12", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "3", strokeLinecap: "round", strokeLinejoin: "round" }, e('path', { d: "m6 9 6 6 6-6" })),
+            ChevronsUpDown: () => e('svg', { xmlns: "http://www.w3.org/2000/svg", width: "12", height: "12", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", className: "opacity-40" }, e('path', { d: "m7 15 5 5 5-5" }), e('path', { d: "m7 9 5-5 5 5" })),
+            Loader: () => e('svg', { xmlns: "http://www.w3.org/2000/svg", width: "28", height: "28", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", className: "spin" }, e('path', { d: "M21 12a9 9 0 1 1-6.219-8.56" })),
+            AlertTriangle: () => e('svg', { xmlns: "http://www.w3.org/2000/svg", width: "24", height: "24", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round" }, e('path', { d: "m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" }), e('line', { x1: "12", x2: "12", y1: "9", y2: "13" }), e('line', { x1: "12", x2: "12.01", y1: "17", y2: "17" })),
+            Check: () => e('svg', { xmlns: "http://www.w3.org/2000/svg", width: "18", height: "18", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2.5", strokeLinecap: "round", strokeLinejoin: "round" }, e('path', { d: "M20 6 9 17l-5-5" })),
+            RefreshCw: () => e('svg', { xmlns: "http://www.w3.org/2000/svg", width: "16", height: "16", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round" }, e('path', { d: "M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" }), e('path', { d: "M3 3v5h5" }), e('path', { d: "M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" }), e('path', { d: "M16 16h5v5" }))
+        };
+
+        // ---------------------------------------------------------------
+        // Date / time helpers (same logic used across the other pages)
+        // ---------------------------------------------------------------
+        const pad2 = (n) => String(n).padStart(2, '0');
+
+        const parseDate = (dateStr) => {
+            if (!dateStr) return new Date(8640000000000000);
+            const d = new Date(`${dateStr}T00:00:00`);
+            return isNaN(d.getTime()) ? new Date(8640000000000000) : d;
+        };
+
+        const SAST_OFFSET_MS = 2 * 60 * 60 * 1000;
+        const getJoburgParts = (timestampMs) => {
+            const shifted = new Date(timestampMs + SAST_OFFSET_MS);
+            return { hours: shifted.getUTCHours(), minutes: shifted.getUTCMinutes() };
+        };
+        const toEpoch = (dateStr, timeStr) => {
+            if (!dateStr || !timeStr) return null;
+            const ts = new Date(`${dateStr}T${timeStr}+02:00`).getTime();
+            return isNaN(ts) ? null : ts;
+        };
+
+        const formatDateDisplay = (dateObj) => {
+            if (!dateObj || isNaN(dateObj.getTime())) return 'TBC';
+            return dateObj.toLocaleDateString('en-ZA', { day: '2-digit', month: 'short', year: 'numeric' });
+        };
+
+        const formatDateTime = (iso) => {
+            if (!iso) return '—';
+            const d = new Date(iso);
+            if (isNaN(d.getTime())) return '—';
+            return d.toLocaleString('en-ZA', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Africa/Johannesburg' });
+        };
+
+        // ---------------------------------------------------------------
+        // Supabase helpers
+        // ---------------------------------------------------------------
+        async function fetchAllRows(table, columns, pageSize = 1000) {
+            let all = [];
+            let from = 0;
+            while (true) {
+                const { data, error } = await supabaseClient.from(table).select(columns).range(from, from + pageSize - 1);
+                if (error) throw error;
+                if (!data || data.length === 0) break;
+                all = all.concat(data);
+                if (data.length < pageSize) break;
+                from += pageSize;
+            }
+            return all;
+        }
+
+        async function copyToClipboard(text) {
+            try {
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    await navigator.clipboard.writeText(text);
+                    return true;
+                }
+            } catch (err) { console.error('Clipboard API failed, falling back:', err); }
+            try {
+                const ta = document.createElement('textarea');
+                ta.value = text;
+                ta.style.position = 'fixed';
+                ta.style.left = '-9999px';
+                document.body.appendChild(ta);
+                ta.focus();
+                ta.select();
+                const ok = document.execCommand('copy');
+                document.body.removeChild(ta);
+                return ok;
+            } catch (err) {
+                console.error('Clipboard fallback failed:', err);
+                return false;
+            }
+        }
+
+        function downloadCSV(filename, rows, headers) {
+            const esc = (val) => `"${String(val ?? '').replace(/"/g, '""')}"`;
+            const lines = [headers.map(h => esc(h.label)).join(',')]
+                .concat(rows.map(row => headers.map(h => esc(row[h.key])).join(',')));
+            const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // ---------------------------------------------------------------
+        // Loads sessions + registrations + a school -> district lookup,
+        // then combines them into one array per session.
+        // ---------------------------------------------------------------
+        async function loadAdminData() {
+            const [preregRows, sessionRows, courseRows, schoolRows] = await Promise.all([
+                fetchAllRows('session_pre_registrations', 'id_key, name, email, school, created_at'),
+                fetchAllRows('sessions', 'id_key, session_title, session_date, session_start_time, session_delivery_mode, hosting_unit'),
+                fetchAllRows('courses', 'course_name, developmental_level, programme_duration'),
+                fetchAllRows('schools', 'School_Name, Education_District')
+            ]);
+
+            // Real districts are derived from the schools table itself — never
+            // hardcoded, since exact names/casing live in the data.
+            const districts = Array.from(new Set(schoolRows.map(r => r.Education_District).filter(Boolean))).sort((a, b) => a.localeCompare(b));
+
+            const schoolDistrictMap = new Map();
+            schoolRows.forEach(r => { if (r.School_Name) schoolDistrictMap.set(r.School_Name, r.Education_District); });
+
+            const registrationsByIdKey = new Map();
+            preregRows.forEach(r => {
+                const district = schoolDistrictMap.get(r.school);
+                const bucket = (district && districts.includes(district)) ? district : UNKNOWN_DISTRICT;
+                const enriched = { name: r.name, email: r.email, school: r.school, createdAt: r.created_at, district: bucket };
+                if (!registrationsByIdKey.has(r.id_key)) registrationsByIdKey.set(r.id_key, []);
+                registrationsByIdKey.get(r.id_key).push(enriched);
+            });
+
+            const coursesByName = new Map();
+            courseRows.forEach(c => { if (c.course_name) coursesByName.set(c.course_name, c); });
+
+            const allBuckets = districts.concat(UNKNOWN_DISTRICT);
+
+            const sessions = sessionRows
+                .map(s => {
+                    const course = coursesByName.get(s.session_title) || {};
+                    const durationMin = Number(course.programme_duration) || 0;
+                    const startEpoch = toEpoch(s.session_date, s.session_start_time);
+                    const endEpoch = startEpoch !== null ? startEpoch + durationMin * 60000 : null;
+                    const startParts = startEpoch !== null ? getJoburgParts(startEpoch) : null;
+                    const endParts = endEpoch !== null ? getJoburgParts(endEpoch) : null;
+                    const timeDisplay = (startParts && endParts)
+                        ? `${pad2(startParts.hours)}:${pad2(startParts.minutes)} - ${pad2(endParts.hours)}:${pad2(endParts.minutes)}`
+                        : (startParts ? `${pad2(startParts.hours)}:${pad2(startParts.minutes)}` : '—');
+
+                    const regs = (registrationsByIdKey.get(s.id_key) || []).sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+                    const districtCounts = {};
+                    allBuckets.forEach(d => { districtCounts[d] = 0; });
+                    regs.forEach(r => { districtCounts[r.district] = (districtCounts[r.district] || 0) + 1; });
+
+                    return {
+                        idKey: s.id_key,
+                        name: s.session_title || 'Untitled Session',
+                        dateISO: s.session_date || '',
+                        time: timeDisplay,
+                        level: course.developmental_level || '',
+                        mode: s.session_delivery_mode || '—',
+                        hostingUnit: s.hosting_unit || '',
+                        totalRegistered: regs.length,
+                        districtCounts,
+                        registrants: regs
+                    };
+                })
+                .filter(s => s.name !== 'Untitled Session');
+
+            return { sessions, districts };
+        }
+
+        // ---------------------------------------------------------------
+        // UI pieces
+        // ---------------------------------------------------------------
+        const Badge = ({ children, type = 'default' }) => {
+            let colorClass = 'bg-gray-100 text-gray-700 border-gray-200';
+            const level = (children || '').toString().toLowerCase();
+            if (type === 'level') {
+                if (level.includes('foundation')) colorClass = 'bg-wcg-green text-white border-wcg-green';
+                else if (level.includes('better')) colorClass = 'bg-wcg-red text-white border-wcg-red';
+                else if (level.includes('i can')) colorClass = 'bg-wcg-yellow text-gray-900 border-wcg-yellow';
+                else if (level.includes('summit')) colorClass = 'bg-wcg-blue text-white border-wcg-blue';
+            }
+            return e('span', { className: `px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wide border ${colorClass} shadow-sm` }, children || '—');
+        };
+
+        function StatCard({ label, value, sub }) {
+            return e('div', { className: "bg-white rounded-xl border border-gray-200 shadow-sm p-4" },
+                e('p', { className: "text-[11px] font-bold uppercase tracking-wide text-gray-400 mb-1" }, label),
+                e('p', { className: "text-2xl font-bold text-gray-900" }, value),
+                sub ? e('p', { className: "text-xs text-gray-500 mt-0.5" }, sub) : null
+            );
+        }
+
+        function SortHeader({ label, sortKey, sort, onSort }) {
+            const active = sort.key === sortKey;
+            return e('th', {
+                className: "px-3 py-2.5 text-left text-[11px] font-bold uppercase tracking-wide text-gray-500 cursor-pointer hover:text-wcg-blue select-none",
+                onClick: () => onSort(sortKey)
+            },
+                e('span', { className: "inline-flex items-center gap-1" },
+                    label,
+                    active ? (sort.dir === 'asc' ? e(Icons.ChevronUp) : e(Icons.ChevronDown)) : e(Icons.ChevronsUpDown)
+                )
+            );
+        }
+
+        function Toast({ toast }) {
+            if (!toast) return null;
+            const isError = toast.kind === 'error';
+            return e('div', {
+                className: `fixed bottom-6 left-1/2 -translate-x-1/2 z-[10001] px-4 py-3 rounded-xl shadow-lg text-sm font-semibold flex items-center gap-2 max-w-[90vw] ${isError ? 'bg-wcg-red text-white' : 'bg-wcg-green text-white'}`
+            }, isError ? e(Icons.AlertTriangle) : e(Icons.Check), e('span', null, toast.text));
+        }
+
+        function SessionDetailModal({ session, onClose, showToast }) {
+            const [search, setSearch] = useState('');
+
+            const filtered = session.registrants.filter(r => {
+                if (!search.trim()) return true;
+                const q = search.toLowerCase();
+                return (r.name || '').toLowerCase().includes(q) || (r.email || '').toLowerCase().includes(q) || (r.school || '').toLowerCase().includes(q);
+            });
+
+            const handleCopyEmails = async () => {
+                const emails = Array.from(new Set(session.registrants.map(r => r.email).filter(Boolean)));
+                const ok = await copyToClipboard(emails.join(', '));
+                showToast(ok ? 'success' : 'error', ok ? `Copied ${emails.length} email address${emails.length === 1 ? '' : 'es'} to clipboard.` : 'Could not copy to clipboard.');
+            };
+
+            const handleDownloadCSV = () => {
+                downloadCSV(
+                    `${session.name.replace(/[^a-z0-9]+/gi, '-')}-registrants.csv`,
+                    session.registrants,
+                    [
+                        { key: 'name', label: 'Name' },
+                        { key: 'email', label: 'Email' },
+                        { key: 'school', label: 'School' },
+                        { key: 'district', label: 'District' },
+                        { key: 'createdAt', label: 'Registered At' }
+                    ]
+                );
+            };
+
+            return e('div', { className: "fixed inset-0 bg-black/50 flex items-center justify-center px-4 z-[10000]", onClick: onClose },
+                e('div', { className: "bg-white rounded-2xl shadow-xl max-w-3xl w-full max-h-[85vh] flex flex-col", onClick: (ev) => ev.stopPropagation() },
+                    e('div', { className: "p-5 sm:p-6 border-b border-gray-100 flex items-start justify-between gap-3" },
+                        e('div', null,
+                            e('h3', { className: "text-lg font-bold text-gray-900" }, session.name),
+                            e('p', { className: "text-xs text-gray-500 mt-1" },
+                                formatDateDisplay(parseDate(session.dateISO)), ' · ', session.time, ' · ', session.mode,
+                                session.hostingUnit ? ` · Hosted by ${session.hostingUnit}` : ''
+                            )
+                        ),
+                        e('button', { onClick: onClose, className: "text-gray-400 hover:text-gray-600 flex-shrink-0" }, e(Icons.X))
+                    ),
+                    e('div', { className: "p-5 sm:p-6 pb-3 flex flex-wrap items-center gap-2" },
+                        e('button', {
+                            onClick: handleCopyEmails,
+                            className: "inline-flex items-center gap-2 bg-wcg-blue hover:bg-blue-800 text-white font-bold text-sm px-3.5 py-2 rounded-lg transition-colors"
+                        }, e(Icons.Copy), `Copy All Emails (${session.totalRegistered})`),
+                        e('button', {
+                            onClick: handleDownloadCSV,
+                            className: "inline-flex items-center gap-2 border-2 border-gray-300 hover:border-wcg-blue text-gray-700 font-bold text-sm px-3.5 py-2 rounded-lg transition-colors"
+                        }, e(Icons.Download), "Download CSV"),
+                        e('div', { className: "relative flex-1 min-w-[160px]" },
+                            e('div', { className: "absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400" }, e(Icons.Search)),
+                            e('input', {
+                                type: "text", placeholder: "Filter registrants...", value: search,
+                                onChange: (ev) => setSearch(ev.target.value),
+                                className: "w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg bg-gray-50 focus:outline-none focus:bg-white focus:border-wcg-blue text-sm transition-all"
+                            })
+                        )
+                    ),
+                    e('div', { className: "overflow-auto flex-1 px-5 sm:px-6 pb-6" },
+                        session.registrants.length === 0
+                            ? e('p', { className: "text-sm text-gray-500 py-8 text-center" }, "No one has pre-registered for this session yet.")
+                            : e('table', { className: "w-full text-sm" },
+                                e('thead', null,
+                                    e('tr', { className: "border-b border-gray-200" },
+                                        e('th', { className: "px-3 py-2 text-left text-[11px] font-bold uppercase tracking-wide text-gray-500" }, "Name"),
+                                        e('th', { className: "px-3 py-2 text-left text-[11px] font-bold uppercase tracking-wide text-gray-500" }, "Email"),
+                                        e('th', { className: "px-3 py-2 text-left text-[11px] font-bold uppercase tracking-wide text-gray-500" }, "School"),
+                                        e('th', { className: "px-3 py-2 text-left text-[11px] font-bold uppercase tracking-wide text-gray-500" }, "District"),
+                                        e('th', { className: "px-3 py-2 text-left text-[11px] font-bold uppercase tracking-wide text-gray-500" }, "Registered At")
+                                    )
+                                ),
+                                e('tbody', null,
+                                    filtered.map((r, idx) => e('tr', { key: idx, className: "border-b border-gray-50 hover:bg-gray-50" },
+                                        e('td', { className: "px-3 py-2.5 font-semibold text-gray-800" }, r.name || '—'),
+                                        e('td', { className: "px-3 py-2.5 text-gray-600" }, r.email || '—'),
+                                        e('td', { className: "px-3 py-2.5 text-gray-600" }, r.school || '—'),
+                                        e('td', { className: "px-3 py-2.5 text-gray-600" }, r.district),
+                                        e('td', { className: "px-3 py-2.5 text-gray-500" }, formatDateTime(r.createdAt))
+                                    ))
+                                )
+                            )
+                    )
+                )
+            );
+        }
+
+        function App() {
+            const [sessions, setSessions] = useState([]);
+            const [districts, setDistricts] = useState([]);
+            const [loading, setLoading] = useState(true);
+            const [error, setError] = useState(null);
+            const [refreshKey, setRefreshKey] = useState(0);
+            const [lastUpdated, setLastUpdated] = useState(null);
+
+            const [searchTerm, setSearchTerm] = useState('');
+            const [modeFilter, setModeFilter] = useState('All');
+            const [levelFilter, setLevelFilter] = useState('All');
+            const [districtFilter, setDistrictFilter] = useState('All');
+            const [upcomingOnly, setUpcomingOnly] = useState(false);
+            const [sort, setSort] = useState({ key: 'date', dir: 'asc' });
+
+            const [selectedSession, setSelectedSession] = useState(null);
+            const [toast, setToast] = useState(null);
+            const showToast = (kind, text) => { setToast({ kind, text }); setTimeout(() => setToast(null), 3500); };
+
+            useEffect(() => {
+                let cancelled = false;
+                (async () => {
+                    setLoading(true);
+                    setError(null);
+                    try {
+                        const result = await loadAdminData();
+                        if (!cancelled) {
+                            setSessions(result.sessions);
+                            setDistricts(result.districts);
+                            setLastUpdated(new Date());
+                        }
+                    } catch (err) {
+                        console.error('Error loading admin data:', err);
+                        if (!cancelled) setError('Could not load session data. Please try refreshing.');
+                    } finally {
+                        if (!cancelled) setLoading(false);
+                    }
+                })();
+                return () => { cancelled = true; };
+            }, [refreshKey]);
+
+            const modeOptions = useMemo(() => Array.from(new Set(sessions.map(s => s.mode).filter(m => m && m !== '—'))).sort(), [sessions]);
+            const levelOptions = useMemo(() => Array.from(new Set(sessions.map(s => s.level).filter(Boolean))).sort(), [sessions]);
+
+            const filteredSessions = useMemo(() => {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                return sessions.filter(s => {
+                    if (searchTerm && !s.name.toLowerCase().includes(searchTerm.toLowerCase())) return false;
+                    if (modeFilter !== 'All' && s.mode !== modeFilter) return false;
+                    if (levelFilter !== 'All' && s.level !== levelFilter) return false;
+                    if (districtFilter !== 'All' && (s.districtCounts[districtFilter] || 0) === 0) return false;
+                    if (upcomingOnly && parseDate(s.dateISO) < today) return false;
+                    return true;
+                });
+            }, [sessions, searchTerm, modeFilter, levelFilter, districtFilter, upcomingOnly]);
+
+            const getSortValue = (s, key) => {
+                if (key === 'name') return s.name.toLowerCase();
+                if (key === 'date') return parseDate(s.dateISO).getTime();
+                if (key === 'total') return s.totalRegistered;
+                return s.districtCounts[key] || 0;
+            };
+
+            const sortedSessions = useMemo(() => {
+                const copy = [...filteredSessions];
+                copy.sort((a, b) => {
+                    const av = getSortValue(a, sort.key), bv = getSortValue(b, sort.key);
+                    if (av < bv) return sort.dir === 'asc' ? -1 : 1;
+                    if (av > bv) return sort.dir === 'asc' ? 1 : -1;
+                    return 0;
+                });
+                return copy;
+            }, [filteredSessions, sort]);
+
+            const handleSort = (key) => {
+                setSort(prev => prev.key === key ? { key, dir: prev.dir === 'asc' ? 'desc' : 'asc' } : { key, dir: 'asc' });
+            };
+
+            const clearFilters = () => {
+                setSearchTerm(''); setModeFilter('All'); setLevelFilter('All'); setDistrictFilter('All'); setUpcomingOnly(false);
+            };
+
+            const totalRegistrations = filteredSessions.reduce((sum, s) => sum + s.totalRegistered, 0);
+            const uniqueRegistrants = useMemo(() => {
+                const emails = new Set();
+                filteredSessions.forEach(s => s.registrants.forEach(r => { if (r.email) emails.add(r.email.trim().toLowerCase()); }));
+                return emails.size;
+            }, [filteredSessions]);
+            const districtTotals = useMemo(() => {
+                const totals = {};
+                districts.concat(UNKNOWN_DISTRICT).forEach(d => { totals[d] = 0; });
+                filteredSessions.forEach(s => districts.concat(UNKNOWN_DISTRICT).forEach(d => { totals[d] += s.districtCounts[d] || 0; }));
+                return totals;
+            }, [filteredSessions, districts]);
+            const topDistrict = useMemo(() => {
+                const entries = Object.entries(districtTotals).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]);
+                return entries.length > 0 ? entries[0] : null;
+            }, [districtTotals]);
+
+            const handleDownloadOverviewCSV = () => {
+                const allBuckets = districts.concat(UNKNOWN_DISTRICT);
+                const headers = [
+                    { key: 'name', label: 'Session' },
+                    { key: 'date', label: 'Date' },
+                    { key: 'time', label: 'Time' },
+                    { key: 'level', label: 'Level' },
+                    { key: 'mode', label: 'Delivery Mode' },
+                    { key: 'total', label: 'Total Registered' },
+                    ...allBuckets.map(d => ({ key: d, label: d }))
+                ];
+                const rows = sortedSessions.map(s => {
+                    const row = { name: s.name, date: s.dateISO, time: s.time, level: s.level, mode: s.mode, total: s.totalRegistered };
+                    allBuckets.forEach(d => { row[d] = s.districtCounts[d] || 0; });
+                    return row;
+                });
+                downloadCSV('session-registrations-overview.csv', rows, headers);
+            };
+
+            if (loading) {
+                return e('div', { className: "min-h-screen flex flex-col items-center justify-center text-gray-400" }, e(Icons.Loader), e('p', { className: "mt-3 text-sm" }, "Loading session data…"));
+            }
+
+            return e('div', { className: "min-h-screen pb-16 font-sans bg-gray-50" },
+                e('header', { className: "bg-white border-b border-gray-200 sticky top-0 z-30 shadow-sm" },
+                    e('div', { className: "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 md:py-4" },
+                        e('div', { className: "flex items-center justify-between gap-3 flex-wrap" },
+                            e('div', { className: "flex items-center gap-3" },
+                                e('img', { src: "header.png", alt: "WCG Logo", className: "h-9 md:h-12 w-auto object-contain" }),
+                                e('div', null,
+                                    e('h1', { className: "text-base md:text-lg font-bold font-accent text-gray-900" }, "Session Registrations"),
+                                    e('p', { className: "text-xs text-gray-500" }, "Admin overview · pre-registration data")
+                                )
+                            ),
+                            e('div', { className: "flex items-center gap-2" },
+                                lastUpdated ? e('span', { className: "text-xs text-gray-400 hidden sm:inline" }, `Updated ${lastUpdated.toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit' })}`) : null,
+                                e('button', {
+                                    onClick: () => setRefreshKey(k => k + 1),
+                                    className: "inline-flex items-center gap-2 border-2 border-gray-300 hover:border-wcg-blue text-gray-700 font-bold text-xs px-3 py-2 rounded-lg transition-colors"
+                                }, e(Icons.RefreshCw), "Refresh"),
+                                e('a', { href: "sessions.html", className: "text-xs font-semibold text-wcg-blue underline underline-offset-2 hover:text-blue-800" }, "Upcoming Sessions ↗")
+                            )
+                        )
+                    )
+                ),
+
+                e('div', { className: "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" },
+                    e('div', { className: "mt-3 bg-yellow-50 border border-yellow-200 text-yellow-800 text-xs rounded-lg px-3 py-2" },
+                        "Internal tool — no authentication is enforced yet. Access will be restricted in a future update."
+                    ),
+
+                    error ? e('div', { className: "mt-6 text-center py-10" },
+                        e('div', { className: "mx-auto mb-3 h-10 w-10 rounded-full bg-red-50 text-wcg-red flex items-center justify-center" }, e(Icons.AlertTriangle)),
+                        e('p', { className: "text-sm text-gray-600 mb-3" }, error),
+                        e('button', { onClick: () => setRefreshKey(k => k + 1), className: "bg-wcg-blue text-white font-bold text-sm px-4 py-2 rounded-lg" }, "Try Again")
+                    ) : e(React.Fragment, null,
+
+                        // --- Summary cards ---
+                        e('div', { className: "mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3" },
+                            e(StatCard, { label: "Sessions Shown", value: filteredSessions.length }),
+                            e(StatCard, { label: "Total Registrations", value: totalRegistrations }),
+                            e(StatCard, { label: "Unique Registrants", value: uniqueRegistrants }),
+                            e(StatCard, { label: "Top District", value: topDistrict ? topDistrict[1] : '—', sub: topDistrict ? topDistrict[0] : 'No data yet' })
+                        ),
+
+                        // --- Filters ---
+                        e('div', { className: "mt-5 bg-white rounded-xl border border-gray-200 shadow-sm p-4 flex flex-wrap items-center gap-2" },
+                            e('div', { className: "relative flex-1 min-w-[180px]" },
+                                e('div', { className: "absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400" }, e(Icons.Search)),
+                                e('input', {
+                                    type: "text", placeholder: "Search session name...", value: searchTerm,
+                                    onChange: (ev) => setSearchTerm(ev.target.value),
+                                    className: "w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg bg-gray-50 focus:outline-none focus:bg-white focus:border-wcg-blue text-sm transition-all"
+                                })
+                            ),
+                            e('select', {
+                                value: modeFilter, onChange: (ev) => setModeFilter(ev.target.value),
+                                className: "border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:border-wcg-blue"
+                            }, e('option', { value: "All" }, "All Delivery Modes"), modeOptions.map(m => e('option', { key: m, value: m }, m))),
+                            e('select', {
+                                value: levelFilter, onChange: (ev) => setLevelFilter(ev.target.value),
+                                className: "border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:border-wcg-blue"
+                            }, e('option', { value: "All" }, "All Levels"), levelOptions.map(l => e('option', { key: l, value: l }, l))),
+                            e('select', {
+                                value: districtFilter, onChange: (ev) => setDistrictFilter(ev.target.value),
+                                className: "border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:border-wcg-blue"
+                            }, e('option', { value: "All" }, "All Districts"), districts.concat(UNKNOWN_DISTRICT).map(d => e('option', { key: d, value: d }, d))),
+                            e('label', { className: "inline-flex items-center gap-2 text-sm text-gray-600 px-1 cursor-pointer" },
+                                e('input', { type: "checkbox", checked: upcomingOnly, onChange: (ev) => setUpcomingOnly(ev.target.checked), className: "rounded border-gray-300 text-wcg-blue focus:ring-wcg-blue" }),
+                                "Upcoming only"
+                            ),
+                            e('button', { onClick: clearFilters, className: "text-xs font-semibold text-gray-500 hover:text-wcg-blue underline underline-offset-2" }, "Clear"),
+                            e('button', {
+                                onClick: handleDownloadOverviewCSV,
+                                className: "ml-auto inline-flex items-center gap-2 border-2 border-gray-300 hover:border-wcg-blue text-gray-700 font-bold text-xs px-3 py-2 rounded-lg transition-colors"
+                            }, e(Icons.Download), "Export Overview CSV")
+                        ),
+
+                        // --- Sessions table ---
+                        e('div', { className: "mt-4 bg-white rounded-xl border border-gray-200 shadow-sm overflow-x-auto" },
+                            sortedSessions.length === 0
+                                ? e('p', { className: "text-sm text-gray-500 py-10 text-center" }, "No sessions match these filters.")
+                                : e('table', { className: "w-full text-sm" },
+                                    e('thead', { className: "bg-gray-50" },
+                                        e('tr', { className: "border-b border-gray-200" },
+                                            e(SortHeader, { label: "Session", sortKey: "name", sort, onSort: handleSort }),
+                                            e(SortHeader, { label: "Date", sortKey: "date", sort, onSort: handleSort }),
+                                            e('th', { className: "px-3 py-2.5 text-left text-[11px] font-bold uppercase tracking-wide text-gray-500" }, "Time"),
+                                            e('th', { className: "px-3 py-2.5 text-left text-[11px] font-bold uppercase tracking-wide text-gray-500" }, "Level"),
+                                            e('th', { className: "px-3 py-2.5 text-left text-[11px] font-bold uppercase tracking-wide text-gray-500" }, "Mode"),
+                                            e(SortHeader, { label: "Total", sortKey: "total", sort, onSort: handleSort }),
+                                            districts.map(d => e(SortHeader, { key: d, label: d, sortKey: d, sort, onSort: handleSort })),
+                                            e(SortHeader, { label: UNKNOWN_DISTRICT, sortKey: UNKNOWN_DISTRICT, sort, onSort: handleSort }),
+                                            e('th', { className: "px-3 py-2.5 text-left text-[11px] font-bold uppercase tracking-wide text-gray-500" }, "")
+                                        )
+                                    ),
+                                    e('tbody', null,
+                                        sortedSessions.map(s => e('tr', {
+                                            key: s.idKey,
+                                            className: "border-b border-gray-50 hover:bg-blue-50/50 cursor-pointer transition-colors",
+                                            onClick: () => setSelectedSession(s)
+                                        },
+                                            e('td', { className: "px-3 py-3 font-semibold text-gray-800" }, s.name),
+                                            e('td', { className: "px-3 py-3 text-gray-600" }, formatDateDisplay(parseDate(s.dateISO))),
+                                            e('td', { className: "px-3 py-3 text-gray-600" }, s.time),
+                                            e('td', { className: "px-3 py-3" }, s.level ? e(Badge, { type: "level" }, s.level) : '—'),
+                                            e('td', { className: "px-3 py-3 text-gray-600" }, s.mode),
+                                            e('td', { className: "px-3 py-3 font-bold text-gray-900" }, s.totalRegistered),
+                                            districts.map(d => e('td', { key: d, className: "px-3 py-3 text-gray-500 text-center" }, s.districtCounts[d] || 0)),
+                                            e('td', { className: "px-3 py-3 text-gray-500 text-center" }, s.districtCounts[UNKNOWN_DISTRICT] || 0),
+                                            e('td', { className: "px-3 py-3" },
+                                                e('button', {
+                                                    onClick: (ev) => { ev.stopPropagation(); setSelectedSession(s); },
+                                                    className: "text-xs font-bold text-wcg-blue hover:underline"
+                                                }, "View →")
+                                            )
+                                        ))
+                                    )
+                                )
+                        )
+                    )
+                ),
+
+                selectedSession ? e(SessionDetailModal, { session: selectedSession, onClose: () => setSelectedSession(null), showToast }) : null,
+                e(Toast, { toast })
+            );
+        }
+
+        ReactDOM.createRoot(document.getElementById('root')).render(e(App));
+    </script>
+</body>
+
+</html>
