@@ -152,11 +152,13 @@
         // ---------------------------------------------------------------
         // Supabase helpers
         // ---------------------------------------------------------------
-        async function fetchAllRows(table, columns, pageSize = 1000) {
+        async function fetchAllRows(table, columns, applyFilters, pageSize = 1000) {
             let all = [];
             let from = 0;
             while (true) {
-                const { data, error } = await supabaseClient.from(table).select(columns).range(from, from + pageSize - 1);
+                let query = supabaseClient.from(table).select(columns);
+                if (applyFilters) query = applyFilters(query);
+                const { data, error } = await query.range(from, from + pageSize - 1);
                 if (error) throw error;
                 if (!data || data.length === 0) break;
                 all = all.concat(data);
@@ -208,11 +210,21 @@
         // ---------------------------------------------------------------
         // Loads sessions + registrations + a school -> district lookup,
         // then combines them into one array per session.
+        //
+        // Scope: this tool is about *pre-registration*, not attendance — so
+        // it only ever looks at 'Virtual' sessions (the only ones the
+        // Pre-Register widget appears on), from 21 days ago through to
+        // whatever's upcoming. It does not touch attendance_staging at all.
         // ---------------------------------------------------------------
         async function loadAdminData() {
+            const lookback = new Date();
+            lookback.setDate(lookback.getDate() - 21);
+            const lookbackISO = `${lookback.getFullYear()}-${pad2(lookback.getMonth() + 1)}-${pad2(lookback.getDate())}`;
+
             const [preregRows, sessionRows, courseRows, schoolRows] = await Promise.all([
                 fetchAllRows('session_pre_registrations', 'id_key, name, email, school, created_at'),
-                fetchAllRows('sessions', 'id_key, session_title, session_date, session_start_time, session_delivery_mode, hosting_unit'),
+                fetchAllRows('sessions', 'id_key, session_title, session_date, session_start_time, session_delivery_mode, hosting_unit',
+                    q => q.eq('session_delivery_mode', 'Virtual').gte('session_date', lookbackISO)),
                 fetchAllRows('courses', 'course_name, developmental_level, programme_duration'),
                 fetchAllRows('schools', 'School_Name, Education_District')
             ]);
@@ -413,10 +425,8 @@
             const [lastUpdated, setLastUpdated] = useState(null);
 
             const [searchTerm, setSearchTerm] = useState('');
-            const [modeFilter, setModeFilter] = useState('All');
             const [levelFilter, setLevelFilter] = useState('All');
             const [districtFilter, setDistrictFilter] = useState('All');
-            const [upcomingOnly, setUpcomingOnly] = useState(false);
             const [sort, setSort] = useState({ key: 'date', dir: 'asc' });
 
             const [selectedSession, setSelectedSession] = useState(null);
@@ -445,21 +455,16 @@
                 return () => { cancelled = true; };
             }, [refreshKey]);
 
-            const modeOptions = useMemo(() => Array.from(new Set(sessions.map(s => s.mode).filter(m => m && m !== '—'))).sort(), [sessions]);
             const levelOptions = useMemo(() => Array.from(new Set(sessions.map(s => s.level).filter(Boolean))).sort(), [sessions]);
 
             const filteredSessions = useMemo(() => {
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
                 return sessions.filter(s => {
                     if (searchTerm && !s.name.toLowerCase().includes(searchTerm.toLowerCase())) return false;
-                    if (modeFilter !== 'All' && s.mode !== modeFilter) return false;
                     if (levelFilter !== 'All' && s.level !== levelFilter) return false;
                     if (districtFilter !== 'All' && (s.districtCounts[districtFilter] || 0) === 0) return false;
-                    if (upcomingOnly && parseDate(s.dateISO) < today) return false;
                     return true;
                 });
-            }, [sessions, searchTerm, modeFilter, levelFilter, districtFilter, upcomingOnly]);
+            }, [sessions, searchTerm, levelFilter, districtFilter]);
 
             const getSortValue = (s, key) => {
                 if (key === 'name') return s.name.toLowerCase();
@@ -484,7 +489,7 @@
             };
 
             const clearFilters = () => {
-                setSearchTerm(''); setModeFilter('All'); setLevelFilter('All'); setDistrictFilter('All'); setUpcomingOnly(false);
+                setSearchTerm(''); setLevelFilter('All'); setDistrictFilter('All');
             };
 
             const totalRegistrations = filteredSessions.reduce((sum, s) => sum + s.totalRegistered, 0);
@@ -511,12 +516,11 @@
                     { key: 'date', label: 'Date' },
                     { key: 'time', label: 'Time' },
                     { key: 'level', label: 'Level' },
-                    { key: 'mode', label: 'Delivery Mode' },
                     { key: 'total', label: 'Total Registered' },
                     ...allBuckets.map(d => ({ key: d, label: d }))
                 ];
                 const rows = sortedSessions.map(s => {
-                    const row = { name: s.name, date: s.dateISO, time: s.time, level: s.level, mode: s.mode, total: s.totalRegistered };
+                    const row = { name: s.name, date: s.dateISO, time: s.time, level: s.level, total: s.totalRegistered };
                     allBuckets.forEach(d => { row[d] = s.districtCounts[d] || 0; });
                     return row;
                 });
@@ -535,7 +539,7 @@
                                 e('img', { src: "header.png", alt: "WCG Logo", className: "h-9 md:h-12 w-auto object-contain" }),
                                 e('div', null,
                                     e('h1', { className: "text-base md:text-lg font-bold font-accent text-gray-900" }, "Session Registrations"),
-                                    e('p', { className: "text-xs text-gray-500" }, "Admin overview · pre-registration data")
+                                    e('p', { className: "text-xs text-gray-500" }, "Virtual sessions · last 21 days + upcoming · pre-registration counts")
                                 )
                             ),
                             e('div', { className: "flex items-center gap-2" },
@@ -580,10 +584,6 @@
                                 })
                             ),
                             e('select', {
-                                value: modeFilter, onChange: (ev) => setModeFilter(ev.target.value),
-                                className: "border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:border-wcg-blue"
-                            }, e('option', { value: "All" }, "All Delivery Modes"), modeOptions.map(m => e('option', { key: m, value: m }, m))),
-                            e('select', {
                                 value: levelFilter, onChange: (ev) => setLevelFilter(ev.target.value),
                                 className: "border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:border-wcg-blue"
                             }, e('option', { value: "All" }, "All Levels"), levelOptions.map(l => e('option', { key: l, value: l }, l))),
@@ -591,10 +591,6 @@
                                 value: districtFilter, onChange: (ev) => setDistrictFilter(ev.target.value),
                                 className: "border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:border-wcg-blue"
                             }, e('option', { value: "All" }, "All Districts"), districts.concat(UNKNOWN_DISTRICT).map(d => e('option', { key: d, value: d }, d))),
-                            e('label', { className: "inline-flex items-center gap-2 text-sm text-gray-600 px-1 cursor-pointer" },
-                                e('input', { type: "checkbox", checked: upcomingOnly, onChange: (ev) => setUpcomingOnly(ev.target.checked), className: "rounded border-gray-300 text-wcg-blue focus:ring-wcg-blue" }),
-                                "Upcoming only"
-                            ),
                             e('button', { onClick: clearFilters, className: "text-xs font-semibold text-gray-500 hover:text-wcg-blue underline underline-offset-2" }, "Clear"),
                             e('button', {
                                 onClick: handleDownloadOverviewCSV,
@@ -613,7 +609,6 @@
                                             e(SortHeader, { label: "Date", sortKey: "date", sort, onSort: handleSort }),
                                             e('th', { className: "px-3 py-2.5 text-left text-[11px] font-bold uppercase tracking-wide text-gray-500" }, "Time"),
                                             e('th', { className: "px-3 py-2.5 text-left text-[11px] font-bold uppercase tracking-wide text-gray-500" }, "Level"),
-                                            e('th', { className: "px-3 py-2.5 text-left text-[11px] font-bold uppercase tracking-wide text-gray-500" }, "Mode"),
                                             e(SortHeader, { label: "Total", sortKey: "total", sort, onSort: handleSort }),
                                             districts.map(d => e(SortHeader, { key: d, label: d, sortKey: d, sort, onSort: handleSort })),
                                             e(SortHeader, { label: UNKNOWN_DISTRICT, sortKey: UNKNOWN_DISTRICT, sort, onSort: handleSort }),
@@ -630,7 +625,6 @@
                                             e('td', { className: "px-3 py-3 text-gray-600" }, formatDateDisplay(parseDate(s.dateISO))),
                                             e('td', { className: "px-3 py-3 text-gray-600" }, s.time),
                                             e('td', { className: "px-3 py-3" }, s.level ? e(Badge, { type: "level" }, s.level) : '—'),
-                                            e('td', { className: "px-3 py-3 text-gray-600" }, s.mode),
                                             e('td', { className: "px-3 py-3 font-bold text-gray-900" }, s.totalRegistered),
                                             districts.map(d => e('td', { key: d, className: "px-3 py-3 text-gray-500 text-center" }, s.districtCounts[d] || 0)),
                                             e('td', { className: "px-3 py-3 text-gray-500 text-center" }, s.districtCounts[UNKNOWN_DISTRICT] || 0),
