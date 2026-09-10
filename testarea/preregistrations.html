@@ -238,11 +238,13 @@
 
             const registrationsByIdKey = new Map();
             preregRows.forEach(r => {
+                const key = String(r.id_key ?? '').trim();
+                if (!key) return;
                 const district = schoolDistrictMap.get(r.school);
                 const bucket = (district && districts.includes(district)) ? district : UNKNOWN_DISTRICT;
                 const enriched = { name: r.name, email: r.email, school: r.school, createdAt: r.created_at, district: bucket };
-                if (!registrationsByIdKey.has(r.id_key)) registrationsByIdKey.set(r.id_key, []);
-                registrationsByIdKey.get(r.id_key).push(enriched);
+                if (!registrationsByIdKey.has(key)) registrationsByIdKey.set(key, []);
+                registrationsByIdKey.get(key).push(enriched);
             });
 
             const coursesByName = new Map();
@@ -262,7 +264,7 @@
                         ? `${pad2(startParts.hours)}:${pad2(startParts.minutes)} - ${pad2(endParts.hours)}:${pad2(endParts.minutes)}`
                         : (startParts ? `${pad2(startParts.hours)}:${pad2(startParts.minutes)}` : '—');
 
-                    const regs = (registrationsByIdKey.get(s.id_key) || []).sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+                    const regs = (registrationsByIdKey.get(String(s.id_key ?? '').trim()) || []).sort((a, b) => (a.name || '').localeCompare(b.name || ''));
                     const districtCounts = {};
                     allBuckets.forEach(d => { districtCounts[d] = 0; });
                     regs.forEach(r => { districtCounts[r.district] = (districtCounts[r.district] || 0) + 1; });
@@ -282,7 +284,7 @@
                 })
                 .filter(s => s.name !== 'Untitled Session');
 
-            return { sessions, districts };
+            return { sessions, districts, debug: { preregRowCount: preregRows.length, sessionRowCount: sessionRows.length } };
         }
 
         // ---------------------------------------------------------------
@@ -363,7 +365,16 @@
                     e('div', { className: "p-5 sm:p-6 border-b border-gray-100 flex items-start justify-between gap-3" },
                         e('div', null,
                             e('h3', { className: "text-lg font-bold text-gray-900" }, session.name),
-                            e('p', { className: "text-xs text-gray-500 mt-1" },
+                            e('div', { className: "mt-1.5 flex items-center gap-1.5" },
+                                e('span', { className: "text-[11px] font-bold uppercase tracking-wide text-gray-400" }, "ID Key"),
+                                e('code', { className: "text-sm font-mono font-bold bg-gray-100 px-2 py-0.5 rounded text-gray-800" }, session.idKey),
+                                e('button', {
+                                    onClick: () => copyToClipboard(String(session.idKey)).then(ok => showToast(ok ? 'success' : 'error', ok ? 'Copied ID Key.' : 'Could not copy.')),
+                                    title: "Copy ID Key",
+                                    className: "text-gray-400 hover:text-wcg-blue"
+                                }, e(Icons.Copy))
+                            ),
+                            e('p', { className: "text-xs text-gray-500 mt-1.5" },
                                 formatDateDisplay(parseDate(session.dateISO)), ' · ', session.time, ' · ', session.mode,
                                 session.hostingUnit ? ` · Hosted by ${session.hostingUnit}` : ''
                             )
@@ -423,10 +434,13 @@
             const [error, setError] = useState(null);
             const [refreshKey, setRefreshKey] = useState(0);
             const [lastUpdated, setLastUpdated] = useState(null);
+            const [debugInfo, setDebugInfo] = useState(null);
 
             const [searchTerm, setSearchTerm] = useState('');
             const [levelFilter, setLevelFilter] = useState('All');
             const [districtFilter, setDistrictFilter] = useState('All');
+            const [showPast, setShowPast] = useState(false);
+            const [showDistrictBreakdown, setShowDistrictBreakdown] = useState(false);
             const [sort, setSort] = useState({ key: 'date', dir: 'asc' });
 
             const [selectedSession, setSelectedSession] = useState(null);
@@ -443,6 +457,7 @@
                         if (!cancelled) {
                             setSessions(result.sessions);
                             setDistricts(result.districts);
+                            setDebugInfo(result.debug);
                             setLastUpdated(new Date());
                         }
                     } catch (err) {
@@ -458,15 +473,19 @@
             const levelOptions = useMemo(() => Array.from(new Set(sessions.map(s => s.level).filter(Boolean))).sort(), [sessions]);
 
             const filteredSessions = useMemo(() => {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
                 return sessions.filter(s => {
+                    if (!showPast && parseDate(s.dateISO) < today) return false;
                     if (searchTerm && !s.name.toLowerCase().includes(searchTerm.toLowerCase())) return false;
                     if (levelFilter !== 'All' && s.level !== levelFilter) return false;
                     if (districtFilter !== 'All' && (s.districtCounts[districtFilter] || 0) === 0) return false;
                     return true;
                 });
-            }, [sessions, searchTerm, levelFilter, districtFilter]);
+            }, [sessions, searchTerm, levelFilter, districtFilter, showPast]);
 
             const getSortValue = (s, key) => {
+                if (key === 'idKey') return String(s.idKey || '').toLowerCase();
                 if (key === 'name') return s.name.toLowerCase();
                 if (key === 'date') return parseDate(s.dateISO).getTime();
                 if (key === 'total') return s.totalRegistered;
@@ -512,6 +531,7 @@
             const handleDownloadOverviewCSV = () => {
                 const allBuckets = districts.concat(UNKNOWN_DISTRICT);
                 const headers = [
+                    { key: 'idKey', label: 'ID Key' },
                     { key: 'name', label: 'Session' },
                     { key: 'date', label: 'Date' },
                     { key: 'time', label: 'Time' },
@@ -520,7 +540,7 @@
                     ...allBuckets.map(d => ({ key: d, label: d }))
                 ];
                 const rows = sortedSessions.map(s => {
-                    const row = { name: s.name, date: s.dateISO, time: s.time, level: s.level, total: s.totalRegistered };
+                    const row = { idKey: s.idKey, name: s.name, date: s.dateISO, time: s.time, level: s.level, total: s.totalRegistered };
                     allBuckets.forEach(d => { row[d] = s.districtCounts[d] || 0; });
                     return row;
                 });
@@ -558,6 +578,9 @@
                     e('div', { className: "mt-3 bg-yellow-50 border border-yellow-200 text-yellow-800 text-xs rounded-lg px-3 py-2" },
                         "Internal tool — no authentication is enforced yet. Access will be restricted in a future update."
                     ),
+                    debugInfo ? e('p', { className: "mt-2 text-[11px] text-gray-400" },
+                        `Fetched ${debugInfo.preregRowCount} pre-registration row${debugInfo.preregRowCount === 1 ? '' : 's'} and ${debugInfo.sessionRowCount} Virtual session${debugInfo.sessionRowCount === 1 ? '' : 's'} from Supabase. If pre-registrations exist but this reads 0, check RLS/select policies on session_pre_registrations.`
+                    ) : null,
 
                     error ? e('div', { className: "mt-6 text-center py-10" },
                         e('div', { className: "mx-auto mb-3 h-10 w-10 rounded-full bg-red-50 text-wcg-red flex items-center justify-center" }, e(Icons.AlertTriangle)),
@@ -593,25 +616,36 @@
                             }, e('option', { value: "All" }, "All Districts"), districts.concat(UNKNOWN_DISTRICT).map(d => e('option', { key: d, value: d }, d))),
                             e('button', { onClick: clearFilters, className: "text-xs font-semibold text-gray-500 hover:text-wcg-blue underline underline-offset-2" }, "Clear"),
                             e('button', {
+                                onClick: () => setShowDistrictBreakdown(v => !v),
+                                className: "inline-flex items-center gap-1.5 border border-gray-200 hover:border-wcg-blue text-gray-600 hover:text-wcg-blue font-semibold text-xs px-3 py-2 rounded-lg transition-colors"
+                            }, showDistrictBreakdown ? e(Icons.ChevronUp) : e(Icons.ChevronDown), showDistrictBreakdown ? "Hide District Breakdown" : "Show District Breakdown"),
+                            e('button', {
                                 onClick: handleDownloadOverviewCSV,
                                 className: "ml-auto inline-flex items-center gap-2 border-2 border-gray-300 hover:border-wcg-blue text-gray-700 font-bold text-xs px-3 py-2 rounded-lg transition-colors"
                             }, e(Icons.Download), "Export Overview CSV")
                         ),
 
+                        // --- Show past sessions toggle ---
+                        e('button', {
+                            onClick: () => setShowPast(v => !v),
+                            className: "mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-gray-500 hover:text-wcg-blue"
+                        }, showPast ? e(Icons.ChevronUp) : e(Icons.ChevronDown), showPast ? "Hide sessions older than today" : "Show sessions from the last 21 days too"),
+
                         // --- Sessions table ---
-                        e('div', { className: "mt-4 bg-white rounded-xl border border-gray-200 shadow-sm overflow-x-auto" },
+                        e('div', { className: "mt-2 bg-white rounded-xl border border-gray-200 shadow-sm overflow-x-auto" },
                             sortedSessions.length === 0
                                 ? e('p', { className: "text-sm text-gray-500 py-10 text-center" }, "No sessions match these filters.")
                                 : e('table', { className: "w-full text-sm" },
                                     e('thead', { className: "bg-gray-50" },
                                         e('tr', { className: "border-b border-gray-200" },
+                                            e(SortHeader, { label: "ID Key", sortKey: "idKey", sort, onSort: handleSort }),
                                             e(SortHeader, { label: "Session", sortKey: "name", sort, onSort: handleSort }),
                                             e(SortHeader, { label: "Date", sortKey: "date", sort, onSort: handleSort }),
                                             e('th', { className: "px-3 py-2.5 text-left text-[11px] font-bold uppercase tracking-wide text-gray-500" }, "Time"),
                                             e('th', { className: "px-3 py-2.5 text-left text-[11px] font-bold uppercase tracking-wide text-gray-500" }, "Level"),
                                             e(SortHeader, { label: "Total", sortKey: "total", sort, onSort: handleSort }),
-                                            districts.map(d => e(SortHeader, { key: d, label: d, sortKey: d, sort, onSort: handleSort })),
-                                            e(SortHeader, { label: UNKNOWN_DISTRICT, sortKey: UNKNOWN_DISTRICT, sort, onSort: handleSort }),
+                                            showDistrictBreakdown ? districts.map(d => e(SortHeader, { key: d, label: d, sortKey: d, sort, onSort: handleSort })) : null,
+                                            showDistrictBreakdown ? e(SortHeader, { label: UNKNOWN_DISTRICT, sortKey: UNKNOWN_DISTRICT, sort, onSort: handleSort }) : null,
                                             e('th', { className: "px-3 py-2.5 text-left text-[11px] font-bold uppercase tracking-wide text-gray-500" }, "")
                                         )
                                     ),
@@ -621,13 +655,26 @@
                                             className: "border-b border-gray-50 hover:bg-blue-50/50 cursor-pointer transition-colors",
                                             onClick: () => setSelectedSession(s)
                                         },
+                                            e('td', { className: "px-3 py-3" },
+                                                e('div', { className: "inline-flex items-center gap-1.5" },
+                                                    e('code', { className: "text-xs bg-gray-100 px-1.5 py-0.5 rounded font-mono text-gray-700" }, s.idKey),
+                                                    e('button', {
+                                                        onClick: (ev) => {
+                                                            ev.stopPropagation();
+                                                            copyToClipboard(String(s.idKey)).then(ok => showToast(ok ? 'success' : 'error', ok ? 'Copied ID Key.' : 'Could not copy.'));
+                                                        },
+                                                        title: "Copy ID Key",
+                                                        className: "text-gray-400 hover:text-wcg-blue"
+                                                    }, e(Icons.Copy))
+                                                )
+                                            ),
                                             e('td', { className: "px-3 py-3 font-semibold text-gray-800" }, s.name),
                                             e('td', { className: "px-3 py-3 text-gray-600" }, formatDateDisplay(parseDate(s.dateISO))),
                                             e('td', { className: "px-3 py-3 text-gray-600" }, s.time),
                                             e('td', { className: "px-3 py-3" }, s.level ? e(Badge, { type: "level" }, s.level) : '—'),
                                             e('td', { className: "px-3 py-3 font-bold text-gray-900" }, s.totalRegistered),
-                                            districts.map(d => e('td', { key: d, className: "px-3 py-3 text-gray-500 text-center" }, s.districtCounts[d] || 0)),
-                                            e('td', { className: "px-3 py-3 text-gray-500 text-center" }, s.districtCounts[UNKNOWN_DISTRICT] || 0),
+                                            showDistrictBreakdown ? districts.map(d => e('td', { key: d, className: "px-3 py-3 text-gray-500 text-center" }, s.districtCounts[d] || 0)) : null,
+                                            showDistrictBreakdown ? e('td', { className: "px-3 py-3 text-gray-500 text-center" }, s.districtCounts[UNKNOWN_DISTRICT] || 0) : null,
                                             e('td', { className: "px-3 py-3" },
                                                 e('button', {
                                                     onClick: (ev) => { ev.stopPropagation(); setSelectedSession(s); },
