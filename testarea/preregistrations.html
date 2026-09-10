@@ -168,6 +168,74 @@
             return all;
         }
 
+        // Copies both an HTML and a plain-text representation, so pasting into
+        // a rich-text compose box (Outlook/Gmail) keeps custom link text like
+        // "CLICK HERE TO JOIN" as a real clickable hyperlink, while anything
+        // that can't accept rich content still gets a sensible plain-text copy.
+        async function copyRichText(html, plainText) {
+            try {
+                if (navigator.clipboard && window.ClipboardItem) {
+                    const item = new ClipboardItem({
+                        'text/html': new Blob([html], { type: 'text/html' }),
+                        'text/plain': new Blob([plainText], { type: 'text/plain' })
+                    });
+                    await navigator.clipboard.write([item]);
+                    return true;
+                }
+            } catch (err) { console.error('Rich clipboard copy failed, falling back to plain text:', err); }
+            return copyToClipboard(plainText);
+        }
+
+        function escapeHtml(str) {
+            return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        }
+
+        function nl2br(str) {
+            return escapeHtml(str).replace(/\n/g, '<br>');
+        }
+
+        // Builds the reminder email (subject, plain-text body, HTML body) from
+        // a session record plus an optional short personal note from the advisor.
+        function buildReminderEmail(session, personalNote) {
+            const dateDisplay = formatDateDisplay(parseDate(session.dateISO));
+            const subject = `Reminder: ${session.name} – ${dateDisplay}`;
+            const note = (personalNote || '').trim();
+
+            const plainLines = [
+                'Hi there,',
+                '',
+                ...(note ? [note, ''] : []),
+                "This is a friendly reminder that you're registered for the session below. We'd love for you to join us!",
+                '',
+                `Session: ${session.name}`,
+                `Date: ${dateDisplay}`,
+                `Time: ${session.time}`,
+                '',
+                ...(session.description ? ['About this session:', session.description, ''] : []),
+                ...(session.outline ? ["What you'll gain:", session.outline, ''] : []),
+                ...(session.joinLink ? [`Click here to join: ${session.joinLink}`, ''] : []),
+                "Every session is a step forward in your professional growth journey — thank you for continuing to invest in your development and in the learners you serve. We look forward to seeing you there!",
+                '',
+                'Warm regards,',
+                'The WCED eLearning Team'
+            ];
+            const plainTextBody = plainLines.join('\n');
+
+            const htmlBody = `<div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#333333;line-height:1.6;">
+<p>Hi there,</p>
+${note ? `<p>${nl2br(note)}</p>` : ''}
+<p>This is a friendly reminder that you're registered for the session below. We'd love for you to join us!</p>
+<p><strong>Session:</strong> ${escapeHtml(session.name)}<br><strong>Date:</strong> ${escapeHtml(dateDisplay)}<br><strong>Time:</strong> ${escapeHtml(session.time)}</p>
+${session.description ? `<p><strong>About this session:</strong><br>${nl2br(session.description)}</p>` : ''}
+${session.outline ? `<p><strong>What you'll gain:</strong><br>${nl2br(session.outline)}</p>` : ''}
+${session.joinLink ? `<p><a href="${escapeHtml(session.joinLink)}" style="display:inline-block;background-color:#001489;color:#ffffff;text-decoration:none;font-weight:bold;padding:12px 24px;border-radius:6px;">CLICK HERE TO JOIN</a></p>` : ''}
+<p>Every session is a step forward in your professional growth journey — thank you for continuing to invest in your development and in the learners you serve. We look forward to seeing you there!</p>
+<p>Warm regards,<br>The WCED eLearning Team</p>
+</div>`;
+
+            return { subject, plainTextBody, htmlBody };
+        }
+
         async function copyToClipboard(text) {
             try {
                 if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -223,9 +291,9 @@
 
             const [preregRows, sessionRows, courseRows, schoolRows] = await Promise.all([
                 fetchAllRows('session_pre_registrations', 'id_key, name, email, school, created_at'),
-                fetchAllRows('sessions', 'id_key, session_title, session_date, session_start_time, session_delivery_mode, hosting_unit',
+                fetchAllRows('sessions', 'id_key, session_title, session_date, session_start_time, session_delivery_mode, hosting_unit, session_link',
                     q => q.eq('session_delivery_mode', 'Virtual').gte('session_date', lookbackISO)),
-                fetchAllRows('courses', 'course_name, developmental_level, programme_duration'),
+                fetchAllRows('courses', 'course_name, developmental_level, programme_duration, session_desciption, session_outcomes'),
                 fetchAllRows('schools', 'School_Name, Education_District')
             ]);
 
@@ -277,6 +345,9 @@
                         level: course.developmental_level || '',
                         mode: s.session_delivery_mode || '—',
                         hostingUnit: s.hosting_unit || '',
+                        description: course.session_desciption || '',
+                        outline: course.session_outcomes || '',
+                        joinLink: s.session_link || '',
                         totalRegistered: regs.length,
                         districtCounts,
                         registrants: regs
@@ -333,6 +404,8 @@
 
         function SessionDetailModal({ session, onClose, showToast }) {
             const [search, setSearch] = useState('');
+            const [tab, setTab] = useState('registrants');
+            const [personalNote, setPersonalNote] = useState('');
 
             const filtered = session.registrants.filter(r => {
                 if (!search.trim()) return true;
@@ -360,6 +433,18 @@
                 );
             };
 
+            const email = buildReminderEmail(session, personalNote);
+
+            const handleCopyEmailBody = async () => {
+                const ok = await copyRichText(email.htmlBody, email.plainTextBody);
+                showToast(ok ? 'success' : 'error', ok ? "Copied the email body — paste it straight into your mail client." : 'Could not copy to clipboard.');
+            };
+
+            const handleCopySubject = async () => {
+                const ok = await copyToClipboard(email.subject);
+                showToast(ok ? 'success' : 'error', ok ? 'Copied subject line.' : 'Could not copy to clipboard.');
+            };
+
             return e('div', { className: "fixed inset-0 bg-black/50 flex items-center justify-center px-4 z-[10000]", onClick: onClose },
                 e('div', { className: "bg-white rounded-2xl shadow-xl max-w-3xl w-full max-h-[85vh] flex flex-col", onClick: (ev) => ev.stopPropagation() },
                     e('div', { className: "p-5 sm:p-6 border-b border-gray-100 flex items-start justify-between gap-3" },
@@ -381,47 +466,91 @@
                         ),
                         e('button', { onClick: onClose, className: "text-gray-400 hover:text-gray-600 flex-shrink-0" }, e(Icons.X))
                     ),
-                    e('div', { className: "p-5 sm:p-6 pb-3 flex flex-wrap items-center gap-2" },
+
+                    e('div', { className: "px-5 sm:px-6 pt-3 flex items-center gap-1 border-b border-gray-100" },
                         e('button', {
-                            onClick: handleCopyEmails,
-                            className: "inline-flex items-center gap-2 bg-wcg-blue hover:bg-blue-800 text-white font-bold text-sm px-3.5 py-2 rounded-lg transition-colors"
-                        }, e(Icons.Copy), `Copy All Emails (${session.totalRegistered})`),
+                            onClick: () => setTab('registrants'),
+                            className: `px-3 py-2 text-sm font-bold border-b-2 -mb-px transition-colors ${tab === 'registrants' ? 'border-wcg-blue text-wcg-blue' : 'border-transparent text-gray-400 hover:text-gray-600'}`
+                        }, `Registrants (${session.totalRegistered})`),
                         e('button', {
-                            onClick: handleDownloadCSV,
-                            className: "inline-flex items-center gap-2 border-2 border-gray-300 hover:border-wcg-blue text-gray-700 font-bold text-sm px-3.5 py-2 rounded-lg transition-colors"
-                        }, e(Icons.Download), "Download CSV"),
-                        e('div', { className: "relative flex-1 min-w-[160px]" },
-                            e('div', { className: "absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400" }, e(Icons.Search)),
-                            e('input', {
-                                type: "text", placeholder: "Filter registrants...", value: search,
-                                onChange: (ev) => setSearch(ev.target.value),
-                                className: "w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg bg-gray-50 focus:outline-none focus:bg-white focus:border-wcg-blue text-sm transition-all"
-                            })
-                        )
+                            onClick: () => setTab('email'),
+                            className: `px-3 py-2 text-sm font-bold border-b-2 -mb-px transition-colors ${tab === 'email' ? 'border-wcg-blue text-wcg-blue' : 'border-transparent text-gray-400 hover:text-gray-600'}`
+                        }, "Reminder Email")
                     ),
-                    e('div', { className: "overflow-auto flex-1 px-5 sm:px-6 pb-6" },
-                        session.registrants.length === 0
-                            ? e('p', { className: "text-sm text-gray-500 py-8 text-center" }, "No one has pre-registered for this session yet.")
-                            : e('table', { className: "w-full text-sm" },
-                                e('thead', null,
-                                    e('tr', { className: "border-b border-gray-200" },
-                                        e('th', { className: "px-3 py-2 text-left text-[11px] font-bold uppercase tracking-wide text-gray-500" }, "Name"),
-                                        e('th', { className: "px-3 py-2 text-left text-[11px] font-bold uppercase tracking-wide text-gray-500" }, "Email"),
-                                        e('th', { className: "px-3 py-2 text-left text-[11px] font-bold uppercase tracking-wide text-gray-500" }, "School"),
-                                        e('th', { className: "px-3 py-2 text-left text-[11px] font-bold uppercase tracking-wide text-gray-500" }, "District"),
-                                        e('th', { className: "px-3 py-2 text-left text-[11px] font-bold uppercase tracking-wide text-gray-500" }, "Registered At")
-                                    )
-                                ),
-                                e('tbody', null,
-                                    filtered.map((r, idx) => e('tr', { key: idx, className: "border-b border-gray-50 hover:bg-gray-50" },
-                                        e('td', { className: "px-3 py-2.5 font-semibold text-gray-800" }, r.name || '—'),
-                                        e('td', { className: "px-3 py-2.5 text-gray-600" }, r.email || '—'),
-                                        e('td', { className: "px-3 py-2.5 text-gray-600" }, r.school || '—'),
-                                        e('td', { className: "px-3 py-2.5 text-gray-600" }, r.district),
-                                        e('td', { className: "px-3 py-2.5 text-gray-500" }, formatDateTime(r.createdAt))
-                                    ))
-                                )
+
+                    tab === 'registrants' ? e(React.Fragment, null,
+                        e('div', { className: "p-5 sm:p-6 pb-3 flex flex-wrap items-center gap-2" },
+                            e('button', {
+                                onClick: handleCopyEmails,
+                                className: "inline-flex items-center gap-2 bg-wcg-blue hover:bg-blue-800 text-white font-bold text-sm px-3.5 py-2 rounded-lg transition-colors"
+                            }, e(Icons.Copy), `Copy All Emails (${session.totalRegistered})`),
+                            e('button', {
+                                onClick: handleDownloadCSV,
+                                className: "inline-flex items-center gap-2 border-2 border-gray-300 hover:border-wcg-blue text-gray-700 font-bold text-sm px-3.5 py-2 rounded-lg transition-colors"
+                            }, e(Icons.Download), "Download CSV"),
+                            e('div', { className: "relative flex-1 min-w-[160px]" },
+                                e('div', { className: "absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400" }, e(Icons.Search)),
+                                e('input', {
+                                    type: "text", placeholder: "Filter registrants...", value: search,
+                                    onChange: (ev) => setSearch(ev.target.value),
+                                    className: "w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg bg-gray-50 focus:outline-none focus:bg-white focus:border-wcg-blue text-sm transition-all"
+                                })
                             )
+                        ),
+                        e('div', { className: "overflow-auto flex-1 px-5 sm:px-6 pb-6" },
+                            session.registrants.length === 0
+                                ? e('p', { className: "text-sm text-gray-500 py-8 text-center" }, "No one has pre-registered for this session yet.")
+                                : e('table', { className: "w-full text-sm" },
+                                    e('thead', null,
+                                        e('tr', { className: "border-b border-gray-200" },
+                                            e('th', { className: "px-3 py-2 text-left text-[11px] font-bold uppercase tracking-wide text-gray-500" }, "Name"),
+                                            e('th', { className: "px-3 py-2 text-left text-[11px] font-bold uppercase tracking-wide text-gray-500" }, "Email"),
+                                            e('th', { className: "px-3 py-2 text-left text-[11px] font-bold uppercase tracking-wide text-gray-500" }, "School"),
+                                            e('th', { className: "px-3 py-2 text-left text-[11px] font-bold uppercase tracking-wide text-gray-500" }, "District"),
+                                            e('th', { className: "px-3 py-2 text-left text-[11px] font-bold uppercase tracking-wide text-gray-500" }, "Registered At")
+                                        )
+                                    ),
+                                    e('tbody', null,
+                                        filtered.map((r, idx) => e('tr', { key: idx, className: "border-b border-gray-50 hover:bg-gray-50" },
+                                            e('td', { className: "px-3 py-2.5 font-semibold text-gray-800" }, r.name || '—'),
+                                            e('td', { className: "px-3 py-2.5 text-gray-600" }, r.email || '—'),
+                                            e('td', { className: "px-3 py-2.5 text-gray-600" }, r.school || '—'),
+                                            e('td', { className: "px-3 py-2.5 text-gray-600" }, r.district),
+                                            e('td', { className: "px-3 py-2.5 text-gray-500" }, formatDateTime(r.createdAt))
+                                        ))
+                                    )
+                                )
+                        )
+                    ) : e('div', { className: "overflow-auto flex-1 p-5 sm:p-6" },
+                        e('p', { className: "text-xs text-gray-500 mb-3" },
+                            "This pulls in the session's details automatically. Add an optional personal note below, then copy the email body straight into your mail client — the join link stays clickable when pasted into Outlook or Gmail."
+                        ),
+                        e('label', { className: "block text-xs font-bold uppercase tracking-wide text-gray-400 mb-1" }, "Personal note (optional)"),
+                        e('textarea', {
+                            value: personalNote,
+                            onChange: (ev) => setPersonalNote(ev.target.value),
+                            placeholder: "e.g. Looking forward to seeing your school represented at this one!",
+                            rows: 2,
+                            className: "w-full px-3 py-2 border border-gray-200 rounded-lg bg-gray-50 focus:outline-none focus:bg-white focus:border-wcg-blue text-sm mb-4 resize-none"
+                        }),
+                        e('div', { className: "flex flex-wrap items-center gap-2 mb-4" },
+                            e('button', {
+                                onClick: handleCopyEmailBody,
+                                className: "inline-flex items-center gap-2 bg-wcg-blue hover:bg-blue-800 text-white font-bold text-sm px-3.5 py-2 rounded-lg transition-colors"
+                            }, e(Icons.Copy), "Copy Email Body"),
+                            e('button', {
+                                onClick: handleCopySubject,
+                                className: "inline-flex items-center gap-2 border-2 border-gray-300 hover:border-wcg-blue text-gray-700 font-bold text-sm px-3.5 py-2 rounded-lg transition-colors"
+                            }, e(Icons.Copy), "Copy Subject"),
+                            e('button', {
+                                onClick: handleCopyEmails,
+                                className: "inline-flex items-center gap-2 border-2 border-gray-300 hover:border-wcg-blue text-gray-700 font-bold text-sm px-3.5 py-2 rounded-lg transition-colors"
+                            }, e(Icons.Copy), `Copy Recipient Emails (${session.totalRegistered})`)
+                        ),
+                        e('p', { className: "text-xs font-bold uppercase tracking-wide text-gray-400 mb-1" }, `Subject: ${email.subject}`),
+                        e('div', { className: "border border-gray-200 rounded-xl p-4 bg-gray-50" },
+                            e('div', { dangerouslySetInnerHTML: { __html: email.htmlBody } })
+                        )
                     )
                 )
             );
@@ -471,6 +600,7 @@
             }, [refreshKey]);
 
             const levelOptions = useMemo(() => Array.from(new Set(sessions.map(s => s.level).filter(Boolean))).sort(), [sessions]);
+            const hostingDistrictOptions = useMemo(() => Array.from(new Set(sessions.map(s => s.hostingUnit).filter(Boolean))).sort(), [sessions]);
 
             const filteredSessions = useMemo(() => {
                 const today = new Date();
@@ -479,7 +609,7 @@
                     if (!showPast && parseDate(s.dateISO) < today) return false;
                     if (searchTerm && !s.name.toLowerCase().includes(searchTerm.toLowerCase())) return false;
                     if (levelFilter !== 'All' && s.level !== levelFilter) return false;
-                    if (districtFilter !== 'All' && (s.districtCounts[districtFilter] || 0) === 0) return false;
+                    if (districtFilter !== 'All' && s.hostingUnit !== districtFilter) return false;
                     return true;
                 });
             }, [sessions, searchTerm, levelFilter, districtFilter, showPast]);
@@ -607,29 +737,31 @@
                                 })
                             ),
                             e('select', {
+                                value: districtFilter, onChange: (ev) => setDistrictFilter(ev.target.value),
+                                className: "border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:border-wcg-blue"
+                            }, e('option', { value: "All" }, "All Hosting Districts"), hostingDistrictOptions.map(d => e('option', { key: d, value: d }, d))),
+                            e('select', {
                                 value: levelFilter, onChange: (ev) => setLevelFilter(ev.target.value),
                                 className: "border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:border-wcg-blue"
                             }, e('option', { value: "All" }, "All Levels"), levelOptions.map(l => e('option', { key: l, value: l }, l))),
-                            e('select', {
-                                value: districtFilter, onChange: (ev) => setDistrictFilter(ev.target.value),
-                                className: "border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:border-wcg-blue"
-                            }, e('option', { value: "All" }, "All Districts"), districts.concat(UNKNOWN_DISTRICT).map(d => e('option', { key: d, value: d }, d))),
                             e('button', { onClick: clearFilters, className: "text-xs font-semibold text-gray-500 hover:text-wcg-blue underline underline-offset-2" }, "Clear"),
-                            e('button', {
-                                onClick: () => setShowDistrictBreakdown(v => !v),
-                                className: "inline-flex items-center gap-1.5 border border-gray-200 hover:border-wcg-blue text-gray-600 hover:text-wcg-blue font-semibold text-xs px-3 py-2 rounded-lg transition-colors"
-                            }, showDistrictBreakdown ? e(Icons.ChevronUp) : e(Icons.ChevronDown), showDistrictBreakdown ? "Hide District Breakdown" : "Show District Breakdown"),
                             e('button', {
                                 onClick: handleDownloadOverviewCSV,
                                 className: "ml-auto inline-flex items-center gap-2 border-2 border-gray-300 hover:border-wcg-blue text-gray-700 font-bold text-xs px-3 py-2 rounded-lg transition-colors"
                             }, e(Icons.Download), "Export Overview CSV")
                         ),
 
-                        // --- Show past sessions toggle ---
-                        e('button', {
-                            onClick: () => setShowPast(v => !v),
-                            className: "mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-gray-500 hover:text-wcg-blue"
-                        }, showPast ? e(Icons.ChevronUp) : e(Icons.ChevronDown), showPast ? "Hide sessions older than today" : "Show sessions from the last 21 days too"),
+                        // --- Toggles: past sessions (left) / district breakdown (right) ---
+                        e('div', { className: "mt-3 flex items-center justify-between flex-wrap gap-2" },
+                            e('button', {
+                                onClick: () => setShowPast(v => !v),
+                                className: "inline-flex items-center gap-1.5 text-xs font-semibold text-gray-500 hover:text-wcg-blue"
+                            }, showPast ? e(Icons.ChevronUp) : e(Icons.ChevronDown), showPast ? "Hide sessions older than today" : "Show sessions from the last 21 days too"),
+                            e('button', {
+                                onClick: () => setShowDistrictBreakdown(v => !v),
+                                className: "inline-flex items-center gap-1.5 text-xs font-semibold text-gray-500 hover:text-wcg-blue"
+                            }, showDistrictBreakdown ? e(Icons.ChevronUp) : e(Icons.ChevronDown), showDistrictBreakdown ? "Hide district breakdown" : "Show district breakdown")
+                        ),
 
                         // --- Sessions table ---
                         e('div', { className: "mt-2 bg-white rounded-xl border border-gray-200 shadow-sm overflow-x-auto" },
